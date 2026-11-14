@@ -1,0 +1,5 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import Listing from '../generated/Listing.jsx';
+
+createRoot(document.getElementById('root')).render(<Listing />);

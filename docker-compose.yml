@@ -1,0 +1,30 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-dev}
+    restart: unless-stopped
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:-estatesmart.online}
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

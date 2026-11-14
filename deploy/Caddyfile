@@ -1,0 +1,17 @@
+# Caddy tự xin và gia hạn chứng chỉ HTTPS (Let's Encrypt) cho tên miền.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# GitHub Webhook → dịch vụ webhook chạy trên máy chủ (cổng 9000)
+	handle /hooks/* {
+		reverse_proxy host.docker.internal:9000
+	}
+
+	handle {
+		reverse_proxy web:80
+	}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}

@@ -1,0 +1,21 @@
+name: CI
+
+# Kiểm tra mỗi pull request và mỗi lần push lên main: build web và build image Docker.
+# Việc deploy lên VPS do GitHub Webhook đảm nhận (xem docs/KE_HOACH_TRIEN_KHAI.md).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: docker build --build-arg GIT_SHA=${GITHUB_SHA::7} -t estatesmart-web:ci .

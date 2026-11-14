@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>estateSmartAI — Trợ lý thẩm định mặt bằng</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&amp;family=Instrument+Serif&amp;display=swap">
+<style>
+body{margin:0;background:#F4EFE6}
+*{box-sizing:border-box}
+a{color:inherit}a:hover{color:#A3562B}
+button{font:inherit;cursor:pointer}
+input{font:inherit}
+input::placeholder{color:rgba(31,28,25,.5)}
+.shell{display:flex;height:100vh;min-height:720px}
+.chatcol{flex:0 0 clamp(400px,38%,560px);min-width:0;display:flex;flex-direction:column;border-right:1px solid rgba(31,28,25,.12)}
+.viz{flex:1 1 auto;min-width:0;padding:12px;display:flex}
+@keyframes pulse{0%{transform:translate(-50%,-50%) scale(.4);opacity:.7}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
+.pulse{animation:pulse 1.6s ease-out infinite}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+@media (max-width:900px){
+.shell{flex-direction:column;height:auto}
+.chatcol{flex:none;height:78vh;min-height:560px;border-right:0;border-bottom:1px solid rgba(31,28,25,.12)}
+.viz{height:560px}
+}
+</style>
+</helmet>
+<div class="shell" style="font-family: 'Familjen Grotesk', system-ui, sans-serif; color: #1F1C19; background: #F4EFE6; width: 100%">
+
+<!-- CHAT (LEFT) -->
+<main class="chatcol">
+<header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 28px">
+<a href="Main.dc.html" style="font-weight: 600; font-size: 16px; letter-spacing: 0.01em; text-decoration: none; color: #1F1C19">ESTATESMART / AI</a>
+<button type="button" onClick="{{reset}}" style="min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(31,28,25,0.3); background: none; color: #1F1C19; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">PHIÊN MỚI +</button>
+</header>
+<div style="padding: 0 28px 16px; border-bottom: 1px solid rgba(31,28,25,0.12)">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">TRỢ LÝ THẨM ĐỊNH · BƯỚC {{stepLabel}} / 05</p>
+<h1 style="margin: 6px 0 12px; font-weight: 500; font-size: 32px; line-height: 1.1; letter-spacing: -0.01em">{{headerTitle}}</h1>
+<div style="height: 2px; background: rgba(31,28,25,0.1)"><div style="height: 2px; background: #A3562B; width: {{progress}}"></div></div>
+</div>
+
+<div ref="{{threadRef}}" style="flex: 1 1 auto; overflow-y: auto; padding: 24px 28px">
+<div style="display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{messages}}" as="m" hint-placeholder-count="3">
+
+<sc-if value="{{m.isBot}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<span aria-hidden="true" style="flex: 0 0 32px; height: 32px; border-radius: 50%; background: #1F1C19; color: #F4EFE6; display: grid; place-items: center; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 20px">e</span>
+<div>
+<p style="margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: rgba(31,28,25,0.62)">ESTATESMART AI</p>
+<p style="margin: 0; font-size: 15px; line-height: 1.6">{{m.text}}</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{m.isUser}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; justify-content: flex-end">
+<p style="margin: 0; max-width: 82%; padding: 11px 16px; border-radius: 18px 18px 4px 18px; background: #1F1C19; color: #F4EFE6; font-size: 15px; line-height: 1.5">{{m.text}}</p>
+</div>
+</sc-if>
+
+<sc-if value="{{m.isAgents}}" hint-placeholder-val="{{ false }}">
+<div style="margin-left: 44px; padding: 16px 20px; border-radius: 18px; background: #FBF8F2; border: 1px solid rgba(31,28,25,0.1)">
+<p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">SUPERVISOR · 5 AI AGENT</p>
+<ol style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{agents}}" as="a" hint-placeholder-count="5">
+<li style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(31,28,25,0.08); font-size: 14px">
+<span style="flex: 0 0 24px; font-size: 12px; font-weight: 600; color: rgba(31,28,25,0.6)">{{a.num}}</span>
+<span style="flex: 1 1 auto; {{a.labelStyle}}">{{a.label}}</span>
+<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; {{a.statusStyle}}">{{a.status}}</span>
+</li>
+</sc-for>
+</ol>
+</div>
+</sc-if>
+
+<sc-if value="{{m.isResults}}" hint-placeholder-val="{{ false }}">
+<div style="margin-left: 44px; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{results}}" as="r" hint-placeholder-count="3">
+<article style="{{r.cardStyle}}">
+<img src="{{r.src}}" alt="{{r.alt}}" style="flex: 0 0 96px; width: 96px; height: 96px; object-fit: cover; border-radius: 12px; display: block">
+<div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<div style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline">
+<h3 style="margin: 0; font-size: 15px; font-weight: 500; line-height: 1.3">{{r.rank}}. {{r.name}}</h3>
+<span style="font-size: 14px; font-weight: 600; white-space: nowrap">{{r.score}}/100</span>
+</div>
+<p style="margin: 0; font-size: 13px; color: rgba(31,28,25,0.68)">{{r.meta}} · {{r.price}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: auto; padding-top: 6px">
+<button type="button" onClick="{{r.showMap}}" style="min-height: 32px; padding: 0; border: 0; background: none; color: #1F1C19; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-decoration: underline">BẢN ĐỒ</button>
+<button type="button" onClick="{{r.show3d}}" style="min-height: 32px; padding: 0; border: 0; background: none; color: #1F1C19; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-decoration: underline">XEM 3D</button>
+<a href="Listing.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #A3562B">HỒ SƠ &#8594;</a>
+</div>
+</div>
+</article>
+</sc-for>
+</div>
+</sc-if>
+
+</sc-for>
+
+<sc-if value="{{showOptions}}" hint-placeholder-val="{{ true }}">
+<div style="margin-left: 44px; display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="4">
+<button type="button" onClick="{{o.pick}}" style="min-height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(31,28,25,0.3); background: #FBF8F2; color: #1F1C19; font-size: 14px">{{o.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</div>
+
+<div style="padding: 14px 28px 18px; border-top: 1px solid rgba(31,28,25,0.12)">
+<div style="display: flex; gap: 10px; align-items: center">
+<label for="chat-input" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Nhập yêu cầu</label>
+<input id="chat-input" type="text" value="{{draft}}" onChange="{{onDraft}}" onKeyDown="{{onKey}}" placeholder="{{placeholder}}" style="flex: 1 1 auto; min-width: 0; height: 50px; padding: 0 20px; border-radius: 999px; border: 1px solid rgba(31,28,25,0.24); background: #FBF8F2; color: #1F1C19; font-size: 15px; outline-color: #A3562B">
+<button type="button" onClick="{{send}}" aria-label="Gửi" style="flex: 0 0 50px; height: 50px; border-radius: 50%; border: 0; background: #1F1C19; color: #F4EFE6; display: grid; place-items: center">
+<svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+</div>
+<p style="margin: 8px 0 0; font-size: 12px; color: rgba(31,28,25,0.62)">Bản mô phỏng MVP. Kết quả và số liệu là dữ liệu minh hoạ.</p>
+</div>
+</main>
+
+<!-- VISUAL (RIGHT) -->
+<section class="viz" aria-label="Bản đồ và mô hình 3D">
+<div style="position: relative; flex: 1 1 auto; border-radius: 24px; overflow: hidden; background: #E8E1D3">
+
+<!-- MAP -->
+<sc-if value="{{isMap}}" hint-placeholder-val="{{ true }}">
+<div style="position: absolute; inset: 0">
+<svg viewBox="0 0 1000 800" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block">
+<rect width="1000" height="800" fill="#ECE5D7"></rect>
+<path d="M0 640 C 200 580, 380 720, 560 655 S 860 575, 1000 615 L1000 800 L0 800 Z" fill="#CFD8D3"></path>
+<rect x="520" y="330" width="120" height="96" rx="8" fill="#D8DCC5"></rect>
+<rect x="130" y="430" width="96" height="74" rx="8" fill="#D8DCC5"></rect>
+<rect x="800" y="180" width="90" height="70" rx="8" fill="#D8DCC5"></rect>
+<g stroke="#F8F4EC" stroke-width="5" fill="none">
+<path d="M0 200 L1000 190"></path><path d="M0 420 L1000 395"></path><path d="M0 520 L1000 500"></path>
+<path d="M120 0 L160 640"></path><path d="M250 0 L270 600"></path><path d="M560 0 L540 660"></path><path d="M860 0 L830 600"></path><path d="M960 0 L940 610"></path>
+<path d="M0 60 L1000 40"></path>
+</g>
+<g stroke="#FFFFFF" stroke-width="16" fill="none" stroke-linecap="round">
+<path d="M0 310 L1000 270"></path>
+<path d="M380 0 L460 800"></path>
+<path d="M720 0 L650 640"></path>
+<path d="M0 130 C 300 170, 600 90, 1000 150"></path>
+</g>
+</svg>
+
+<sc-if value="{{analyzing}}" hint-placeholder-val="{{ false }}">
+<span class="pulse" style="position: absolute; left: 50%; top: 42%; width: 360px; height: 360px; border-radius: 50%; border: 2px solid #A3562B"></span>
+</sc-if>
+
+<sc-for list="{{competitors}}" as="c" hint-placeholder-count="10">
+<span title="Cơ sở cùng ngành" style="position: absolute; left: {{c.x}}; top: {{c.y}}; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #FBF8F2; border: 2px solid #6B625A"></span>
+</sc-for>
+
+<sc-if value="{{hasResults}}" hint-placeholder-val="{{ false }}">
+<span style="position: absolute; left: {{selPin.x}}; top: {{selPin.y}}; width: 260px; height: 260px; transform: translate(-50%, -50%); border-radius: 50%; border: 1.5px dashed rgba(163,86,43,0.8); background: rgba(163,86,43,0.08)"></span>
+</sc-if>
+
+<sc-for list="{{pins}}" as="p" hint-placeholder-count="3">
+<button type="button" onClick="{{p.pick}}" aria-label="{{p.label}}" aria-pressed="{{p.pressed}}" style="{{p.style}}">{{p.rank}}</button>
+</sc-for>
+
+<div style="position: absolute; left: 20px; top: 20px; padding: 12px 16px; border-radius: 14px; background: rgba(251,248,242,0.94)">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">KHU VỰC</p>
+<p style="margin: 2px 0 0; font-size: 16px; font-weight: 500">{{areaLabel}}</p>
+</div>
+
+<div style="position: absolute; left: 20px; bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 14px; border-radius: 12px; background: rgba(251,248,242,0.94); font-size: 12px">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border-radius: 50%; background: #1F1C19"></span>Mặt bằng đề xuất</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 50%; background: #FBF8F2; border: 2px solid #6B625A"></span>Cơ sở cùng ngành</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border-radius: 50%; border: 1.5px dashed #A3562B"></span>Bán kính 500 m</span>
+</div>
+
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ true }}">
+<div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(86%, 380px); padding: 22px 24px; border-radius: 18px; background: rgba(251,248,242,0.96); text-align: center">
+<p style="margin: 0; font-size: 16px; font-weight: 500">{{mapHint}}</p>
+<p style="margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: rgba(31,28,25,0.68)">Các mặt bằng phù hợp và cơ sở cùng ngành sẽ hiển thị tại đây.</p>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<!-- 3D -->
+<sc-if value="{{is3d}}" hint-placeholder-val="{{ false }}">
+<div onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerLeave="{{dragEnd}}" style="position: absolute; inset: 0; background: #E9E3D7; perspective: 1500px; cursor: grab; touch-action: none">
+<div style="position: absolute; left: 50%; top: 62%; width: 0; height: 0; transform-style: preserve-3d; transform: rotateX(-24deg) rotateY({{rot}}deg)">
+<sc-for list="{{faces}}" as="f" hint-placeholder-count="12">
+<div style="{{f.style}}"></div>
+</sc-for>
+</div>
+<div style="position: absolute; left: 20px; top: 20px; padding: 12px 16px; border-radius: 14px; background: rgba(251,248,242,0.94)">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">MÔ HÌNH KHỐI · {{sel.code}}</p>
+<p style="margin: 2px 0 0; font-size: 16px; font-weight: 500">{{sel.name}}</p>
+<p style="margin: 2px 0 0; font-size: 13px; color: rgba(31,28,25,0.68)">{{sel.massing}}</p>
+</div>
+<div style="position: absolute; left: 20px; bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 999px; background: rgba(251,248,242,0.94)">
+<button type="button" onClick="{{rotLeft}}" aria-label="Xoay trái" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(31,28,25,0.24); background: none; color: #1F1C19; display: grid; place-items: center">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<label for="rot-range" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Góc xoay</label>
+<input id="rot-range" type="range" min="0" max="359" value="{{rotVal}}" onChange="{{onRot}}" style="width: 140px; accent-color: #A3562B">
+<button type="button" onClick="{{rotRight}}" aria-label="Xoay phải" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(31,28,25,0.24); background: none; color: #1F1C19; display: grid; place-items: center">
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<span style="font-size: 12px; color: rgba(31,28,25,0.68); padding-right: 6px">Kéo để xoay</span>
+</div>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ true }}">
+<p style="position: absolute; right: 20px; top: 20px; margin: 0; padding: 8px 14px; border-radius: 999px; background: #1F1C19; color: #F4EFE6; font-size: 11px; font-weight: 600; letter-spacing: 0.14em">MÔ HÌNH MẪU</p>
+</sc-if>
+</div>
+</sc-if>
+
+<!-- VIEW TABS -->
+<div role="group" aria-label="Chế độ hiển thị" style="position: absolute; right: 20px; top: 20px; display: flex; padding: 4px; border-radius: 999px; background: rgba(251,248,242,0.94); z-index: 2; {{tabsOffset}}">
+<button type="button" onClick="{{viewMap}}" aria-pressed="{{mapPressed}}" style="{{mapTabStyle}}">BẢN ĐỒ 2D</button>
+<button type="button" onClick="{{view3d}}" aria-pressed="{{d3Pressed}}" style="{{d3TabStyle}}">MÔ HÌNH 3D</button>
+</div>
+
+<!-- SELECTED CARD -->
+<sc-if value="{{hasResults}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; right: 20px; bottom: 20px; width: min(340px, calc(100% - 40px)); display: flex; gap: 12px; padding: 12px; border-radius: 18px; background: #FBF8F2; box-shadow: 0 16px 36px rgba(31,28,25,0.16); z-index: 2">
+<img src="{{sel.src}}" alt="{{sel.alt}}" style="flex: 0 0 88px; width: 88px; height: 88px; border-radius: 12px; object-fit: cover; display: block">
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; color: rgba(31,28,25,0.62)">#{{sel.rank}} · {{sel.score}}/100 ĐIỂM</p>
+<p style="margin: 0; font-size: 15px; font-weight: 500; line-height: 1.3">{{sel.name}}</p>
+<p style="margin: 0; font-size: 13px; color: rgba(31,28,25,0.68)">{{sel.price}} · {{sel.size}}</p>
+<a href="Listing.dc.html" style="margin-top: auto; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #A3562B">XEM HỒ SƠ &#8594;</a>
+</div>
+</div>
+</sc-if>
+
+</div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', rot: 35 };
+    this.thread = null;
+    this.timer = null;
+    this.drag = null;
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (this.thread && prevState && (prevState.answers !== this.state.answers || prevState.phase !== this.state.phase || prevState.agentDone !== this.state.agentDone)) {
+      this.thread.scrollTop = this.thread.scrollHeight;
+    }
+  }
+  componentWillUnmount() {
+    if (this.timer) clearInterval(this.timer);
+  }
+  questions() {
+    return [
+      { key: 'MÔ HÌNH', q: 'Xin chào, tôi là trợ lý thẩm định mặt bằng của estateSmartAI. Anh/chị dự định triển khai mô hình kinh doanh nào?', options: ['Quán cà phê', 'Trà sữa', 'Nhà hàng', 'Tạp hoá', 'Cửa hàng tiện lợi'], ph: 'Ví dụ: quán cà phê mang đi' },
+      { key: 'KHU VỰC', q: 'Khu vực mục tiêu của anh/chị là ở đâu?', options: ['Quận 1', 'Quận 3', 'Bình Thạnh', 'Phú Nhuận', 'TP. Thủ Đức'], ph: 'Ví dụ: Bình Thạnh, gần Hàng Xanh' },
+      { key: 'NGÂN SÁCH', q: 'Ngân sách thuê dự kiến mỗi tháng là bao nhiêu?', options: ['Dưới 30 triệu', '30–60 triệu', '60–100 triệu', 'Trên 100 triệu'], ph: 'Ví dụ: tối đa 70 triệu/tháng' },
+      { key: 'DIỆN TÍCH', q: 'Diện tích sử dụng mong muốn?', options: ['Dưới 80 m²', '80–150 m²', '150–300 m²', 'Trên 300 m²'], ph: 'Ví dụ: khoảng 200 m²' },
+      { key: 'YÊU CẦU', q: 'Anh/chị có yêu cầu vận hành đặc thù nào không? Ví dụ: chỗ đỗ xe cho khách mang đi, tránh tuyến đường có dải phân cách cứng.', options: ['Cần chỗ đỗ ô tô', 'Tránh dải phân cách cứng', 'Gần khu văn phòng', 'Không có yêu cầu thêm'], ph: 'Mô tả yêu cầu chi tiết' }
+    ];
+  }
+  listings() {
+    return [
+      { code: 'MB-01', rank: 1, score: 88, name: 'Biệt thự sân vườn, Thảo Điền', meta: 'TP. Thủ Đức · 320 m²', size: '320 m²', price: '85 triệu/tháng', x: 62, y: 38, src: '/_blob/88da756d7bdf21acce5e115ce122899b', alt: 'Biệt thự hai tầng tường trắng, sân lát đá', massing: 'Hai tầng · sảnh kính và sân vườn' },
+      { code: 'MB-02', rank: 2, score: 81, name: 'Nhà một tầng có sân, Bình Thạnh', meta: 'Bình Thạnh · 180 m²', size: '180 m²', price: '52 triệu/tháng', x: 33, y: 57, src: '/_blob/75748c213ca7441c1ce9472de5d61042', alt: 'Nhà một tầng ốp gỗ có sân cỏ', massing: 'Một tầng · ốp gỗ, sân trước' },
+      { code: 'MB-03', rank: 3, score: 76, name: 'Căn góc hai mặt tiền, Phú Nhuận', meta: 'Phú Nhuận · 240 m²', size: '240 m²', price: '68 triệu/tháng', x: 47, y: 22, src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', alt: 'Công trình hai tầng có sân đỗ xe', massing: 'Hai tầng · căn góc hai mặt đường' }
+    ];
+  }
+  box(cx, cz, w, h, d, base, opts) {
+    const o = opts || {};
+    const y0 = o.y || 0;
+    const cy = -y0 - h / 2;
+    const front = o.front || base;
+    const side = o.side || base;
+    const faces = [];
+    const face = (W, H, rot, t, bg, shade) => {
+      faces.push({ style: 'position: absolute; left: 0; top: 0; width: ' + W + 'px; height: ' + H + 'px; transform: translate3d(' + (cx - W / 2) + 'px, ' + (cy - H / 2) + 'px, ' + cz + 'px) ' + rot + ' translateZ(' + t + 'px); background: ' + bg + '; box-shadow: inset 0 0 0 999px rgba(31,28,25,' + shade + '); backface-visibility: hidden' });
+    };
+    face(w, h, '', d / 2, front, 0);
+    face(w, h, 'rotateY(180deg)', d / 2, side, 0.12);
+    face(d, h, 'rotateY(90deg)', w / 2, side, 0.08);
+    face(d, h, 'rotateY(-90deg)', w / 2, side, 0.18);
+    face(w, d, 'rotateX(90deg)', h / 2, o.top || '#F2EEE6', 0);
+    return faces;
+  }
+  model(i) {
+    const white = '#F3EFE8';
+    const glass = 'repeating-linear-gradient(90deg, #3A4347 0 30px, #F3EFE8 30px 42px)';
+    const win = 'repeating-linear-gradient(90deg, #F3EFE8 0 26px, #3A4347 26px 52px, #F3EFE8 52px 70px)';
+    const wood = 'repeating-linear-gradient(90deg, #9C6B45 0 6px, #8A5C3A 6px 9px)';
+    const ground = [{ style: 'position: absolute; left: 0; top: 0; width: 640px; height: 640px; transform: translate3d(-320px, -320px, 0) rotateX(90deg); background: #CBD0B4; border-radius: 12px' }];
+    const paving = [{ style: 'position: absolute; left: 0; top: 0; width: 420px; height: 140px; transform: translate3d(-210px, -70px, 170px) rotateX(90deg) translateZ(1px); background: #E4DED2' }];
+    if (i === 0) {
+      return [].concat(ground, paving,
+        this.box(-60, 0, 340, 90, 180, white, { front: glass }),
+        this.box(70, -10, 200, 84, 150, white, { y: 90, front: win }),
+        this.box(-140, 60, 90, 4, 70, '#E4DED2', { y: 90 }));
+    }
+    if (i === 1) {
+      return [].concat(ground, paving,
+        this.box(-50, 0, 220, 80, 170, white, { front: glass }),
+        this.box(110, 0, 100, 80, 170, '#9C6B45', { front: wood, side: wood }),
+        this.box(0, -20, 330, 8, 200, white, { y: 80 }));
+    }
+    return [].concat(ground, paving,
+      this.box(0, 0, 230, 86, 230, white, { front: glass, side: glass }),
+      this.box(0, 0, 230, 86, 230, white, { y: 86, front: win, side: win }),
+      this.box(0, 0, 240, 6, 240, '#E4DED2', { y: 172 }));
+  }
+  answer(text) {
+    const t = String(text || '').trim();
+    if (!t || this.state.phase !== 'ask') return;
+    const answers = [...this.state.answers, t];
+    if (answers.length < this.questions().length) {
+      this.setState({ answers, draft: '' });
+      return;
+    }
+    this.setState({ answers, draft: '', phase: 'analyzing', agentDone: 0, view: 'map' });
+    if (this.timer) clearInterval(this.timer);
+    this.timer = setInterval(() => {
+      const next = this.state.agentDone + 1;
+      if (next >= 5) {
+        clearInterval(this.timer);
+        this.timer = null;
+        this.setState({ agentDone: 5, phase: 'results', sel: 0 });
+      } else {
+        this.setState({ agentDone: next });
+      }
+    }, 800);
+  }
+  renderVals() {
+    const qs = this.questions();
+    const { answers, phase, agentDone, view, rot } = this.state;
+    const ls = this.listings();
+    const sel = ls[this.state.sel];
+    const hasResults = phase === 'results';
+    const step = Math.min(answers.length, qs.length - 1);
+    const messages = [];
+    qs.forEach((q, i) => {
+      if (i <= answers.length) messages.push({ isBot: true, text: q.q });
+      if (answers[i] !== undefined) messages.push({ isUser: true, text: answers[i] });
+    });
+    if (phase !== 'ask') {
+      messages.push({ isBot: true, text: 'Đã ghi nhận đầy đủ tiêu chí. Hệ thống đang điều phối 5 AI Agent để sàng lọc và thẩm định các mặt bằng phù hợp.' });
+      messages.push({ isAgents: true });
+    }
+    if (hasResults) {
+      messages.push({ isBot: true, text: 'Đây là ba mặt bằng phù hợp nhất, xếp theo điểm phù hợp. Chọn một mặt bằng để xem vị trí trên bản đồ hoặc mô hình khối 3D.' });
+      messages.push({ isResults: true });
+    }
+    const agentNames = ['Phân tích nhu cầu', 'Sàng lọc mặt bằng', 'Đánh giá vị trí', 'Phân tích cạnh tranh', 'Chấm điểm & khuyến nghị'];
+    const agents = agentNames.map((label, i) => {
+      const done = i < agentDone;
+      const running = i === agentDone && phase === 'analyzing';
+      return {
+        num: String(i + 1).padStart(2, '0'), label,
+        status: done ? 'HOÀN TẤT' : running ? 'ĐANG XỬ LÝ…' : 'CHỜ',
+        labelStyle: done || running ? 'color: #1F1C19' : 'color: rgba(31,28,25,0.5)',
+        statusStyle: done ? 'color: #1F1C19' : running ? 'color: #A3562B' : 'color: rgba(31,28,25,0.5)'
+      };
+    });
+    const results = ls.map((l, i) => ({
+      ...l,
+      cardStyle: 'display: flex; gap: 12px; padding: 10px; border-radius: 16px; background: #FBF8F2; border: 1px solid ' + (i === this.state.sel ? '#1F1C19' : 'rgba(31,28,25,0.1)'),
+      showMap: () => this.setState({ sel: i, view: 'map' }),
+      show3d: () => this.setState({ sel: i, view: '3d' })
+    }));
+    const pins = hasResults ? ls.map((l, i) => {
+      const on = i === this.state.sel;
+      return {
+        rank: l.rank,
+        label: 'Mặt bằng ' + l.rank + ': ' + l.name,
+        pressed: on ? 'true' : 'false',
+        pick: () => this.setState({ sel: i }),
+        style: 'position: absolute; left: ' + l.x + '%; top: ' + l.y + '%; transform: translate(-50%, -50%); width: ' + (on ? 48 : 38) + 'px; height: ' + (on ? 48 : 38) + 'px; border-radius: 50%; '
+          + (on ? 'background: #A3562B; color: #FBF8F2; border: 3px solid #FBF8F2; box-shadow: 0 8px 20px rgba(31,28,25,0.3)' : 'background: #1F1C19; color: #FBF8F2; border: 2px solid #FBF8F2')
+          + '; font-size: 15px; font-weight: 600; display: grid; place-items: center; padding: 0; z-index: 1'
+      };
+    }) : [];
+    const compPts = [[58,30],[68,44],[66,33],[55,42],[29,52],[38,62],[27,61],[36,50],[44,18],[51,27],[42,26],[75,60],[20,30],[82,22]];
+    const competitors = phase === 'ask' ? [] : compPts.slice(0, phase === 'analyzing' ? 3 + agentDone * 2 : compPts.length).map((p) => ({ x: p[0] + '%', y: p[1] + '%' }));
+    const tab = (on) => 'min-height: 36px; padding: 0 14px; border-radius: 999px; border: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; '
+      + (on ? 'background: #1F1C19; color: #FBF8F2' : 'background: none; color: #1F1C19');
+    const doneSteps = hasResults ? 5 : answers.length;
+    return {
+      messages, agents, results, pins, competitors,
+      showOptions: phase === 'ask',
+      options: phase === 'ask' ? qs[step].options.map((label) => ({ label, pick: () => this.answer(label) })) : [],
+      placeholder: phase === 'ask' ? qs[step].ph : 'Hỏi thêm về các mặt bằng được đề xuất',
+      stepLabel: String(Math.min(doneSteps + 1, 5)).padStart(2, '0'),
+      headerTitle: hasResults ? 'Đề xuất Top 3 mặt bằng' : phase === 'analyzing' ? 'Đang thẩm định' : 'Xác định nhu cầu',
+      progress: (doneSteps / 5 * 100) + '%',
+      isMap: view === 'map',
+      is3d: view === '3d',
+      analyzing: phase === 'analyzing',
+      hasResults,
+      noResults: !hasResults,
+      mapHint: phase === 'analyzing' ? 'Đang quét khu vực…' : 'Hoàn tất 5 bước để xem kết quả',
+      areaLabel: answers[1] || 'TP. Hồ Chí Minh',
+      sel: { ...sel, selName: sel.name },
+      selPin: { x: sel.x + '%', y: sel.y + '%' },
+      faces: this.model(this.state.sel),
+      rot: rot,
+      rotVal: Math.round(((rot % 360) + 360) % 360),
+      onRot: (e) => this.setState({ rot: Number(e.target.value) }),
+      rotLeft: () => this.setState({ rot: this.state.rot - 30 }),
+      rotRight: () => this.setState({ rot: this.state.rot + 30 }),
+      dragStart: (e) => { this.drag = { x: e.clientX, rot: this.state.rot }; },
+      dragMove: (e) => { if (this.drag) this.setState({ rot: this.drag.rot + (e.clientX - this.drag.x) * 0.5 }); },
+      dragEnd: () => { this.drag = null; },
+      viewMap: () => this.setState({ view: 'map' }),
+      view3d: () => this.setState({ view: '3d' }),
+      mapPressed: view === 'map' ? 'true' : 'false',
+      d3Pressed: view === '3d' ? 'true' : 'false',
+      mapTabStyle: tab(view === 'map'),
+      d3TabStyle: tab(view === '3d'),
+      tabsOffset: view === '3d' && !hasResults ? 'top: 64px' : '',
+      draft: this.state.draft,
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      onKey: (e) => { if (e.key === 'Enter') this.answer(this.state.draft); },
+      send: () => this.answer(this.state.draft),
+      threadRef: (el) => { this.thread = el; },
+      reset: () => {
+        if (this.timer) clearInterval(this.timer);
+        this.timer = null;
+        this.setState({ answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map' });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
