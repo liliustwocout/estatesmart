@@ -21,4 +21,7 @@ Giao diện gốc nằm trong `design/*.dc.html` (tải từ canvas Claude Desig
 
 ## Triển khai
 
-Docker + Caddy + GitHub Webhook trên VPS. Xem [docs/KE_HOACH_TRIEN_KHAI.md](docs/KE_HOACH_TRIEN_KHAI.md).
+Docker + Caddy + GitHub Webhook trên VPS.
+
+- Hướng dẫn thiết lập từng bước (VPS, DNS, webhook, vận hành, xử lý sự cố): [docs/HUONG_DAN_CICD.md](docs/HUONG_DAN_CICD.md)
+- Kế hoạch và kiến trúc ban đầu: [docs/KE_HOACH_TRIEN_KHAI.md](docs/KE_HOACH_TRIEN_KHAI.md)
