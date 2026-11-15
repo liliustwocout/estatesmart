@@ -11,336 +11,479 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&amp;family=Instrument+Serif&amp;display=swap">
 <style>
-body{margin:0;background:#1B1916}
+/* Thiết kế lại theo docs/KE_HOACH_THIET_KE_LAI.md — token màu/chữ ở :root, chuyển động ở src/styles/interaction.css */
+:root{
+--bg:#1B1916;--bg-deep:#12100E;--surface:#262320;
+--ink:#F7F3EC;--ink-2:rgba(247,243,236,.76);--line:rgba(247,243,236,.18);--line-2:rgba(247,243,236,.45);
+--accent:#D39A6A;
+--font:'Familjen Grotesk',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;
+--gutter:clamp(16px,3vw,40px);--max:1440px;--radius:20px;
+--shadow:0 18px 40px -12px rgba(0,0,0,.55)
+}
+body{margin:0;background:var(--bg)}
 *{box-sizing:border-box}
-a{color:inherit}a:hover{color:#D39A6A}
 button{font:inherit;cursor:pointer}
-.lnk{text-decoration:none;border-bottom:1px solid currentColor;padding-bottom:4px}
-.collage{position:relative;height:980px;max-width:1440px;margin:0 auto}
-.cl{position:absolute;display:block;object-fit:cover;border-radius:18px;box-shadow:0 18px 44px rgba(0,0,0,.45)}
-.cl-title{position:absolute;left:23%;top:0;width:32%;text-align:center}
-.cl-a{left:-1%;top:12%;width:32%;height:44%;transform:rotate(-4deg)}
-.cl-b{left:52%;top:0;width:17%;height:22%;transform:rotate(-4deg)}
-.cl-c{right:-1%;top:11%;width:28%;height:34%;transform:rotate(7deg)}
-.cl-main{position:absolute;left:26%;top:24%;width:46%;height:38%;border-radius:18px;overflow:hidden;box-shadow:0 18px 44px rgba(0,0,0,.45)}
-.cl-d{left:2%;top:60%;width:20%;height:23%;transform:rotate(3deg)}
-.cl-e{left:25%;top:68%;width:22%;height:28%;transform:rotate(-2deg)}
-.cl-f{right:1%;top:52%;width:25%;height:41%;transform:rotate(-4deg)}
-.dots{display:flex}
+img{max-width:100%}
+[id]{scroll-margin-top:84px}
+.page{font-family:var(--font);color:var(--ink);background:var(--bg);font-size:16px;line-height:1.6}
+.wrap{max-width:var(--max);margin:0 auto;padding-inline:var(--gutter)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.muted{color:var(--ink-2)}
+.h2{margin:0;font-weight:500;font-size:clamp(34px,4.2vw,64px);line-height:1.06;letter-spacing:-.03em;text-wrap:balance;min-width:0}
+.label{margin:0;font-size:15px;color:var(--ink-2)}
+.skip{position:fixed;left:16px;top:12px;z-index:60;padding:12px 18px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:600;text-decoration:none;transform:translateY(-160%);transition:transform var(--dur-2) var(--ease-out)}
+.skip:focus-visible{transform:none}
+
+/* Logo */
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:600;font-size:17px;letter-spacing:-.005em;color:var(--ink);text-decoration:none;min-height:44px}
+.brand svg{width:26px;height:26px;flex:none;transition:transform var(--dur-3) var(--ease-spring)}
+.brand .dot-mark{transition:transform var(--dur-3) var(--ease-spring);transform-origin:21.6px 20.6px}
+@media (hover:hover){.brand:hover svg{transform:rotate(-6deg)}.brand:hover .dot-mark{transform:scale(1.25)}}
+
+/* Nút: một kiểu nút chính trên cả trang (13 Fitts, 1 squash, 2 anticipation) */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:56px;padding:0 26px;border-radius:999px;border:0;font-weight:600;font-size:16px;text-decoration:none;background:var(--ink);color:var(--bg);box-shadow:var(--shadow);transition:scale var(--dur-2) var(--ease-spring),background-color var(--dur-1) var(--ease-out)}
+.btn-sm{min-height:44px;padding:0 18px;font-size:14px;gap:8px;box-shadow:none}
+.btn .arr{flex:none;transition:transform var(--dur-2) var(--ease-out)}
+.btn:active{scale:.96;transition-duration:var(--dur-tap)}
+.btn:active .arr{transform:translateX(-3px);transition-duration:var(--dur-tap)}
+@media (hover:hover){.btn:hover{background:var(--accent)}.btn:hover .arr{transform:translateX(4px)}}
+
+/* Link chữ: gạch dưới có sẵn (19 Jakob), hover vẽ thêm vạch màu (8 secondary action), vùng bấm rộng (14) */
+.link{position:relative;display:inline-block;padding:10px 0;color:var(--ink);text-decoration:none;font-weight:500}
+.link::before,.link::after{content:'';position:absolute;left:0;right:0;bottom:6px;height:1px;background:var(--line-2)}
+.link::after{height:2px;bottom:5px;background:var(--accent);transform:scaleX(0);transform-origin:right;transition:transform var(--dur-3) var(--ease-out)}
+@media (hover:hover){.link:hover::after{transform:scaleX(1);transform-origin:left}}
+
+/* Header dính: luôn có nút tư vấn (20 frequency of use) */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:50}
+.topbar::before{content:'';position:absolute;inset:0;background:rgba(18,16,14,.94);border-bottom:1px solid var(--line);opacity:0;transition:opacity var(--dur-2) var(--ease-out)}
+.topbar.is-solid::before{opacity:1}
+.topbar-in{position:relative;max-width:var(--max);margin:0 auto;padding:12px var(--gutter);display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nav{display:flex;align-items:center;gap:28px}
+.nav .link{font-size:15px}
+.menu-btn{display:none;align-items:center;gap:10px;min-height:44px;min-width:44px;padding:0 4px;border:0;background:none;color:var(--ink);font-size:15px;font-weight:500}
+.menu-ico{position:relative;width:18px;height:12px}
+.menu-ico i{position:absolute;left:0;right:0;height:1.5px;background:currentColor;border-radius:2px;transition:transform var(--dur-3) var(--ease-spring)}
+.menu-ico i:first-child{top:2px}.menu-ico i:last-child{bottom:2px}
+.is-open .menu-ico i:first-child{transform:translateY(3.25px) rotate(45deg)}
+.is-open .menu-ico i:last-child{transform:translateY(-3.25px) rotate(-45deg)}
+
+/* Menu toàn màn hình (mobile): mở theo vòng tròn từ nút menu, link trễ dần (5 follow through) */
+.menu{position:fixed;inset:0;z-index:40;background:var(--bg-deep);display:flex;flex-direction:column;justify-content:flex-end;gap:40px;padding:96px var(--gutter) 32px;visibility:hidden;clip-path:circle(0 at calc(100% - 44px) 34px);transition:clip-path 280ms var(--ease-in),visibility 0s linear 280ms}
+.menu.is-open{visibility:visible;clip-path:circle(150vmax at calc(100% - 44px) 34px);transition:clip-path 620ms var(--ease-out),visibility 0s}
+.menu nav{display:flex;flex-direction:column;gap:4px}
+.menu nav a{font-weight:500;font-size:clamp(38px,9vw,72px);line-height:1.15;letter-spacing:-.025em;color:var(--ink);text-decoration:none;padding:4px 0;opacity:0;transform:translateY(28px);transition:transform var(--dur-3) var(--ease-out),opacity var(--dur-2) var(--ease-out)}
+.menu.is-open nav a{opacity:1;transform:none;transition-delay:calc(140ms + var(--i) * 55ms)}
+
+/* Hero (3 staging): một tiêu đề, một câu, một nút chính */
+.hero{position:relative;height:clamp(620px,100svh,1000px);display:flex;align-items:flex-end;overflow:hidden;background:var(--bg-deep)}
+.hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:60% 50%;animation:settle 1800ms var(--ease-out) both}
+@keyframes settle{from{transform:scale(1.08)}}
+.hero-shade{position:absolute;inset:0}
+.hero-body{position:relative;width:100%;max-width:var(--max);margin:0 auto;padding:0 var(--gutter) clamp(40px,9vh,96px)}
+.hero h1{margin:0;font-weight:500;font-size:clamp(46px,6.6vw,96px);line-height:1.04;letter-spacing:-.03em}
+.line{display:block;overflow:clip;padding-top:.14em;margin-top:-.14em;padding-bottom:.04em}
+.line>span{display:inline-block;animation:rise var(--dur-4) var(--ease-out) both;animation-delay:calc(160ms + var(--i) * 110ms)}
+@keyframes rise{from{transform:translateY(108%)}}
+.hero-lede{margin:22px 0 0;max-width:34ch;font-size:clamp(17px,1.4vw,20px);line-height:1.5;color:var(--ink-2);animation:es-enter var(--dur-4) var(--ease-out) 480ms both}
+.hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px;margin-top:32px;animation:es-enter var(--dur-4) var(--ease-out) 600ms both}
+
+/* Giới thiệu */
+.sec{padding-block:clamp(88px,11vw,180px)}
+.statement{margin:0;max-width:1120px;font-size:clamp(28px,3.8vw,58px);font-weight:400;line-height:1.12;letter-spacing:-.025em;text-wrap:pretty}
+.statement img{display:inline-block;width:2.2em;height:1.05em;object-fit:cover;border-radius:12px;vertical-align:-.12em;margin-right:.18em}
+.about-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 64px;max-width:860px;margin-top:40px;padding-top:32px;border-top:1px solid var(--line-2)}
+.about-cols p{margin:0;max-width:44ch}
+.strip{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:clamp(56px,7vw,96px);height:clamp(240px,30vw,440px)}
+.strip img{width:100%;height:100%;object-fit:cover;display:block;border-radius:var(--radius);box-shadow:var(--shadow)}
+
+/* So sánh */
+.compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:48px 64px;align-items:start}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cmp-col{padding:28px;border-radius:var(--radius);border:1px solid var(--line)}
+.cmp-col.ours{background:var(--surface);border-color:transparent;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.fig{margin-top:28px}
+.num{display:block;font-family:var(--serif);font-weight:400;font-size:clamp(72px,7vw,120px);line-height:.9;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.fig p{margin:10px 0 0;max-width:30ch;color:var(--ink-2)}
+.ours .num{color:var(--accent)}
+.ours .btn{margin-top:auto;align-self:flex-start}
+.ours .fig{margin-bottom:32px}
+
+/* Quy trình 7 bước — khoảnh khắc chủ đạo (4 pose to pose, 7 arcs, 8 secondary action, 17 Doherty, 18 Postel) */
+.ch{position:relative;height:clamp(640px,100svh,1000px);overflow:hidden;background:var(--bg-deep);outline-offset:-4px;touch-action:pan-y}
+.ch-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.06);transition:opacity 640ms var(--ease-in-out),transform 1800ms var(--ease-out)}
+.ch-img.is-active{opacity:1;transform:scale(1)}
+.ch-shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(18,16,14,.86),rgba(18,16,14,.3) 55%,rgba(18,16,14,.5))}
+.ch-ui{position:relative;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding-top:96px;padding-bottom:32px}
+.ch-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+.ch-head .h2{font-size:clamp(22px,2vw,28px);letter-spacing:-.01em}
+.ch-hint{margin:0;font-size:14px;color:var(--ink-2)}
+.short{display:none}
+.dots{position:absolute;right:var(--gutter);top:50%;transform:translateY(-50%);display:flex;flex-direction:column}
+.dot-btn{width:44px;height:44px;border:0;background:none;display:grid;place-items:center;padding:0}
+.dot{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(247,243,236,.85);transition:transform var(--dur-2) var(--ease-spring),background-color var(--dur-1)}
+.dot.is-active{background:var(--ink);transform:scale(1.5);animation:squash 460ms var(--ease-out)}
+@keyframes squash{0%{transform:scale(1)}30%{transform:scale(2.2,1.1)}60%{transform:scale(1.25,1.9)}100%{transform:scale(1.5)}}
+@media (hover:hover){.dot-btn:hover .dot:not(.is-active){transform:scale(1.35)}}
+.ch-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.ch-text{transform-origin:0 100%}
+.ch-text[data-dir="fwd"]{animation:arc-fwd 560ms var(--ease-out) both}
+.ch-text[data-dir="back"]{animation:arc-back 560ms var(--ease-out) both}
+@keyframes arc-fwd{0%{opacity:0;transform:translate(48px,28px) rotate(3deg)}55%{opacity:1}}
+@keyframes arc-back{0%{opacity:0;transform:translate(-48px,28px) rotate(-3deg)}55%{opacity:1}}
+.ch-title{margin:0;font-size:clamp(40px,4.4vw,64px);font-weight:500;letter-spacing:-.03em;line-height:1.02}
+.ch-sub{margin:14px 0 0;font-size:17px;color:var(--ink-2)}
+.ch-side{text-align:right}
+.ch-num{margin:0;font-family:var(--serif);font-weight:400;font-size:clamp(88px,8vw,128px);letter-spacing:-.02em;line-height:.9;transform-origin:100% 100%;animation:num-in 620ms var(--ease-out) 60ms both;font-variant-numeric:tabular-nums}
+.ch-num small{font-size:.28em;letter-spacing:0;color:var(--ink-2);margin-left:.2em}
+@keyframes num-in{0%{opacity:0;transform:translateY(36px) rotate(-6deg)}}
+.ch-ctrl{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.round{width:52px;height:52px;border-radius:50%;border:1px solid var(--line-2);background:none;color:var(--ink);display:grid;place-items:center}
+.round svg{transition:transform var(--dur-2) var(--ease-out)}
+@media (hover:hover){.round:hover{background:var(--ink);color:var(--bg);border-color:var(--ink)}.round.next:hover svg{transform:translateX(3px)}.round.prev:hover svg{transform:translateX(-3px)}}
+.bar{position:relative;height:3px;margin-top:24px;background:rgba(247,243,236,.25);border-radius:2px;overflow:hidden}
+.bar i{position:absolute;inset:0;background:var(--ink);transform-origin:left;transition:transform var(--dur-3) var(--ease-in-out)}
+
+/* 5 AI Agent (16 Miller: năm mục) */
+.agents-head{display:flex;flex-wrap:wrap;gap:24px 48px;align-items:flex-end;justify-content:space-between;margin-bottom:48px}
+.agents-head .h2{max-width:16ch}
+.agents-head p{margin:0;max-width:40ch;color:var(--ink-2)}
+.agents{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-2)}
+.agent{display:grid;grid-template-columns:64px minmax(0,1fr) minmax(0,1.25fr);gap:8px 32px;align-items:baseline;padding:28px 0;border-bottom:1px solid var(--line)}
+.agent-n{font-size:15px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.agent-t{font-size:clamp(24px,2.3vw,32px);font-weight:500;letter-spacing:-.02em;line-height:1.2}
+.agent p{margin:0;color:var(--ink-2);max-width:52ch}
+.agent.last .agent-n{color:var(--accent)}
+
+/* Hồ sơ mẫu */
+.study{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:0}
+.study-card{min-height:600px;background:var(--surface);border-radius:var(--radius);padding:clamp(28px,3.4vw,44px);display:flex;flex-direction:column;justify-content:space-between;gap:48px}
+.study-title{white-space:pre-line;animation:es-enter var(--dur-3) var(--ease-out) both}
+.study-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:24px}
+.pills{display:flex;gap:8px}
+.pill{width:52px;height:52px;border-radius:50%;border:1px solid var(--line-2);background:none;color:var(--ink-2);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+.pill.is-active{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+@media (hover:hover){.pill:not(.is-active):hover{border-color:var(--ink);color:var(--ink)}}
+.study-body{max-width:38ch;animation:es-enter var(--dur-3) var(--ease-out) 60ms both}
+.study-body p{margin:0 0 8px}
+.study-media{position:relative;min-height:600px;border-radius:var(--radius);overflow:hidden;background:var(--bg-deep)}
+
+/* Chân trang */
+.foot{background:var(--bg-deep);padding-top:clamp(80px,9vw,140px);padding-bottom:28px;overflow:hidden}
+.foot-cta{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:40px}
+.foot-cta .h2{font-size:clamp(44px,6vw,92px)}
+.foot-cta div{display:flex;flex-direction:column;gap:24px;max-width:380px}
+.foot-cta div p{margin:0;color:var(--ink-2)}
+.foot-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:32px;margin-top:clamp(72px,9vw,140px);padding-top:28px;border-top:1px solid var(--line-2);font-size:15px;line-height:1.7}
+.foot-grid p{margin:0}
+.foot-grid .label{margin-bottom:8px;font-size:14px}
+.foot-grid .link{padding:2px 0}
+.foot-grid .link::before,.foot-grid .link::after{bottom:0}
+.wordmark{display:flex;align-items:center;gap:.12em;margin:clamp(56px,6vw,96px) 0 0;font-family:var(--serif);font-weight:400;font-size:clamp(52px,13.5vw,216px);line-height:.9;letter-spacing:-.03em;white-space:nowrap}
+.wordmark svg{width:.78em;height:.78em;flex:none}
+.legal{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:24px;font-size:14px;color:var(--ink-2)}
+
+@media (max-width:1024px){
+.compare{grid-template-columns:minmax(0,1fr)}
+.foot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media (max-width:820px){
-.collage{height:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 16px}
-.cl,.cl-main{position:static;transform:none;width:100%;height:180px}
-.cl-title{position:static;width:auto;grid-column:1/-1;margin-bottom:12px;order:-2}
-.cl-main{grid-column:1/-1;height:300px;order:-1}
+.nav .link{display:none}
+.menu-btn{display:inline-flex}
 .dots{display:none}
+.study{grid-template-columns:minmax(0,1fr)}
+.study-card{min-height:auto}
+.study-media{min-height:360px}
+.agent{grid-template-columns:48px minmax(0,1fr)}
+.agent p{grid-column:2}
+}
+@media (max-width:640px){
+.hero-actions .btn{width:100%}
+.about-cols,.cmp{grid-template-columns:minmax(0,1fr)}
+.strip{grid-template-columns:repeat(2,minmax(0,1fr));height:auto}
+.strip img{height:200px}
+.strip img:first-child{grid-column:1/-1;height:260px}
+.topbar .btn-sm{padding:0 14px}
+.topbar .btn-sm .arr{display:none}
+.menu-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.long{display:none}
+.short{display:inline!important}
+.ch-side{width:100%;display:flex;justify-content:space-between;align-items:flex-end;text-align:left}
+.ch-ctrl{margin-top:0}
+.foot-grid{grid-template-columns:minmax(0,1fr)}
+.ch-side .ch-num{font-size:72px}
 }
 </style>
 </helmet>
-<div style="font-family: 'Familjen Grotesk', system-ui, sans-serif; color: #F7F3EC; background: #1B1916; width: 100%; overflow-x: hidden">
+<div class="page">
+<a class="skip" href="#noi-dung">Bỏ qua đến nội dung</a>
 
-<sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
-<div style="position: fixed; inset: 0; z-index: 50; background: #12100E; color: #F7F3EC; display: flex; flex-direction: column; padding: 24px clamp(16px, 3vw, 40px)">
-<div style="display: flex; justify-content: space-between; align-items: center">
-<span style="font-weight: 600; font-size: 17px; letter-spacing: 0.01em">ESTATESMART / AI</span>
-<button type="button" onClick="{{toggleMenu}}" style="background: none; border: 0; color: #F7F3EC; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; min-height: 44px; padding: 0 4px">ĐÓNG ✕</button>
+<!-- HEADER -->
+<header class="topbar {{topbarCls}}">
+<div class="topbar-in">
+<a class="brand" href="#" aria-label="estateSmartAI, về đầu trang">
+<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle class="dot-mark" cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg>
+<span>estateSmart/AI</span>
+</a>
+<div class="nav">
+<a class="link" href="#quy-trinh">Quy trình</a>
+<a class="link" href="Listing.dc.html">Hồ sơ mẫu</a>
+<a class="btn btn-sm" href="Chat.dc.html"><span class="long">Bắt đầu tư vấn</span><span class="short">Tư vấn</span><svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<button type="button" class="menu-btn {{menuCls}}" onClick="{{toggleMenu}}" aria-expanded="{{menuExpanded}}" aria-controls="menu-chinh"><span class="menu-label">{{menuLabel}}</span><span class="menu-ico" aria-hidden="true"><i></i><i></i></span></button>
 </div>
-<nav aria-label="Điều hướng chính" style="margin: auto 0; display: flex; flex-direction: column; gap: 8px">
-<a href="#gioi-thieu" onClick="{{toggleMenu}}" style="font-weight: 500; font-size: clamp(40px, 6.4vw, 84px); line-height: 1.1; text-decoration: none; color: #F7F3EC">Giới thiệu</a>
-<a href="#hanh-trinh" onClick="{{toggleMenu}}" style="font-weight: 500; font-size: clamp(40px, 6.4vw, 84px); line-height: 1.1; text-decoration: none; color: #F7F3EC">Quy trình</a>
-<a href="Chat.dc.html" style="font-weight: 500; font-size: clamp(40px, 6.4vw, 84px); line-height: 1.1; text-decoration: none; color: #F7F3EC">Trợ lý AI</a>
-<a href="Listing.dc.html" style="font-weight: 500; font-size: clamp(40px, 6.4vw, 84px); line-height: 1.1; text-decoration: none; color: #F7F3EC">Hồ sơ mặt bằng</a>
-<a href="#lien-he" onClick="{{toggleMenu}}" style="font-weight: 500; font-size: clamp(40px, 6.4vw, 84px); line-height: 1.1; text-decoration: none; color: #F7F3EC">Liên hệ</a>
-</nav>
-<p style="margin: 0; font-size: 12px; letter-spacing: 0.18em; color: rgba(247,243,236,0.72)">NHÓM 20 · AI IN ACTION · 2026</p>
-</div>
-</sc-if>
-
-<!-- HERO -->
-<section style="position: relative; min-height: 100vh; height: 920px; max-height: 1100px; overflow: hidden">
-<img src="/_blob/88da756d7bdf21acce5e115ce122899b" alt="Công trình hai tầng tường trắng, hàng cột thẳng đứng và sân lát đá lúc hoàng hôn" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 50%">
-<div style="position: absolute; inset: 0; background: rgba(20, 17, 14, {{overlay}})"></div>
-
-<header style="position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 18px clamp(16px, 3vw, 40px); z-index: 2">
-<a href="#" style="font-weight: 600; font-size: 17px; letter-spacing: 0.01em; text-decoration: none; color: #F7F3EC">ESTATESMART / AI</a>
-<div style="display: flex; align-items: center; gap: 28px">
-<a href="Chat.dc.html" style="font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-decoration: none; color: #F7F3EC">TRỢ LÝ AI</a>
-<button type="button" onClick="{{toggleMenu}}" aria-label="Mở menu" style="background: none; border: 0; color: #F7F3EC; font-size: 14px; font-weight: 600; letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px">MENU
-<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><circle cx="2" cy="2" r="1.3" fill="currentColor"></circle><circle cx="8" cy="2" r="1.3" fill="currentColor"></circle><circle cx="2" cy="8" r="1.3" fill="currentColor"></circle><circle cx="8" cy="8" r="1.3" fill="currentColor"></circle></svg>
-</button>
 </div>
 </header>
 
-<div style="position: relative; z-index: 1; padding: 64px clamp(16px, 3vw, 40px) 0">
-<h1 style="margin: 0; font-weight: 500; font-size: clamp(54px, 7vw, 108px); line-height: 1; letter-spacing: -0.025em">Mặt bằng,<br>thẩm định bằng dữ liệu.</h1>
-<div style="display: flex; flex-wrap: wrap; gap: 20px 32px; margin-top: 36px; font-size: 15px; font-weight: 500; letter-spacing: 0.02em">
-<a class="lnk" href="Chat.dc.html" style="color: #F7F3EC">BẮT ĐẦU TƯ VẤN &#8594;</a>
-<a class="lnk" href="Listing.dc.html" style="color: #F7F3EC">XEM HỒ SƠ MẪU &#8594;</a>
-</div>
-</div>
-
-<div style="position: absolute; z-index: 1; left: 0; right: 0; top: 52%; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 24px; padding: 0 clamp(16px, 3vw, 40px); font-size: 15px; font-weight: 500; letter-spacing: 0.24em">
-<span>MẶT BẰNG KINH DOANH</span>
-<span>F&amp;B · BÁN LẺ</span>
-<span style="font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 28px; letter-spacing: 0.02em; line-height: 0.6">2026</span>
-<a href="#gioi-thieu" style="text-decoration: none; color: #F7F3EC">KHÁM PHÁ</a>
+<div id="menu-chinh" class="menu {{menuCls}}" aria-hidden="{{menuHidden}}">
+<nav aria-label="Điều hướng chính">
+<a href="#gioi-thieu" onClick="{{closeMenu}}" style="--i: 0">Giới thiệu</a>
+<a href="#quy-trinh" onClick="{{closeMenu}}" style="--i: 1">Quy trình</a>
+<a href="Chat.dc.html" style="--i: 2">Trợ lý AI</a>
+<a href="Listing.dc.html" style="--i: 3">Hồ sơ mặt bằng</a>
+<a href="#lien-he" onClick="{{closeMenu}}" style="--i: 4">Liên hệ</a>
+</nav>
+<p class="label">Nhóm 20, chương trình AI In Action 2026</p>
 </div>
 
-<p style="position: absolute; z-index: 1; left: 50%; bottom: 28px; transform: translateX(-50%); margin: 0; width: min(92%, 460px); text-align: center; font-size: 16px; line-height: 1.45">Mỗi mặt bằng là một quyết định đầu tư.<br>Hãy quyết định dựa trên dữ liệu.</p>
-</section>
-
-<!-- COLLAGE -->
-<section id="gioi-thieu" style="padding: 40px 0 72px">
-<div class="collage">
-<h2 class="cl-title" style="margin: 0; font-weight: 500; font-size: clamp(42px, 4.4vw, 66px); line-height: 1.12; letter-spacing: -0.02em">Quyết định mặt bằng có cơ sở</h2>
-<img class="cl cl-a" src="/_blob/e58ecc3f426d1ec53126f84a9cad47a3" alt="Công trình hai tầng giữa đồi cỏ, sân đỗ xe phía trước">
-<img class="cl cl-b" src="/_blob/c1d785e9fac6c74b8e90d82cae82af92" alt="Hiên nhà rộng mở ra khu vườn">
-<img class="cl cl-c" src="/_blob/8cc9ac945960bf00282a323c6238a51c" alt="Toàn cảnh khuôn viên nhìn từ trên cao lúc hoàng hôn">
-<div class="cl-main">
-<img src="{{slide.src}}" alt="{{slide.alt}}" style="width: 100%; height: 100%; object-fit: cover; display: block; object-position: {{slide.pos}}">
-<div style="position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; gap: 10px">
-<button type="button" onClick="{{prevSlide}}" aria-label="Ảnh trước" style="width: 44px; height: 44px; border-radius: 50%; border: 0; background: #F7F3EC; color: #1B1916; display: grid; place-items: center">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</button>
-<button type="button" onClick="{{nextSlide}}" aria-label="Ảnh tiếp theo" style="width: 44px; height: 44px; border-radius: 50%; border: 0; background: #F7F3EC; color: #1B1916; display: grid; place-items: center">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</button>
-</div>
-</div>
-<img class="cl cl-d" src="/_blob/526999b39fdb3b7b29959da9e7531ab5" alt="Không gian chính với bàn gỗ, sofa và cửa kính lớn">
-<img class="cl cl-e" src="/_blob/16bfb5cd9c78a2ff917437809efcd6ff" alt="Khu bếp và bàn dài bên cửa kính">
-<img class="cl cl-f" src="/_blob/3517a4dd3d9a82c4b088e7f9bcd011df" alt="Mặt tiền có hàng cột chiếu sáng lúc chiều tối">
-</div>
-</section>
-
-<!-- ABOUT -->
-<section style="padding: clamp(80px, 12vw, 200px) clamp(16px, 3vw, 40px) clamp(64px, 8vw, 140px)">
-<div style="display: flex; flex-wrap: wrap; gap: 24px">
-<p style="flex: 1 1 200px; max-width: 300px; margin: 8px 0 0; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; color: rgba(247,243,236,0.72)">VỀ DỰ ÁN</p>
-<div style="flex: 999 1 560px; min-width: 0">
-<p style="margin: 0; font-size: clamp(32px, 4.3vw, 70px); font-weight: 400; line-height: 1.06; letter-spacing: -0.03em"><img src="/_blob/3517a4dd3d9a82c4b088e7f9bcd011df" alt="" style="display: inline-block; width: 2.3em; height: 1.1em; object-fit: cover; border-radius: 10px; vertical-align: -0.12em; margin-right: 0.2em"> estateSmartAI thẩm định mặt bằng kinh doanh như một chuyên viên phát triển mạng lưới: vị trí, khả năng tiếp cận, mức độ cạnh tranh và giá thuê, trước khi bạn ký hợp đồng.</p>
-<div style="height: 1px; background: rgba(247,243,236,0.5); margin: 28px 0 32px"></div>
-<div style="display: flex; flex-wrap: wrap; gap: 32px 64px">
-<p style="flex: 1 1 300px; max-width: 380px; margin: 0; font-size: 16px; line-height: 1.6">Nền tảng dành cho chủ doanh nghiệp F&amp;B và bán lẻ quy mô nhỏ. Hệ thống tổng hợp tin cho thuê, dữ liệu giao thông, dữ liệu cạnh tranh từ GrabFood, ShopeeFood và kiến thức ngành, sau đó đề xuất ba mặt bằng phù hợp nhất để khảo sát.</p>
-<p style="flex: 1 1 300px; max-width: 380px; margin: 0; font-size: 16px; line-height: 1.6; color: rgba(247,243,236,0.72)">Các chuỗi lớn có bộ phận phát triển mặt bằng chuyên trách để khảo sát lưu lượng và mật độ dân cư. Doanh nghiệp nhỏ thường chỉ dựa vào tin rao và kinh nghiệm cá nhân. estateSmartAI thu hẹp khoảng cách đó.</p>
-</div>
+<main id="noi-dung">
+<!-- HERO -->
+<section class="hero">
+<img class="hero-img" src="/_blob/88da756d7bdf21acce5e115ce122899b" alt="Công trình hai tầng tường trắng, hàng cột thẳng đứng và sân lát đá lúc hoàng hôn">
+<div class="hero-shade" style="background: linear-gradient(to top, rgba(18,16,14,0.88), rgba(18,16,14,{{overlay}}) 55%, rgba(18,16,14,0.45))"></div>
+<div class="hero-body">
+<h1><span class="line"><span style="--i: 0">Mặt bằng,</span></span><span class="line"><span style="--i: 1">thẩm định bằng dữ liệu.</span></span></h1>
+<p class="hero-lede">Ba mặt bằng đáng khảo sát nhất, mỗi chỉ số kèm nguồn kiểm chứng.</p>
+<div class="hero-actions">
+<a class="btn" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a class="link" href="Listing.dc.html">Xem hồ sơ mẫu</a>
 </div>
 </div>
 </section>
 
-<!-- FIGURES -->
-<section style="padding: 0 clamp(16px, 3vw, 40px) clamp(80px, 10vw, 160px)">
-<p style="margin: 0 0 24px; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; color: rgba(247,243,236,0.72)">QUY TRÌNH TRUYỀN THỐNG VÀ GIẢI PHÁP</p>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); border-top: 1px solid rgba(247,243,236,0.22)">
-<div style="padding: 32px 32px 32px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<p style="margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(88px, 9vw, 150px); line-height: 0.9; letter-spacing: -0.02em">1–2</p>
-<p style="margin: 14px 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.2em">TUẦN SÀNG LỌC TIN ĐĂNG</p>
-<p style="margin: 16px 0 0; max-width: 300px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Thời gian sàng lọc tin cho thuê trên các sàn và hội nhóm, nơi thông tin thường chưa được kiểm chứng.</p>
+<!-- GIỚI THIỆU -->
+<section id="gioi-thieu" class="sec wrap">
+<h2 class="sr-only">Giới thiệu</h2>
+<p class="statement"><img src="/_blob/3517a4dd3d9a82c4b088e7f9bcd011df" alt="" loading="lazy"> estateSmartAI thẩm định mặt bằng như một chuyên viên phát triển mạng lưới: vị trí, khả năng tiếp cận, cạnh tranh và giá thuê, trước khi bạn ký hợp đồng.</p>
+<div class="about-cols">
+<p>Dành cho chủ quán F&amp;B và cửa hàng bán lẻ nhỏ. Hệ thống tổng hợp tin cho thuê, dữ liệu giao thông, đối thủ trên GrabFood và ShopeeFood, rồi đề xuất ba mặt bằng đáng khảo sát nhất.</p>
+<p class="muted">Chuỗi lớn có bộ phận phát triển mặt bằng riêng. Doanh nghiệp nhỏ thường chỉ dựa vào tin rao và kinh nghiệm cá nhân. estateSmartAI thu hẹp khoảng cách đó.</p>
 </div>
-<div style="padding: 32px 32px 32px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<p style="margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(88px, 9vw, 150px); line-height: 0.9; letter-spacing: -0.02em">4–7</p>
-<p style="margin: 14px 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.2em">NGÀY SẮP XẾP KHẢO SÁT</p>
-<p style="margin: 16px 0 0; max-width: 300px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Thời gian liên hệ đầu mối và sắp xếp lịch khảo sát thực địa.</p>
+<div class="strip">
+<img src="/_blob/75748c213ca7441c1ce9472de5d61042" alt="Mặt tiền một tầng ốp gỗ, sân cỏ và cây ô liu" loading="lazy">
+<img src="/_blob/16bfb5cd9c78a2ff917437809efcd6ff" alt="Khu bếp và bàn dài bên cửa kính" loading="lazy">
+<img src="/_blob/c1d785e9fac6c74b8e90d82cae82af92" alt="Hiên nhà rộng mở ra khu vườn" loading="lazy">
 </div>
-<div style="padding: 32px 32px 32px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<p style="margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(88px, 9vw, 150px); line-height: 0.9; letter-spacing: -0.02em; color: #D39A6A">Top 3</p>
-<p style="margin: 14px 0 0; font-size: 12px; font-weight: 600; letter-spacing: 0.2em; color: #D39A6A">MẶT BẰNG ĐỀ XUẤT</p>
-<p style="margin: 16px 0 0; max-width: 300px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Ba mặt bằng phù hợp nhất để khảo sát, mỗi chỉ số đi kèm nguồn tham chiếu để kiểm chứng.</p>
+</section>
+
+<!-- SO SÁNH -->
+<section class="sec wrap compare" style="padding-top: 0">
+<h2 class="h2">Từ vài tuần dò tin đến ba lựa chọn có nguồn.</h2>
+<div class="cmp">
+<div class="cmp-col">
+<p class="label">Cách làm hiện nay</p>
+<div class="fig"><span class="num">1–2</span><p>tuần sàng lọc tin trên các sàn và hội nhóm, thông tin chưa được kiểm chứng.</p></div>
+<div class="fig"><span class="num">4–7</span><p>ngày liên hệ đầu mối và sắp xếp lịch khảo sát thực địa.</p></div>
+</div>
+<div class="cmp-col ours">
+<p class="label">Với estateSmartAI</p>
+<div class="fig"><span class="num">Top 3</span><p>mặt bằng phù hợp nhất để khảo sát, mỗi chỉ số kèm nguồn tham chiếu.</p></div>
+<a class="btn" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
 </section>
 
-<!-- CHAPTER VIEWER -->
-<section id="hanh-trinh" style="position: relative; min-height: 100vh; height: 900px; max-height: 1060px; overflow: hidden; background: #12100E">
-<img src="{{chapter.src}}" alt="{{chapter.alt}}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: {{chapter.pos}}">
-<div style="position: absolute; inset: 0; background: rgba(20,17,14,0.5)"></div>
-
-<div class="dots" style="position: absolute; z-index: 1; right: clamp(16px, 3vw, 40px); top: 50%; transform: translateY(-50%); flex-direction: column; align-items: center">
+<!-- QUY TRÌNH 7 BƯỚC -->
+<section id="quy-trinh" class="ch" tabIndex="0" aria-label="Quy trình 7 bước, dùng phím mũi tên trái phải để chuyển bước" onKeyDown="{{chKey}}" onPointerDown="{{chDown}}" onPointerUp="{{chUp}}">
+<sc-for list="{{chapterImgs}}" as="c" hint-placeholder-count="7">
+<img class="ch-img {{c.cls}}" src="{{c.src}}" alt="" loading="lazy" style="object-position: {{c.pos}}">
+</sc-for>
+<div class="ch-shade"></div>
+<div class="dots">
 <sc-for list="{{chapters}}" as="c" hint-placeholder-count="7">
-<button type="button" onClick="{{c.pick}}" aria-label="Bước {{c.num}}: {{c.title}}" style="width: 28px; height: 36px; border: 0; background: none; display: grid; place-items: center; padding: 0">
-<span style="{{c.dotStyle}}"></span>
-</button>
+<button type="button" class="dot-btn" onClick="{{c.pick}}" aria-label="Bước {{c.num}}: {{c.title}}" aria-current="{{c.current}}"><span class="dot {{c.cls}}"></span></button>
 </sc-for>
 </div>
-
-<div style="position: absolute; z-index: 1; left: clamp(16px, 3vw, 40px); right: clamp(16px, 3vw, 40px); bottom: 28px">
-<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap">
+<div class="ch-ui wrap">
+<div class="ch-head">
+<h2 class="h2">Quy trình 7 bước</h2>
+<p class="ch-hint"><span class="long">Dùng phím mũi tên trái, phải để chuyển bước</span><span class="short">Vuốt để chuyển bước</span></p>
+</div>
 <div>
-<p style="margin: 0 0 14px; display: flex; align-items: center; gap: 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.2em"><span style="width: 32px; height: 1px; background: #F7F3EC"></span>QUY TRÌNH 7 BƯỚC</p>
-<h2 style="margin: 0; font-size: clamp(40px, 4.2vw, 62px); font-weight: 500; letter-spacing: -0.035em; line-height: 1.02">{{chapter.title}}</h2>
-<p style="margin: 16px 0 0; font-size: 13px; font-weight: 500; letter-spacing: 0.16em">{{chapter.sub}}</p>
+<div class="ch-foot">
+<div class="ch-text" key="{{chapter.num}}" data-dir="{{dirName}}" aria-live="polite">
+<h3 class="ch-title">{{chapter.title}}</h3>
+<p class="ch-sub">{{chapter.sub}}</p>
 </div>
-<div style="text-align: right">
-<p style="margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(88px, 8vw, 132px); letter-spacing: -0.02em; line-height: 0.9">{{chapter.num}}</p>
-<div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 10px">
-<button type="button" onClick="{{prevChapter}}" aria-label="Bước trước" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(247,243,236,0.5); background: none; color: #F7F3EC; display: grid; place-items: center">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</button>
-<button type="button" onClick="{{nextChapter}}" aria-label="Bước tiếp theo" style="width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(247,243,236,0.5); background: none; color: #F7F3EC; display: grid; place-items: center">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</button>
-<span style="margin-left: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.18em">TRÊN 07</span>
+<div class="ch-side">
+<p class="ch-num" key="{{chapter.num}}">{{chapter.num}}<small>/ 07</small></p>
+<div class="ch-ctrl">
+<button type="button" class="round prev" onClick="{{prevChapter}}" aria-label="Bước trước"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<button type="button" class="round next" onClick="{{nextChapter}}" aria-label="Bước tiếp theo"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
 </div>
 </div>
 </div>
-<div style="position: relative; height: 12px; margin-top: 24px">
-<div style="position: absolute; left: 0; right: 0; top: 6px; height: 1px; background: rgba(247,243,236,0.35)"></div>
-<div style="position: absolute; left: 0; top: 5px; height: 3px; background: #F7F3EC; width: {{progress}}"></div>
+<div class="bar"><i style="transform: scaleX({{progress}})"></i></div>
 </div>
 </div>
 </section>
 
-<!-- STUDY SPLIT -->
-<section id="bao-cao" style="padding: 20px">
-<div style="display: flex; flex-wrap: wrap; gap: 12px">
-<div style="flex: 1 1 440px; min-height: 640px; background: #262320; border-radius: 28px; padding: clamp(28px, 3.4vw, 44px); display: flex; flex-direction: column; justify-content: space-between; gap: 48px">
-<h2 style="margin: 0; font-size: clamp(40px, 4.4vw, 72px); font-weight: 500; line-height: 1.05; letter-spacing: -0.04em; white-space: pre-line">{{study.title}}</h2>
-<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 24px">
-<div style="display: flex">
-<sc-for list="{{studies}}" as="s" hint-placeholder-count="2">
-<button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="{{s.btnStyle}}">{{s.num}}</button>
-</sc-for>
+<!-- 5 AI AGENT -->
+<section class="sec wrap">
+<div class="agents-head">
+<h2 class="h2">Bộ phận phát triển mặt bằng cho doanh nghiệp nhỏ.</h2>
+<p>Một Supervisor điều phối năm AI Agent. Mỗi Agent đảm nhận một nghiệp vụ; báo cáo cuối trích nguồn cho từng chỉ số.</p>
 </div>
-<div style="max-width: 380px">
-<p style="margin: 0; font-size: 14px; font-weight: 500; line-height: 1.6">{{study.body}}</p>
-<a href="{{study.href}}" style="display: inline-block; margin-top: 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: #F7F3EC">{{study.cta}}</a>
-</div>
-</div>
-</div>
-<div style="flex: 1 1 440px; min-height: 640px; border-radius: 28px; overflow: hidden; position: relative; background: #12100E">
-<img src="{{study.src}}" alt="{{study.alt}}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: {{study.pos}}">
-</div>
-</div>
-</section>
-
-<!-- AGENTS INDEX -->
-<section style="padding: clamp(80px, 10vw, 160px) clamp(16px, 3vw, 40px)">
-<div style="display: flex; flex-wrap: wrap; gap: 24px 48px; align-items: flex-end; justify-content: space-between; margin-bottom: 48px">
-<h2 style="margin: 0; max-width: 780px; font-weight: 500; font-size: clamp(38px, 4.2vw, 66px); line-height: 1.1; letter-spacing: -0.02em">Bộ phận phát triển mặt bằng, dành cho doanh nghiệp nhỏ.</h2>
-<p style="margin: 0; max-width: 380px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.72)">Một Supervisor điều phối năm AI Agent chuyên trách. Mỗi Agent đảm nhận một nghiệp vụ; báo cáo cuối cùng trích dẫn nguồn cho từng chỉ số.</p>
-</div>
-<ol style="list-style: none; margin: 0; padding: 0; border-top: 1px solid rgba(247,243,236,0.6)">
-<li style="display: flex; flex-wrap: wrap; gap: 8px 32px; align-items: baseline; padding: 28px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<span style="flex: 0 0 64px; font-size: 13px; font-weight: 600; letter-spacing: 0.16em">01</span>
-<span style="flex: 1 1 300px; font-size: clamp(24px, 2.3vw, 34px); font-weight: 500; letter-spacing: -0.02em">Phân tích nhu cầu</span>
-<span style="flex: 1 1 360px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Chuẩn hoá mô hình kinh doanh, ngân sách, diện tích và các yêu cầu vận hành như chỗ đỗ xe cho khách mang đi.</span>
-</li>
-<li style="display: flex; flex-wrap: wrap; gap: 8px 32px; align-items: baseline; padding: 28px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<span style="flex: 0 0 64px; font-size: 13px; font-weight: 600; letter-spacing: 0.16em">02</span>
-<span style="flex: 1 1 300px; font-size: clamp(24px, 2.3vw, 34px); font-weight: 500; letter-spacing: -0.02em">Sàng lọc mặt bằng</span>
-<span style="flex: 1 1 360px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Lọc theo điều kiện bắt buộc về ngân sách, khu vực và diện tích trên nguồn tin cho thuê đang hoạt động.</span>
-</li>
-<li style="display: flex; flex-wrap: wrap; gap: 8px 32px; align-items: baseline; padding: 28px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<span style="flex: 0 0 64px; font-size: 13px; font-weight: 600; letter-spacing: 0.16em">03</span>
-<span style="flex: 1 1 300px; font-size: clamp(24px, 2.3vw, 34px); font-weight: 500; letter-spacing: -0.02em">Đánh giá vị trí</span>
-<span style="flex: 1 1 360px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Kiểm tra khả năng tiếp cận, bãi đỗ xe lân cận, dải phân cách cứng và mật độ dân cư, văn phòng trong bán kính phục vụ.</span>
-</li>
-<li style="display: flex; flex-wrap: wrap; gap: 8px 32px; align-items: baseline; padding: 28px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<span style="flex: 0 0 64px; font-size: 13px; font-weight: 600; letter-spacing: 0.16em">04</span>
-<span style="flex: 1 1 300px; font-size: clamp(24px, 2.3vw, 34px); font-weight: 500; letter-spacing: -0.02em">Phân tích cạnh tranh</span>
-<span style="flex: 1 1 360px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Xác định cơ sở cùng ngành trên GrabFood, ShopeeFood, GrabMart, ước tính phân khúc giá và chỉ ra khoảng trống thị trường.</span>
-</li>
-<li style="display: flex; flex-wrap: wrap; gap: 8px 32px; align-items: baseline; padding: 28px 0; border-bottom: 1px solid rgba(247,243,236,0.22)">
-<span style="flex: 0 0 64px; font-size: 13px; font-weight: 600; letter-spacing: 0.16em; color: #D39A6A">05</span>
-<span style="flex: 1 1 300px; font-size: clamp(24px, 2.3vw, 34px); font-weight: 500; letter-spacing: -0.02em">Chấm điểm &amp; khuyến nghị</span>
-<span style="flex: 1 1 360px; font-size: 15px; line-height: 1.6; color: rgba(247,243,236,0.8)">Tính điểm phù hợp 0–100, đối chiếu đơn giá/m² với mặt bằng khu vực và nêu rõ ưu điểm, rủi ro.</span>
-</li>
+<ol class="agents">
+<li class="agent"><span class="agent-n">01</span><span class="agent-t">Phân tích nhu cầu</span><p>Chuẩn hoá mô hình kinh doanh, ngân sách, diện tích và yêu cầu vận hành như chỗ đỗ xe cho khách mang đi.</p></li>
+<li class="agent"><span class="agent-n">02</span><span class="agent-t">Sàng lọc mặt bằng</span><p>Lọc theo ngân sách, khu vực và diện tích trên nguồn tin cho thuê đang hoạt động.</p></li>
+<li class="agent"><span class="agent-n">03</span><span class="agent-t">Đánh giá vị trí</span><p>Kiểm tra khả năng tiếp cận, bãi đỗ xe, dải phân cách cứng và mật độ dân cư, văn phòng trong bán kính phục vụ.</p></li>
+<li class="agent"><span class="agent-n">04</span><span class="agent-t">Phân tích cạnh tranh</span><p>Xác định cơ sở cùng ngành trên GrabFood, ShopeeFood, GrabMart, ước tính phân khúc giá và khoảng trống thị trường.</p></li>
+<li class="agent last"><span class="agent-n">05</span><span class="agent-t">Chấm điểm và khuyến nghị</span><p>Tính điểm phù hợp 0–100, đối chiếu đơn giá/m² với khu vực và nêu rõ ưu điểm, rủi ro.</p></li>
 </ol>
 </section>
 
-<!-- FOOTER -->
-<footer id="lien-he" style="background: #12100E; padding: clamp(72px, 9vw, 140px) clamp(16px, 3vw, 40px) 28px; overflow: hidden">
-<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 40px">
-<h2 style="margin: 0; font-weight: 500; font-size: clamp(46px, 6vw, 96px); line-height: 1.02; letter-spacing: -0.025em">Bắt đầu với<br>một yêu cầu.</h2>
-<div style="display: flex; flex-direction: column; gap: 20px; max-width: 380px">
-<p style="margin: 0; font-size: 16px; line-height: 1.6; color: rgba(247,243,236,0.78)">Chọn mô hình kinh doanh và khu vực mục tiêu. Trợ lý AI sẽ thực hiện phần thẩm định.</p>
-<a href="Chat.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 28px; border-radius: 999px; background: #F7F3EC; color: #1B1916; text-decoration: none; font-size: 14px; font-weight: 600; letter-spacing: 0.06em">BẮT ĐẦU TƯ VẤN &#8594;</a>
+<!-- HỒ SƠ MẪU -->
+<section id="ho-so-mau" class="sec wrap study">
+<div class="study-card">
+<h2 class="h2 study-title" key="{{study.num}}">{{study.title}}</h2>
+<div class="study-foot">
+<div class="pills" role="group" aria-label="Chọn ví dụ">
+<sc-for list="{{studies}}" as="s" hint-placeholder-count="2">
+<button type="button" class="pill {{s.cls}}" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" aria-label="Ví dụ {{s.num}}">{{s.num}}</button>
+</sc-for>
+</div>
+<div class="study-body" key="{{study.num}}">
+<p>{{study.body}}</p>
+<a class="link" href="{{study.href}}">{{study.cta}}</a>
 </div>
 </div>
+</div>
+<div class="study-media">
+<sc-for list="{{studyImgs}}" as="s" hint-placeholder-count="2">
+<img class="ch-img {{s.cls}}" src="{{s.src}}" alt="{{s.alt}}" loading="lazy" style="object-position: {{s.pos}}">
+</sc-for>
+</div>
+</section>
+</main>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px; margin-top: clamp(72px, 9vw, 140px); padding-top: 28px; border-top: 1px solid rgba(247,243,236,0.3); font-size: 14px; line-height: 1.7">
+<!-- CHÂN TRANG -->
+<footer id="lien-he" class="foot">
+<div class="wrap">
+<div class="foot-cta">
+<h2 class="h2">Bắt đầu với<br>một yêu cầu.</h2>
 <div>
-<p style="margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(247,243,236,0.72)">DỰ ÁN</p>
-<p style="margin: 0">T020 · AI In Action<br>Mentor: Lương Sơn Tịnh</p>
-</div>
-<div>
-<p style="margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(247,243,236,0.72)">NHÓM 20</p>
-<p style="margin: 0">Cao Trung Hiếu — Project Owner<br>Lê Phạm Thành Đạt — Project Manager</p>
-</div>
-<div>
-<p style="margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(247,243,236,0.72)">PHÁT TRIỂN</p>
-<p style="margin: 0">Cao Phạm Thành Đạt — Developer<br>Trần Đức Duy — Developer</p>
-</div>
-<div>
-<p style="margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(247,243,236,0.72)">SẢN PHẨM</p>
-<p style="margin: 0"><a href="Chat.dc.html" style="color: #F7F3EC">Trợ lý AI</a><br><a href="Listing.dc.html" style="color: #F7F3EC">Hồ sơ mặt bằng</a><br><a href="#hanh-trinh" style="color: #F7F3EC">Quy trình</a></p>
+<p>Chọn mô hình kinh doanh và khu vực mục tiêu. Trợ lý AI sẽ thực hiện phần thẩm định.</p>
+<a class="btn" href="Chat.dc.html" style="align-self: flex-start">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
-
-<p style="margin: clamp(48px, 6vw, 96px) 0 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: clamp(64px, 15vw, 230px); line-height: 0.85; letter-spacing: -0.03em; white-space: nowrap">estateSmart/AI</p>
-<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 24px; font-size: 11px; letter-spacing: 0.18em; color: rgba(247,243,236,0.72)">
-<span>© 2026 ESTATESMARTAI</span>
-<span>TP. HỒ CHÍ MINH · VIỆT NAM</span>
+<div class="foot-grid">
+<div><p class="label">Dự án</p><p>T020, AI In Action<br>Mentor: Lương Sơn Tịnh</p></div>
+<div><p class="label">Nhóm 20</p><p>Cao Trung Hiếu, Project Owner<br>Lê Phạm Thành Đạt, Project Manager</p></div>
+<div><p class="label">Phát triển</p><p>Cao Phạm Thành Đạt, Developer<br>Trần Đức Duy, Developer</p></div>
+<div><p class="label">Sản phẩm</p><p><a class="link" href="Chat.dc.html">Trợ lý AI</a><br><a class="link" href="Listing.dc.html">Hồ sơ mặt bằng</a><br><a class="link" href="#quy-trinh">Quy trình</a></p></div>
+</div>
+<p class="wordmark" aria-label="estateSmart/AI"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg><span aria-hidden="true">estateSmart/AI</span></p>
+<div class="legal">
+<span>© 2026 estateSmartAI</span>
+<span>TP. Hồ Chí Minh, Việt Nam</span>
+</div>
 </div>
 </footer>
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"overlay":{"editor":"range","default":0.42,"min":0.15,"max":0.75,"step":0.01,"section":"Hero"},"$preview":{"width":1440,"height":6500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"overlay":{"editor":"range","default":0.2,"min":0,"max":0.7,"step":0.01,"section":"Hero"},"$preview":{"width":1440,"height":6500}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { slide: 0, chapter: 0, study: 0, menuOpen: false };
+    this.state = { chapter: 0, dir: 0, study: 0, menuOpen: false, scrolled: false };
+    this.downX = null;
+    this.onScroll = () => {
+      const s = window.scrollY > 24;
+      if (s !== this.state.scrolled) this.setState({ scrolled: s });
+    };
+    this.onKey = (e) => {
+      if (e.key === 'Escape' && this.state.menuOpen) this.setState({ menuOpen: false });
+    };
+  }
+  componentDidMount() {
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    window.addEventListener('keydown', this.onKey);
+    this.onScroll();
+  }
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.onScroll);
+    window.removeEventListener('keydown', this.onKey);
+    document.body.style.overflow = '';
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.menuOpen !== this.state.menuOpen) document.body.style.overflow = this.state.menuOpen ? 'hidden' : '';
+  }
+  go(i, dir) {
+    this.setState({ chapter: i, dir });
+  }
+  step(d) {
+    const n = 7;
+    this.setState((s) => ({ chapter: (s.chapter + d + n) % n, dir: d }));
   }
   renderVals() {
-    const slides = [
-      { src: '/_blob/75748c213ca7441c1ce9472de5d61042', pos: '50% 50%', alt: 'Mặt tiền một tầng ốp gỗ, sân cỏ và cây ô liu' },
-      { src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%', alt: 'Công trình một tầng giữa đồng cỏ lúc hoàng hôn' },
-      { src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 50%', alt: 'Hàng cột đá và cửa kính bên bồn cây' },
-      { src: '/_blob/2c6440f67701f1d1ba74d0679f8eb676', pos: '50% 50%', alt: 'Phòng khách sáng, sàn gỗ và sofa kem' }
-    ];
     const chapterData = [
-      { title: 'Xác định nhu cầu', sub: 'MÔ HÌNH KINH DOANH, KHU VỰC VÀ NGÂN SÁCH', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
-      { title: 'Sàng lọc', sub: 'DANH SÁCH ỨNG VIÊN TRÊN BẢN ĐỒ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
-      { title: 'Hồ sơ mặt bằng', sub: 'HÌNH ẢNH, THÔNG SỐ VÀ NGUỒN DỮ LIỆU', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
-      { title: 'Đánh giá vị trí', sub: 'KHẢ NĂNG TIẾP CẬN, DẢI PHÂN CÁCH, BÃI ĐỖ XE', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
-      { title: 'Nhận định AI', sub: 'ĐIỂM PHÙ HỢP 0–100, ƯU ĐIỂM VÀ RỦI RO', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
-      { title: 'So sánh', sub: 'ĐỐI CHIẾU BA HỒ SƠ THEO CÙNG TIÊU CHÍ', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
-      { title: 'Kết nối chủ nhà', sub: 'LƯU DANH SÁCH KHẢO SÁT VÀ ĐẶT LỊCH XEM', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
+      { title: 'Xác định nhu cầu', sub: 'Mô hình kinh doanh, khu vực và ngân sách', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
+      { title: 'Sàng lọc', sub: 'Danh sách ứng viên trên bản đồ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
+      { title: 'Hồ sơ mặt bằng', sub: 'Hình ảnh, thông số và nguồn dữ liệu', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
+      { title: 'Đánh giá vị trí', sub: 'Khả năng tiếp cận, dải phân cách, bãi đỗ xe', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
+      { title: 'Nhận định AI', sub: 'Điểm phù hợp 0–100, ưu điểm và rủi ro', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
+      { title: 'So sánh', sub: 'Đối chiếu ba hồ sơ theo cùng tiêu chí', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
+      { title: 'Kết nối chủ nhà', sub: 'Lưu danh sách khảo sát và đặt lịch xem', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
     ];
     const studyData = [
-      { title: 'Thẩm định vị trí,\nkhả năng tiếp cận\nvà giá thuê.', body: 'Mỗi mặt bằng được chấm điểm phù hợp từ 0 đến 100, kèm ưu điểm, rủi ro và nguồn tham chiếu cho từng chỉ số.', cta: 'XEM HỒ SƠ MẪU →', href: 'Listing.dc.html', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 45%', alt: 'Hàng cột đá và cửa kính dưới nắng chiều' },
-      { title: 'Năm AI Agent,\nmột báo cáo\nthống nhất.', body: 'Ba mặt bằng phù hợp nhất được trình bày song song trên bản đồ để bạn lưu vào danh sách khảo sát hoặc liên hệ chủ nhà.', cta: 'TRẢI NGHIỆM TRỢ LÝ AI →', href: 'Chat.dc.html', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%', alt: 'Không gian chính với bàn gỗ và sofa' }
+      { title: 'Thẩm định vị trí,\nkhả năng tiếp cận\nvà giá thuê.', body: 'Mỗi mặt bằng được chấm điểm phù hợp từ 0 đến 100, kèm ưu điểm, rủi ro và nguồn tham chiếu cho từng chỉ số.', cta: 'Xem hồ sơ mẫu', href: 'Listing.dc.html', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 45%', alt: 'Hàng cột đá và cửa kính dưới nắng chiều' },
+      { title: 'Năm AI Agent,\nmột báo cáo\nthống nhất.', body: 'Ba mặt bằng phù hợp nhất được trình bày song song trên bản đồ để bạn lưu vào danh sách khảo sát hoặc liên hệ chủ nhà.', cta: 'Trải nghiệm trợ lý AI', href: 'Chat.dc.html', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%', alt: 'Không gian chính với bàn gỗ và sofa' }
     ];
-    const n = chapterData.length;
     const ci = this.state.chapter;
     const si = this.state.study;
+    const open = this.state.menuOpen;
     const pad = (i) => String(i + 1).padStart(2, '0');
     return {
-      overlay: this.props.overlay ?? 0.42,
-      menuOpen: this.state.menuOpen,
-      toggleMenu: () => this.setState({ menuOpen: !this.state.menuOpen }),
-      slide: slides[this.state.slide],
-      prevSlide: () => this.setState({ slide: (this.state.slide + slides.length - 1) % slides.length }),
-      nextSlide: () => this.setState({ slide: (this.state.slide + 1) % slides.length }),
-      chapter: { ...chapterData[ci], num: pad(ci), alt: 'Bước ' + pad(ci) + ': ' + chapterData[ci].title },
-      progress: ((ci + 1) / n * 100).toFixed(2) + '%',
+      overlay: this.props.overlay ?? 0.2,
+      topbarCls: (this.state.scrolled && !open) ? 'is-solid' : '',
+      menuCls: open ? 'is-open' : '',
+      menuExpanded: open ? 'true' : 'false',
+      menuHidden: open ? 'false' : 'true',
+      menuLabel: open ? 'Đóng' : 'Menu',
+      toggleMenu: () => this.setState({ menuOpen: !open }),
+      closeMenu: () => this.setState({ menuOpen: false }),
+      chapter: { ...chapterData[ci], num: pad(ci) },
+      dirName: this.state.dir > 0 ? 'fwd' : this.state.dir < 0 ? 'back' : 'none',
+      progress: ((ci + 1) / chapterData.length).toFixed(4),
+      chapterImgs: chapterData.map((c, i) => ({ src: c.src, pos: c.pos, cls: i === ci ? 'is-active' : '' })),
       chapters: chapterData.map((c, i) => ({
         num: pad(i),
         title: c.title,
-        pick: () => this.setState({ chapter: i }),
-        dotStyle: i === ci
-          ? 'width: 12px; height: 12px; border-radius: 50%; background: #F7F3EC'
-          : 'width: 6px; height: 6px; border-radius: 50%; border: 1px solid rgba(247,243,236,0.8)'
+        cls: i === ci ? 'is-active' : '',
+        current: i === ci ? 'step' : 'false',
+        pick: () => { if (i !== ci) this.go(i, i > ci ? 1 : -1); }
       })),
-      prevChapter: () => this.setState({ chapter: (ci + n - 1) % n }),
-      nextChapter: () => this.setState({ chapter: (ci + 1) % n }),
-      study: studyData[si],
+      prevChapter: () => this.step(-1),
+      nextChapter: () => this.step(1),
+      chKey: (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); this.step(1); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); this.step(-1); }
+      },
+      chDown: (e) => { this.downX = e.pointerType === 'mouse' ? null : e.clientX; },
+      chUp: (e) => {
+        if (this.downX === null) return;
+        const dx = e.clientX - this.downX;
+        this.downX = null;
+        if (Math.abs(dx) > 40) this.step(dx < 0 ? 1 : -1);
+      },
+      study: { ...studyData[si], num: pad(si) },
+      studyImgs: studyData.map((s, i) => ({ src: s.src, pos: s.pos, alt: s.alt, cls: i === si ? 'is-active' : '' })),
       studies: studyData.map((s, i) => ({
         num: pad(i),
+        cls: i === si ? 'is-active' : '',
         pressed: i === si ? 'true' : 'false',
-        pick: () => this.setState({ study: i }),
-        btnStyle: 'width: 56px; height: 56px; border-radius: 50%; background: none; font-size: 13px; font-weight: 600; margin-right: -4px; '
-          + (i === si ? 'border: 1px solid #F7F3EC; color: #F7F3EC' : 'border: 1px solid rgba(247,243,236,0.35); color: rgba(247,243,236,0.72)')
+        pick: () => this.setState({ study: i })
       }))
     };
   }

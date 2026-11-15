@@ -11,68 +11,229 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&amp;family=Instrument+Serif&amp;display=swap">
 <style>
-body{margin:0;background:#F4EFE6}
+/* Trợ lý AI — chế độ Operate: chuyển động = phản hồi + giữ mạch. Xem docs/KE_HOACH_THIET_KE_LAI.md */
+:root{
+--bg:#F4EFE6;--surface:#FBF8F2;--map:#ECE5D7;
+--ink:#1F1C19;--ink-2:rgba(31,28,25,.68);--line:rgba(31,28,25,.12);--line-2:rgba(31,28,25,.3);
+--accent:#A3562B;--paper:#F4EFE6;
+--font:'Familjen Grotesk',system-ui,sans-serif;--serif:'Instrument Serif',Georgia,serif;
+--focus:#A3562B;--shadow:0 16px 36px -10px rgba(31,28,25,.22)
+}
+body{margin:0;background:var(--bg)}
 *{box-sizing:border-box}
-a{color:inherit}a:hover{color:#A3562B}
 button{font:inherit;cursor:pointer}
 input{font:inherit}
 input::placeholder{color:rgba(31,28,25,.5)}
-.shell{display:flex;height:100vh;min-height:720px}
-.chatcol{flex:0 0 clamp(400px,38%,560px);min-width:0;display:flex;flex-direction:column;border-right:1px solid rgba(31,28,25,.12)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.shell{display:flex;height:100vh;height:100dvh;min-height:720px;font-family:var(--font);color:var(--ink);background:var(--bg);font-size:16px;line-height:1.55}
+.chatcol{flex:0 0 clamp(400px,38%,560px);min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--line)}
 .viz{flex:1 1 auto;min-width:0;padding:12px;display:flex}
-@keyframes pulse{0%{transform:translate(-50%,-50%) scale(.4);opacity:.7}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
-.pulse{animation:pulse 1.6s ease-out infinite}
-@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+
+/* Header & tiến độ (16 Miller: 5 bước tách khúc) */
+.head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 28px}
+.brand{display:inline-flex;align-items:center;gap:10px;min-height:44px;font-weight:600;font-size:16px;color:var(--ink);text-decoration:none}
+.brand svg{flex:none;transition:transform var(--dur-3) var(--ease-spring)}
+@media (hover:hover){.brand:hover svg{transform:rotate(-6deg)}}
+.ghost{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:0;box-shadow:inset 0 0 0 1px var(--line-2);background:none;color:var(--ink);font-size:14px;font-weight:600}
+@media (hover:hover){.ghost:hover{background:var(--ink);color:var(--paper)}}
+.status{padding:0 28px 18px;border-bottom:1px solid var(--line)}
+.status .label{margin:0;font-size:14px;color:var(--ink-2)}
+.status h1{margin:4px 0 14px;font-weight:500;font-size:30px;line-height:1.1;letter-spacing:-.015em}
+.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.steps i{height:4px;border-radius:2px;background:var(--line);overflow:hidden;position:relative}
+.steps i::after{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform var(--dur-3) var(--ease-in-out)}
+.steps i.on::after{transform:scaleX(1)}
+
+/* Luồng hội thoại */
+.thread{flex:1 1 auto;overflow-y:auto;padding:24px 28px;scroll-behavior:smooth}
+.msgs{display:flex;flex-direction:column;gap:18px}
+.bot{display:flex;gap:12px;align-items:flex-start}
+.avatar{flex:0 0 32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center}
+.who{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.bot p.text{margin:0;font-size:16px}
+.me{display:flex;justify-content:flex-end}
+.bubble{position:relative;max-width:82%;padding:11px 16px;border:0;border-radius:18px 18px 4px 18px;background:var(--ink);color:var(--paper);font-size:16px;line-height:1.45;text-align:left}
+.bubble .edit{display:block;max-height:0;opacity:0;overflow:hidden;font-size:12px;color:rgba(244,239,230,.7);transition:opacity var(--dur-1)}
+@media (hover:hover){.bubble:hover .edit{max-height:none;opacity:1;margin-top:4px}}
+.bubble:focus-visible .edit{max-height:none;opacity:1;margin-top:4px}
+/* (2 anticipation, 8 secondary action) chấm “đang soạn” trước khi câu hỏi tiếp theo xuất hiện */
+.typing{display:inline-flex;gap:5px;padding:12px 14px;border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-2);animation:blink 900ms var(--ease-in-out) infinite}
+.typing i:nth-child(2){animation-delay:150ms}.typing i:nth-child(3){animation-delay:300ms}
+@keyframes blink{0%,80%,100%{transform:translateY(0);opacity:.35}40%{transform:translateY(-4px);opacity:1}}
+
+/* Agent */
+.agents{margin-left:44px;padding:16px 20px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.agents .who{margin-bottom:6px}
+.agents ol{list-style:none;margin:0;padding:0}
+.agent{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px 0;border-top:1px solid rgba(31,28,25,.08);font-size:15px;color:rgba(31,28,25,.5);transition:color var(--dur-2)}
+.agent.run,.agent.done{color:var(--ink)}
+.agent .st{display:inline-flex;align-items:center;gap:8px;font-size:13px}
+.agent.run .st{color:var(--accent)}
+.ico{width:20px;height:20px;border-radius:50%;display:grid;place-items:center}
+.ico.wait{box-shadow:inset 0 0 0 1.5px rgba(31,28,25,.3)}
+.ico.run{border:2px solid var(--accent);border-right-color:transparent;animation:spin 800ms linear infinite}
+.ico.done{background:var(--ink);color:var(--paper);animation:pop 420ms var(--ease-out)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{0%{transform:scale(.4)}45%{transform:scale(1.25,.85)}70%{transform:scale(.92,1.08)}100%{transform:scale(1)}}
+
+/* Kết quả: cả thẻ là vùng bấm (13 Fitts, 14 bigger hit areas) */
+.results{margin-left:44px;display:flex;flex-direction:column;gap:10px}
+.card{position:relative;display:flex;gap:12px;padding:10px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow var(--dur-2) var(--ease-out)}
+.card.is-on{box-shadow:inset 0 0 0 2px var(--ink),var(--shadow)}
+.card img{flex:0 0 96px;width:96px;height:96px;object-fit:cover;border-radius:12px;display:block;transition:transform var(--dur-3) var(--ease-out)}
+@media (hover:hover){.card:hover img{transform:scale(1.03)}.card:not(.is-on):hover{box-shadow:inset 0 0 0 1px var(--line-2)}}
+.card-body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:2px}
+.card-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card h3{margin:0;font-size:16px;font-weight:500;line-height:1.3}
+.card-hit{all:unset;cursor:pointer}
+.card-hit::after{content:'';position:absolute;inset:0;border-radius:16px}
+.card-hit:focus-visible::after{outline:2px solid var(--focus);outline-offset:2px}
+.score{font-size:15px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.meta{margin:0;font-size:14px;color:var(--ink-2)}
+.card-actions{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:auto;padding-top:4px}
+.tlink{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0;border:0;background:none;color:var(--ink);font-size:14px;font-weight:600;text-decoration:underline;text-underline-offset:.25em;text-decoration-color:var(--line-2)}
+.tlink.accent{color:var(--accent);text-decoration:none}
+.tlink svg{transition:transform var(--dur-2) var(--ease-out)}
+@media (hover:hover){.tlink:hover{text-decoration-color:currentColor}.tlink.accent:hover svg{transform:translateX(3px)}}
+
+/* Gợi ý trả lời nhanh, có số phím tắt (20 frequency of use, 15 Hick: tối đa 5 lựa chọn) */
+.chips{margin-left:44px;display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:0;box-shadow:inset 0 0 0 1px var(--line-2);background:var(--surface);color:var(--ink);font-size:15px}
+.chip kbd{display:none;min-width:20px;height:20px;padding:0 5px;border-radius:5px;background:rgba(31,28,25,.08);font:600 12px/20px var(--font);color:var(--ink-2)}
+@media (hover:hover) and (pointer:fine){.chip kbd{display:inline-block}}
+@media (hover:hover){.chip:hover{box-shadow:inset 0 0 0 1px var(--ink);background:#fff}}
+.stagger>*{animation:es-enter var(--dur-3) var(--ease-out) both}
+.stagger>:nth-child(2){animation-delay:60ms}.stagger>:nth-child(3){animation-delay:120ms}.stagger>:nth-child(4){animation-delay:180ms}.stagger>:nth-child(5){animation-delay:240ms}
+
+/* Ô nhập */
+.composer{padding:14px 28px 18px;border-top:1px solid var(--line)}
+.composer-row{display:flex;gap:10px;align-items:center}
+.composer input{flex:1 1 auto;min-width:0;height:52px;padding:0 20px;border-radius:999px;border:0;box-shadow:inset 0 0 0 1px rgba(31,28,25,.24);background:var(--surface);color:var(--ink);font-size:16px;transition:box-shadow var(--dur-1)}
+.composer input:focus{outline:none;box-shadow:inset 0 0 0 2px var(--ink)}
+.send{flex:0 0 52px;height:52px;border-radius:50%;border:0;background:var(--ink);color:var(--paper);display:grid;place-items:center}
+.send svg{transition:transform var(--dur-2) var(--ease-out)}
+.send.is-empty{background:rgba(31,28,25,.18);color:var(--ink-2)}
+@media (hover:hover){.send:not(.is-empty):hover{background:var(--accent)}.send:not(.is-empty):hover svg{transform:translateX(3px)}}
+.send:active svg{transform:translateX(-3px)}
+.composer .hint{margin:8px 0 0;font-size:13px;color:var(--ink-2)}
+
+/* Toast hoàn tác (thay cho hộp xác nhận) */
+.toast{position:fixed;left:50%;bottom:24px;z-index:20;display:flex;align-items:center;gap:16px;padding:10px 10px 10px 20px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:15px;box-shadow:var(--shadow);transform:translateX(-50%);animation:toast-in var(--dur-3) var(--ease-out) both}
+@keyframes toast-in{from{opacity:0;transform:translate(-50%,16px)}}
+.toast button{min-height:40px;padding:0 16px;border-radius:999px;border:0;background:var(--paper);color:var(--ink);font-weight:600}
+
+/* Bản đồ & 3D */
+.stage{position:relative;flex:1 1 auto;border-radius:24px;overflow:hidden;background:var(--map)}
+.view{position:absolute;inset:0;animation:fade var(--dur-2) var(--ease-out) both}
+@keyframes fade{from{opacity:0}}
+.float{position:absolute;padding:12px 16px;border-radius:14px;background:rgba(251,248,242,.95)}
+.float .label{margin:0;font-size:13px;color:var(--ink-2)}
+.float .val{margin:2px 0 0;font-size:16px;font-weight:500}
+.legend{left:20px;bottom:20px;display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 14px;font-size:13px}
+.legend span{display:flex;align-items:center;gap:6px}
+@keyframes pulse{0%{transform:scale(.4);opacity:.7}100%{transform:scale(1.6);opacity:0}}
+.pulse{position:absolute;left:50%;top:42%;width:360px;height:360px;margin:-180px 0 0 -180px;border-radius:50%;border:2px solid var(--accent);animation:pulse 1.6s var(--ease-out) infinite}
+.comp-dot{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--surface);border:2px solid #6B625A;animation:pop 420ms var(--ease-out) both}
+.ring{position:absolute;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;border:1.5px dashed rgba(163,86,43,.8);background:rgba(163,86,43,.08);animation:ring-in 520ms var(--ease-out) both}
+@keyframes ring-in{from{transform:scale(.3);opacity:0}}
+/* (1 squash & stretch) ghim bật lên lần lượt; ghim đang chọn phóng to bằng scale, không đổi kích thước */
+.pin{position:absolute;z-index:1;width:40px;height:40px;margin:-20px 0 0 -20px;padding:0;border-radius:50%;border:2px solid var(--surface);background:var(--ink);color:var(--surface);font-size:15px;font-weight:600;display:grid;place-items:center;animation:pin-pop 560ms var(--ease-out) both}
+.pin::before{content:'';position:absolute;inset:-6px;border-radius:50%}
+.pin.is-on{scale:1.2;background:var(--accent);border-width:3px;box-shadow:0 8px 20px rgba(31,28,25,.3);z-index:2}
+@media (hover:hover){.pin:not(.is-on):hover{scale:1.1}}
+@keyframes pin-pop{0%{transform:translateY(-24px) scale(.3);opacity:0}55%{transform:translateY(0) scale(1.15,.85);opacity:1}75%{transform:scale(.95,1.06)}100%{transform:none}}
+.empty{position:absolute;left:50%;top:50%;width:min(86%,380px);padding:22px 24px;border-radius:18px;background:rgba(251,248,242,.96);text-align:center;transform:translate(-50%,-50%)}
+.empty p{margin:0}
+.empty .sub{margin-top:8px;font-size:14px;color:var(--ink-2)}
+
+/* Bộ chuyển Bản đồ / 3D có nền trượt (4 pose to pose) */
+.vtabs{position:absolute;right:20px;top:20px;z-index:3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:4px;border-radius:999px;background:rgba(251,248,242,.95)}
+.vtabs .ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 2);border-radius:999px;background:var(--ink);transition:transform var(--dur-3) var(--ease-in-out)}
+.vtabs button{position:relative;min-height:40px;padding:0 16px;border:0;border-radius:999px;background:none;color:var(--ink);font-size:14px;font-weight:600;transition:color var(--dur-2)}
+.vtabs button[aria-pressed="true"]{color:var(--surface)}
+
+/* 3D: xoay bằng nút đi theo cung tròn (7 arcs, 11 solid drawing) */
+.scene{position:absolute;inset:0;background:#E9E3D7;perspective:1500px;cursor:grab;touch-action:none}
+.scene.is-dragging{cursor:grabbing}
+.model{position:absolute;left:50%;top:62%;width:0;height:0;transform-style:preserve-3d;transition:transform 640ms var(--ease-in-out)}
+.is-dragging .model{transition:none}
+.rot{left:20px;bottom:20px;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px}
+.rbtn{width:44px;height:44px;border-radius:50%;border:0;box-shadow:inset 0 0 0 1px rgba(31,28,25,.24);background:none;color:var(--ink);display:grid;place-items:center}
+@media (hover:hover){.rbtn:hover{background:var(--ink);color:var(--surface)}}
+.chip-dark{right:20px;top:72px;margin:0;padding:6px 12px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:13px}
+
+.sel{position:absolute;right:20px;bottom:20px;z-index:2;width:min(340px,calc(100% - 40px));display:flex;gap:12px;padding:12px;border-radius:18px;background:var(--surface);box-shadow:var(--shadow);animation:es-enter var(--dur-3) var(--ease-out) both}
+.sel img{flex:0 0 88px;width:88px;height:88px;border-radius:12px;object-fit:cover;display:block}
+.sel-body{min-width:0;display:flex;flex-direction:column;gap:2px}
+
+@media (prefers-reduced-motion:reduce){.pulse,.typing i,.ico.run{animation:none}}
 @media (max-width:900px){
 .shell{flex-direction:column;height:auto}
-.chatcol{flex:none;height:78vh;min-height:560px;border-right:0;border-bottom:1px solid rgba(31,28,25,.12)}
+.chatcol{flex:none;height:80vh;height:80dvh;min-height:560px;border-right:0;border-bottom:1px solid var(--line)}
 .viz{height:560px}
+.head,.status,.thread,.composer{padding-inline:16px}
+.legend{right:20px;bottom:auto;top:100px;left:20px}
+.sel{bottom:12px;right:12px;width:calc(100% - 24px)}
 }
 </style>
 </helmet>
-<div class="shell" style="font-family: 'Familjen Grotesk', system-ui, sans-serif; color: #1F1C19; background: #F4EFE6; width: 100%">
+<div class="shell">
 
-<!-- CHAT (LEFT) -->
+<!-- HỘI THOẠI (TRÁI) -->
 <main class="chatcol">
-<header style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 28px">
-<a href="Main.dc.html" style="font-weight: 600; font-size: 16px; letter-spacing: 0.01em; text-decoration: none; color: #1F1C19">ESTATESMART / AI</a>
-<button type="button" onClick="{{reset}}" style="min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(31,28,25,0.3); background: none; color: #1F1C19; font-size: 12px; font-weight: 600; letter-spacing: 0.08em">PHIÊN MỚI +</button>
+<header class="head">
+<a class="brand" href="Main.dc.html"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#A3562B"></circle></svg>estateSmart/AI</a>
+<button type="button" class="ghost" onClick="{{reset}}"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"></path></svg>Phiên mới</button>
 </header>
-<div style="padding: 0 28px 16px; border-bottom: 1px solid rgba(31,28,25,0.12)">
-<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">TRỢ LÝ THẨM ĐỊNH · BƯỚC {{stepLabel}} / 05</p>
-<h1 style="margin: 6px 0 12px; font-weight: 500; font-size: 32px; line-height: 1.1; letter-spacing: -0.01em">{{headerTitle}}</h1>
-<div style="height: 2px; background: rgba(31,28,25,0.1)"><div style="height: 2px; background: #A3562B; width: {{progress}}"></div></div>
+<div class="status">
+<p class="label">{{stepText}}</p>
+<h1>{{headerTitle}}</h1>
+<div class="steps" aria-hidden="true">
+<sc-for list="{{stepBars}}" as="b" hint-placeholder-count="5"><i class="{{b.cls}}"></i></sc-for>
+</div>
 </div>
 
-<div ref="{{threadRef}}" style="flex: 1 1 auto; overflow-y: auto; padding: 24px 28px">
-<div style="display: flex; flex-direction: column; gap: 18px">
+<div class="thread" ref="{{threadRef}}" role="log" aria-live="polite" aria-label="Hội thoại với trợ lý">
+<div class="msgs">
 <sc-for list="{{messages}}" as="m" hint-placeholder-count="3">
 
 <sc-if value="{{m.isBot}}" hint-placeholder-val="{{ true }}">
-<div style="display: flex; gap: 12px; align-items: flex-start">
-<span aria-hidden="true" style="flex: 0 0 32px; height: 32px; border-radius: 50%; background: #1F1C19; color: #F4EFE6; display: grid; place-items: center; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 20px">e</span>
+<div class="bot es-enter">
+<span class="avatar" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 32 32" fill="none"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg></span>
 <div>
-<p style="margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; color: rgba(31,28,25,0.62)">ESTATESMART AI</p>
-<p style="margin: 0; font-size: 15px; line-height: 1.6">{{m.text}}</p>
+<p class="who">estateSmartAI</p>
+<p class="text">{{m.text}}</p>
 </div>
+</div>
+</sc-if>
+
+<sc-if value="{{m.isTyping}}" hint-placeholder-val="{{ false }}">
+<div class="bot es-enter">
+<span class="avatar" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 32 32" fill="none"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg></span>
+<span class="typing" role="status" aria-label="Trợ lý đang soạn câu trả lời"><i></i><i></i><i></i></span>
 </div>
 </sc-if>
 
 <sc-if value="{{m.isUser}}" hint-placeholder-val="{{ false }}">
-<div style="display: flex; justify-content: flex-end">
-<p style="margin: 0; max-width: 82%; padding: 11px 16px; border-radius: 18px 18px 4px 18px; background: #1F1C19; color: #F4EFE6; font-size: 15px; line-height: 1.5">{{m.text}}</p>
+<div class="me es-enter">
+<button type="button" class="bubble" onClick="{{m.edit}}" aria-label="{{m.text}}. Bấm để sửa câu trả lời này">{{m.text}}<span class="edit" aria-hidden="true">Bấm để sửa</span></button>
 </div>
 </sc-if>
 
+<sc-if value="{{m.isUserPlain}}" hint-placeholder-val="{{ false }}">
+<div class="me es-enter"><p class="bubble" style="margin: 0">{{m.text}}</p></div>
+</sc-if>
+
 <sc-if value="{{m.isAgents}}" hint-placeholder-val="{{ false }}">
-<div style="margin-left: 44px; padding: 16px 20px; border-radius: 18px; background: #FBF8F2; border: 1px solid rgba(31,28,25,0.1)">
-<p style="margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">SUPERVISOR · 5 AI AGENT</p>
-<ol style="list-style: none; margin: 0; padding: 0">
+<div class="agents es-enter">
+<p class="who">Supervisor điều phối 5 AI Agent</p>
+<ol>
 <sc-for list="{{agents}}" as="a" hint-placeholder-count="5">
-<li style="display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid rgba(31,28,25,0.08); font-size: 14px">
-<span style="flex: 0 0 24px; font-size: 12px; font-weight: 600; color: rgba(31,28,25,0.6)">{{a.num}}</span>
-<span style="flex: 1 1 auto; {{a.labelStyle}}">{{a.label}}</span>
-<span style="font-size: 11px; font-weight: 600; letter-spacing: 0.12em; {{a.statusStyle}}">{{a.status}}</span>
+<li class="agent {{a.cls}}">
+<span class="ico {{a.cls}}" aria-hidden="true"><sc-if value="{{a.done}}" hint-placeholder-val="{{ false }}"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m2.5 6.2 2.3 2.3 4.7-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if></span>
+<span>{{a.label}}</span>
+<span class="st">{{a.status}}</span>
 </li>
 </sc-for>
 </ol>
@@ -80,20 +241,20 @@ input::placeholder{color:rgba(31,28,25,.5)}
 </sc-if>
 
 <sc-if value="{{m.isResults}}" hint-placeholder-val="{{ false }}">
-<div style="margin-left: 44px; display: flex; flex-direction: column; gap: 10px">
+<div class="results stagger">
 <sc-for list="{{results}}" as="r" hint-placeholder-count="3">
-<article style="{{r.cardStyle}}">
-<img src="{{r.src}}" alt="{{r.alt}}" style="flex: 0 0 96px; width: 96px; height: 96px; object-fit: cover; border-radius: 12px; display: block">
-<div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px">
-<div style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline">
-<h3 style="margin: 0; font-size: 15px; font-weight: 500; line-height: 1.3">{{r.rank}}. {{r.name}}</h3>
-<span style="font-size: 14px; font-weight: 600; white-space: nowrap">{{r.score}}/100</span>
+<article class="card {{r.cls}}">
+<img src="{{r.src}}" alt="{{r.alt}}">
+<div class="card-body">
+<div class="card-top">
+<h3><button type="button" class="card-hit" onClick="{{r.showMap}}" aria-pressed="{{r.pressed}}">{{r.rank}}. {{r.name}}</button></h3>
+<span class="score">{{r.score}}/100</span>
 </div>
-<p style="margin: 0; font-size: 13px; color: rgba(31,28,25,0.68)">{{r.meta}} · {{r.price}}</p>
-<div style="display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: auto; padding-top: 6px">
-<button type="button" onClick="{{r.showMap}}" style="min-height: 32px; padding: 0; border: 0; background: none; color: #1F1C19; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-decoration: underline">BẢN ĐỒ</button>
-<button type="button" onClick="{{r.show3d}}" style="min-height: 32px; padding: 0; border: 0; background: none; color: #1F1C19; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-decoration: underline">XEM 3D</button>
-<a href="Listing.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #A3562B">HỒ SƠ &#8594;</a>
+<p class="meta">{{r.meta}}, {{r.price}}</p>
+<div class="card-actions">
+<button type="button" class="tlink" onClick="{{r.showMap}}">Bản đồ</button>
+<button type="button" class="tlink" onClick="{{r.show3d}}">Xem 3D</button>
+<a class="tlink accent" href="Listing.dc.html">Hồ sơ<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
 </article>
@@ -104,34 +265,31 @@ input::placeholder{color:rgba(31,28,25,.5)}
 </sc-for>
 
 <sc-if value="{{showOptions}}" hint-placeholder-val="{{ true }}">
-<div style="margin-left: 44px; display: flex; flex-wrap: wrap; gap: 8px">
+<div class="chips stagger" key="{{optionsKey}}">
 <sc-for list="{{options}}" as="o" hint-placeholder-count="4">
-<button type="button" onClick="{{o.pick}}" style="min-height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(31,28,25,0.3); background: #FBF8F2; color: #1F1C19; font-size: 14px">{{o.label}}</button>
+<button type="button" class="chip" onClick="{{o.pick}}"><kbd aria-hidden="true">{{o.n}}</kbd>{{o.label}}</button>
 </sc-for>
 </div>
 </sc-if>
 </div>
 </div>
 
-<div style="padding: 14px 28px 18px; border-top: 1px solid rgba(31,28,25,0.12)">
-<div style="display: flex; gap: 10px; align-items: center">
-<label for="chat-input" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Nhập yêu cầu</label>
-<input id="chat-input" type="text" value="{{draft}}" onChange="{{onDraft}}" onKeyDown="{{onKey}}" placeholder="{{placeholder}}" style="flex: 1 1 auto; min-width: 0; height: 50px; padding: 0 20px; border-radius: 999px; border: 1px solid rgba(31,28,25,0.24); background: #FBF8F2; color: #1F1C19; font-size: 15px; outline-color: #A3562B">
-<button type="button" onClick="{{send}}" aria-label="Gửi" style="flex: 0 0 50px; height: 50px; border-radius: 50%; border: 0; background: #1F1C19; color: #F4EFE6; display: grid; place-items: center">
-<svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</button>
+<div class="composer">
+<div class="composer-row">
+<label for="chat-input" class="sr-only">Nhập câu trả lời</label>
+<input id="chat-input" type="text" autoComplete="off" value="{{draft}}" onChange="{{onDraft}}" onKeyDown="{{onKey}}" placeholder="{{placeholder}}">
+<button type="button" class="send {{sendCls}}" onClick="{{send}}" aria-label="Gửi câu trả lời"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
 </div>
-<p style="margin: 8px 0 0; font-size: 12px; color: rgba(31,28,25,0.62)">Bản mô phỏng MVP. Kết quả và số liệu là dữ liệu minh hoạ.</p>
+<p class="hint">{{composerHint}}</p>
 </div>
 </main>
 
-<!-- VISUAL (RIGHT) -->
+<!-- BẢN ĐỒ / 3D (PHẢI) -->
 <section class="viz" aria-label="Bản đồ và mô hình 3D">
-<div style="position: relative; flex: 1 1 auto; border-radius: 24px; overflow: hidden; background: #E8E1D3">
+<div class="stage">
 
-<!-- MAP -->
 <sc-if value="{{isMap}}" hint-placeholder-val="{{ true }}">
-<div style="position: absolute; inset: 0">
+<div class="view">
 <svg viewBox="0 0 1000 800" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block">
 <rect width="1000" height="800" fill="#ECE5D7"></rect>
 <path d="M0 640 C 200 580, 380 720, 560 655 S 860 575, 1000 615 L1000 800 L0 800 Z" fill="#CFD8D3"></path>
@@ -152,86 +310,80 @@ input::placeholder{color:rgba(31,28,25,.5)}
 </svg>
 
 <sc-if value="{{analyzing}}" hint-placeholder-val="{{ false }}">
-<span class="pulse" style="position: absolute; left: 50%; top: 42%; width: 360px; height: 360px; border-radius: 50%; border: 2px solid #A3562B"></span>
+<span class="pulse" aria-hidden="true"></span>
 </sc-if>
 
 <sc-for list="{{competitors}}" as="c" hint-placeholder-count="10">
-<span title="Cơ sở cùng ngành" style="position: absolute; left: {{c.x}}; top: {{c.y}}; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: #FBF8F2; border: 2px solid #6B625A"></span>
+<span class="comp-dot" title="Cơ sở cùng ngành" style="left: {{c.x}}; top: {{c.y}}"></span>
 </sc-for>
 
 <sc-if value="{{hasResults}}" hint-placeholder-val="{{ false }}">
-<span style="position: absolute; left: {{selPin.x}}; top: {{selPin.y}}; width: 260px; height: 260px; transform: translate(-50%, -50%); border-radius: 50%; border: 1.5px dashed rgba(163,86,43,0.8); background: rgba(163,86,43,0.08)"></span>
+<span class="ring" key="{{selCode}}" aria-hidden="true" style="left: {{selPin.x}}; top: {{selPin.y}}"></span>
 </sc-if>
 
 <sc-for list="{{pins}}" as="p" hint-placeholder-count="3">
-<button type="button" onClick="{{p.pick}}" aria-label="{{p.label}}" aria-pressed="{{p.pressed}}" style="{{p.style}}">{{p.rank}}</button>
+<button type="button" class="pin {{p.cls}}" onClick="{{p.pick}}" aria-label="{{p.label}}" aria-pressed="{{p.pressed}}" style="left: {{p.x}}; top: {{p.y}}; animation-delay: {{p.delay}}">{{p.rank}}</button>
 </sc-for>
 
-<div style="position: absolute; left: 20px; top: 20px; padding: 12px 16px; border-radius: 14px; background: rgba(251,248,242,0.94)">
-<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">KHU VỰC</p>
-<p style="margin: 2px 0 0; font-size: 16px; font-weight: 500">{{areaLabel}}</p>
+<div class="float" style="left: 20px; top: 20px">
+<p class="label">Khu vực</p>
+<p class="val">{{areaLabel}}</p>
 </div>
 
-<div style="position: absolute; left: 20px; bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 14px; border-radius: 12px; background: rgba(251,248,242,0.94); font-size: 12px">
-<span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border-radius: 50%; background: #1F1C19"></span>Mặt bằng đề xuất</span>
-<span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 50%; background: #FBF8F2; border: 2px solid #6B625A"></span>Cơ sở cùng ngành</span>
-<span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border-radius: 50%; border: 1.5px dashed #A3562B"></span>Bán kính 500 m</span>
+<div class="float legend">
+<span><span style="width: 12px; height: 12px; border-radius: 50%; background: #1F1C19"></span>Mặt bằng đề xuất</span>
+<span><span style="width: 10px; height: 10px; border-radius: 50%; background: #FBF8F2; border: 2px solid #6B625A"></span>Cơ sở cùng ngành</span>
+<span><span style="width: 12px; height: 12px; border-radius: 50%; border: 1.5px dashed #A3562B"></span>Bán kính 500 m</span>
 </div>
 
 <sc-if value="{{noResults}}" hint-placeholder-val="{{ true }}">
-<div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(86%, 380px); padding: 22px 24px; border-radius: 18px; background: rgba(251,248,242,0.96); text-align: center">
-<p style="margin: 0; font-size: 16px; font-weight: 500">{{mapHint}}</p>
-<p style="margin: 8px 0 0; font-size: 13px; line-height: 1.55; color: rgba(31,28,25,0.68)">Các mặt bằng phù hợp và cơ sở cùng ngành sẽ hiển thị tại đây.</p>
+<div class="empty">
+<p style="font-weight: 500">{{mapHint}}</p>
+<p class="sub">Mặt bằng phù hợp và cơ sở cùng ngành sẽ hiện ở đây.</p>
 </div>
 </sc-if>
 </div>
 </sc-if>
 
-<!-- 3D -->
 <sc-if value="{{is3d}}" hint-placeholder-val="{{ false }}">
-<div onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerLeave="{{dragEnd}}" style="position: absolute; inset: 0; background: #E9E3D7; perspective: 1500px; cursor: grab; touch-action: none">
-<div style="position: absolute; left: 50%; top: 62%; width: 0; height: 0; transform-style: preserve-3d; transform: rotateX(-24deg) rotateY({{rot}}deg)">
+<div class="view scene {{dragCls}}" onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerLeave="{{dragEnd}}" onPointerCancel="{{dragEnd}}">
+<div class="model" style="transform: rotateX(-24deg) rotateY({{rot}}deg)">
 <sc-for list="{{faces}}" as="f" hint-placeholder-count="12">
 <div style="{{f.style}}"></div>
 </sc-for>
 </div>
-<div style="position: absolute; left: 20px; top: 20px; padding: 12px 16px; border-radius: 14px; background: rgba(251,248,242,0.94)">
-<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: rgba(31,28,25,0.62)">MÔ HÌNH KHỐI · {{sel.code}}</p>
-<p style="margin: 2px 0 0; font-size: 16px; font-weight: 500">{{sel.name}}</p>
-<p style="margin: 2px 0 0; font-size: 13px; color: rgba(31,28,25,0.68)">{{sel.massing}}</p>
+<div class="float" style="left: 20px; top: 20px">
+<p class="label">Mô hình khối {{sel.code}}</p>
+<p class="val">{{sel.name}}</p>
+<p class="label">{{sel.massing}}</p>
 </div>
-<div style="position: absolute; left: 20px; bottom: 20px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 999px; background: rgba(251,248,242,0.94)">
-<button type="button" onClick="{{rotLeft}}" aria-label="Xoay trái" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(31,28,25,0.24); background: none; color: #1F1C19; display: grid; place-items: center">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</button>
-<label for="rot-range" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Góc xoay</label>
+<div class="float rot">
+<button type="button" class="rbtn" onClick="{{rotLeft}}" aria-label="Xoay trái 45 độ"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<label for="rot-range" class="sr-only">Góc xoay</label>
 <input id="rot-range" type="range" min="0" max="359" value="{{rotVal}}" onChange="{{onRot}}" style="width: 140px; accent-color: #A3562B">
-<button type="button" onClick="{{rotRight}}" aria-label="Xoay phải" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(31,28,25,0.24); background: none; color: #1F1C19; display: grid; place-items: center">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</button>
-<span style="font-size: 12px; color: rgba(31,28,25,0.68); padding-right: 6px">Kéo để xoay</span>
+<button type="button" class="rbtn" onClick="{{rotRight}}" aria-label="Xoay phải 45 độ"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+<span class="label" style="padding-right: 6px">Kéo để xoay</span>
 </div>
 <sc-if value="{{noResults}}" hint-placeholder-val="{{ true }}">
-<p style="position: absolute; right: 20px; top: 20px; margin: 0; padding: 8px 14px; border-radius: 999px; background: #1F1C19; color: #F4EFE6; font-size: 11px; font-weight: 600; letter-spacing: 0.14em">MÔ HÌNH MẪU</p>
+<p class="float chip-dark">Mô hình mẫu</p>
 </sc-if>
 </div>
 </sc-if>
 
-<!-- VIEW TABS -->
-<div role="group" aria-label="Chế độ hiển thị" style="position: absolute; right: 20px; top: 20px; display: flex; padding: 4px; border-radius: 999px; background: rgba(251,248,242,0.94); z-index: 2; {{tabsOffset}}">
-<button type="button" onClick="{{viewMap}}" aria-pressed="{{mapPressed}}" style="{{mapTabStyle}}">BẢN ĐỒ 2D</button>
-<button type="button" onClick="{{view3d}}" aria-pressed="{{d3Pressed}}" style="{{d3TabStyle}}">MÔ HÌNH 3D</button>
+<div class="vtabs" role="group" aria-label="Chế độ hiển thị">
+<span class="ind" aria-hidden="true" style="transform: translateX({{vtabX}})"></span>
+<button type="button" onClick="{{viewMap}}" aria-pressed="{{mapPressed}}">Bản đồ 2D</button>
+<button type="button" onClick="{{view3d}}" aria-pressed="{{d3Pressed}}">Mô hình 3D</button>
 </div>
 
-<!-- SELECTED CARD -->
 <sc-if value="{{hasResults}}" hint-placeholder-val="{{ false }}">
-<div style="position: absolute; right: 20px; bottom: 20px; width: min(340px, calc(100% - 40px)); display: flex; gap: 12px; padding: 12px; border-radius: 18px; background: #FBF8F2; box-shadow: 0 16px 36px rgba(31,28,25,0.16); z-index: 2">
-<img src="{{sel.src}}" alt="{{sel.alt}}" style="flex: 0 0 88px; width: 88px; height: 88px; border-radius: 12px; object-fit: cover; display: block">
-<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
-<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.16em; color: rgba(31,28,25,0.62)">#{{sel.rank}} · {{sel.score}}/100 ĐIỂM</p>
-<p style="margin: 0; font-size: 15px; font-weight: 500; line-height: 1.3">{{sel.name}}</p>
-<p style="margin: 0; font-size: 13px; color: rgba(31,28,25,0.68)">{{sel.price}} · {{sel.size}}</p>
-<a href="Listing.dc.html" style="margin-top: auto; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #A3562B">XEM HỒ SƠ &#8594;</a>
+<div class="sel" key="{{selCode}}">
+<img src="{{sel.src}}" alt="{{sel.alt}}">
+<div class="sel-body">
+<p class="meta">Hạng {{sel.rank}}, {{sel.score}}/100 điểm</p>
+<p style="margin: 0; font-size: 16px; font-weight: 500; line-height: 1.3">{{sel.name}}</p>
+<p class="meta">{{sel.price}}, {{sel.size}}</p>
+<a class="tlink accent" href="Listing.dc.html" style="margin-top: auto">Xem hồ sơ<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
 </sc-if>
@@ -239,24 +391,44 @@ input::placeholder{color:rgba(31,28,25,.5)}
 </div>
 </section>
 
+<sc-if value="{{undoable}}" hint-placeholder-val="{{ false }}">
+<div class="toast" role="status">Đã bắt đầu phiên mới.<button type="button" onClick="{{undo}}">Hoàn tác</button></div>
+</sc-if>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', rot: 35 };
+    this.state = { answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', rot: 35, typing: false, dragging: false, undo: null, extra: [] };
     this.thread = null;
     this.timer = null;
+    this.typeTimer = null;
+    this.undoTimer = null;
     this.drag = null;
+    this.onGlobalKey = (e) => {
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (/^[1-9]$/.test(e.key) && this.state.phase === 'ask' && !this.state.typing) {
+        const opts = this.questions()[Math.min(this.state.answers.length, 4)].options;
+        const o = opts[Number(e.key) - 1];
+        if (o) { e.preventDefault(); this.answer(o); }
+      }
+    };
+  }
+  componentDidMount() {
+    window.addEventListener('keydown', this.onGlobalKey);
   }
   componentDidUpdate(prevProps, prevState) {
-    if (this.thread && prevState && (prevState.answers !== this.state.answers || prevState.phase !== this.state.phase || prevState.agentDone !== this.state.agentDone)) {
+    if (this.thread && prevState && (prevState.answers !== this.state.answers || prevState.phase !== this.state.phase || prevState.agentDone !== this.state.agentDone || prevState.typing !== this.state.typing || prevState.extra !== this.state.extra)) {
       this.thread.scrollTop = this.thread.scrollHeight;
     }
   }
   componentWillUnmount() {
-    if (this.timer) clearInterval(this.timer);
+    window.removeEventListener('keydown', this.onGlobalKey);
+    [this.timer, this.typeTimer, this.undoTimer].forEach((t) => { if (t) { clearInterval(t); clearTimeout(t); } });
   }
   questions() {
     return [
@@ -269,9 +441,9 @@ class Component extends DCLogic {
   }
   listings() {
     return [
-      { code: 'MB-01', rank: 1, score: 88, name: 'Biệt thự sân vườn, Thảo Điền', meta: 'TP. Thủ Đức · 320 m²', size: '320 m²', price: '85 triệu/tháng', x: 62, y: 38, src: '/_blob/88da756d7bdf21acce5e115ce122899b', alt: 'Biệt thự hai tầng tường trắng, sân lát đá', massing: 'Hai tầng · sảnh kính và sân vườn' },
-      { code: 'MB-02', rank: 2, score: 81, name: 'Nhà một tầng có sân, Bình Thạnh', meta: 'Bình Thạnh · 180 m²', size: '180 m²', price: '52 triệu/tháng', x: 33, y: 57, src: '/_blob/75748c213ca7441c1ce9472de5d61042', alt: 'Nhà một tầng ốp gỗ có sân cỏ', massing: 'Một tầng · ốp gỗ, sân trước' },
-      { code: 'MB-03', rank: 3, score: 76, name: 'Căn góc hai mặt tiền, Phú Nhuận', meta: 'Phú Nhuận · 240 m²', size: '240 m²', price: '68 triệu/tháng', x: 47, y: 22, src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', alt: 'Công trình hai tầng có sân đỗ xe', massing: 'Hai tầng · căn góc hai mặt đường' }
+      { code: 'MB-01', rank: 1, score: 88, name: 'Biệt thự sân vườn, Thảo Điền', meta: 'TP. Thủ Đức, 320 m²', size: '320 m²', price: '85 triệu/tháng', x: 62, y: 38, src: '/_blob/88da756d7bdf21acce5e115ce122899b', alt: 'Biệt thự hai tầng tường trắng, sân lát đá', massing: 'Hai tầng, sảnh kính và sân vườn' },
+      { code: 'MB-02', rank: 2, score: 81, name: 'Nhà một tầng có sân, Bình Thạnh', meta: 'Bình Thạnh, 180 m²', size: '180 m²', price: '52 triệu/tháng', x: 33, y: 57, src: '/_blob/75748c213ca7441c1ce9472de5d61042', alt: 'Nhà một tầng ốp gỗ có sân cỏ', massing: 'Một tầng, ốp gỗ, sân trước' },
+      { code: 'MB-03', rank: 3, score: 76, name: 'Căn góc hai mặt tiền, Phú Nhuận', meta: 'Phú Nhuận, 240 m²', size: '240 m²', price: '68 triệu/tháng', x: 47, y: 22, src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', alt: 'Công trình hai tầng có sân đỗ xe', massing: 'Hai tầng, căn góc hai mặt đường' }
     ];
   }
   box(cx, cz, w, h, d, base, opts) {
@@ -315,15 +487,13 @@ class Component extends DCLogic {
       this.box(0, 0, 230, 86, 230, white, { y: 86, front: win, side: win }),
       this.box(0, 0, 240, 6, 240, '#E4DED2', { y: 172 }));
   }
-  answer(text) {
-    const t = String(text || '').trim();
-    if (!t || this.state.phase !== 'ask') return;
-    const answers = [...this.state.answers, t];
-    if (answers.length < this.questions().length) {
-      this.setState({ answers, draft: '' });
-      return;
-    }
-    this.setState({ answers, draft: '', phase: 'analyzing', agentDone: 0, view: 'map' });
+  stopTimers() {
+    if (this.timer) clearInterval(this.timer);
+    if (this.typeTimer) clearTimeout(this.typeTimer);
+    this.timer = null;
+    this.typeTimer = null;
+  }
+  runAgents() {
     if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => {
       const next = this.state.agentDone + 1;
@@ -336,102 +506,140 @@ class Component extends DCLogic {
       }
     }, 800);
   }
+  answer(text) {
+    let t = String(text || '').trim();
+    if (t && this.state.phase === 'results') {
+      this.setState({ draft: '', extra: [...this.state.extra, { isUserPlain: true, text: t }, { isBot: true, text: 'Bản mô phỏng chưa hỗ trợ hỏi đáp tự do. Anh/chị có thể bấm vào từng mặt bằng để xem bản đồ, mô hình 3D hoặc hồ sơ chi tiết.' }] });
+      return;
+    }
+    if (!t || this.state.phase !== 'ask' || this.state.typing) return;
+    const qs = this.questions();
+    const opts = qs[this.state.answers.length].options;
+    if (/^[1-9]$/.test(t) && opts[Number(t) - 1]) t = opts[Number(t) - 1];
+    const answers = [...this.state.answers, t];
+    if (answers.length < qs.length) {
+      this.setState({ answers, draft: '', typing: true });
+      if (this.typeTimer) clearTimeout(this.typeTimer);
+      this.typeTimer = setTimeout(() => { this.typeTimer = null; this.setState({ typing: false }); }, 420);
+      return;
+    }
+    this.setState({ answers, draft: '', phase: 'analyzing', agentDone: 0, view: 'map' });
+    this.runAgents();
+  }
+  editFrom(i) {
+    this.stopTimers();
+    const prev = this.state.answers[i];
+    this.setState({ answers: this.state.answers.slice(0, i), phase: 'ask', agentDone: 0, typing: false, extra: [], draft: prev || '' }, () => {
+      const el = document.getElementById('chat-input');
+      if (el) { el.focus(); el.select(); }
+    });
+  }
   renderVals() {
     const qs = this.questions();
-    const { answers, phase, agentDone, view, rot } = this.state;
+    const { answers, phase, agentDone, view, rot, typing } = this.state;
     const ls = this.listings();
     const sel = ls[this.state.sel];
     const hasResults = phase === 'results';
     const step = Math.min(answers.length, qs.length - 1);
     const messages = [];
     qs.forEach((q, i) => {
-      if (i <= answers.length) messages.push({ isBot: true, text: q.q });
-      if (answers[i] !== undefined) messages.push({ isUser: true, text: answers[i] });
+      if (i < answers.length) messages.push({ isBot: true, text: q.q });
+      else if (i === answers.length && phase === 'ask') messages.push(typing ? { isTyping: true } : { isBot: true, text: q.q });
+      if (answers[i] !== undefined) messages.push({ isUser: true, text: answers[i], edit: () => this.editFrom(i) });
     });
     if (phase !== 'ask') {
-      messages.push({ isBot: true, text: 'Đã ghi nhận đầy đủ tiêu chí. Hệ thống đang điều phối 5 AI Agent để sàng lọc và thẩm định các mặt bằng phù hợp.' });
+      messages.push({ isBot: true, text: 'Đã ghi nhận đủ tiêu chí. Supervisor đang điều phối 5 AI Agent để sàng lọc và thẩm định các mặt bằng phù hợp.' });
       messages.push({ isAgents: true });
     }
     if (hasResults) {
-      messages.push({ isBot: true, text: 'Đây là ba mặt bằng phù hợp nhất, xếp theo điểm phù hợp. Chọn một mặt bằng để xem vị trí trên bản đồ hoặc mô hình khối 3D.' });
+      messages.push({ isBot: true, text: 'Đây là ba mặt bằng phù hợp nhất, xếp theo điểm. Chọn một mặt bằng để xem vị trí trên bản đồ hoặc mô hình khối 3D.' });
       messages.push({ isResults: true });
+      this.state.extra.forEach((x) => messages.push(x));
     }
-    const agentNames = ['Phân tích nhu cầu', 'Sàng lọc mặt bằng', 'Đánh giá vị trí', 'Phân tích cạnh tranh', 'Chấm điểm & khuyến nghị'];
+    const agentNames = ['Phân tích nhu cầu', 'Sàng lọc mặt bằng', 'Đánh giá vị trí', 'Phân tích cạnh tranh', 'Chấm điểm và khuyến nghị'];
     const agents = agentNames.map((label, i) => {
       const done = i < agentDone;
       const running = i === agentDone && phase === 'analyzing';
-      return {
-        num: String(i + 1).padStart(2, '0'), label,
-        status: done ? 'HOÀN TẤT' : running ? 'ĐANG XỬ LÝ…' : 'CHỜ',
-        labelStyle: done || running ? 'color: #1F1C19' : 'color: rgba(31,28,25,0.5)',
-        statusStyle: done ? 'color: #1F1C19' : running ? 'color: #A3562B' : 'color: rgba(31,28,25,0.5)'
-      };
+      return { label, done, cls: done ? 'done' : running ? 'run' : 'wait', status: done ? 'Xong' : running ? 'Đang xử lý' : 'Chờ' };
     });
     const results = ls.map((l, i) => ({
       ...l,
-      cardStyle: 'display: flex; gap: 12px; padding: 10px; border-radius: 16px; background: #FBF8F2; border: 1px solid ' + (i === this.state.sel ? '#1F1C19' : 'rgba(31,28,25,0.1)'),
+      cls: i === this.state.sel ? 'is-on' : '',
+      pressed: i === this.state.sel ? 'true' : 'false',
       showMap: () => this.setState({ sel: i, view: 'map' }),
       show3d: () => this.setState({ sel: i, view: '3d' })
     }));
-    const pins = hasResults ? ls.map((l, i) => {
-      const on = i === this.state.sel;
-      return {
-        rank: l.rank,
-        label: 'Mặt bằng ' + l.rank + ': ' + l.name,
-        pressed: on ? 'true' : 'false',
-        pick: () => this.setState({ sel: i }),
-        style: 'position: absolute; left: ' + l.x + '%; top: ' + l.y + '%; transform: translate(-50%, -50%); width: ' + (on ? 48 : 38) + 'px; height: ' + (on ? 48 : 38) + 'px; border-radius: 50%; '
-          + (on ? 'background: #A3562B; color: #FBF8F2; border: 3px solid #FBF8F2; box-shadow: 0 8px 20px rgba(31,28,25,0.3)' : 'background: #1F1C19; color: #FBF8F2; border: 2px solid #FBF8F2')
-          + '; font-size: 15px; font-weight: 600; display: grid; place-items: center; padding: 0; z-index: 1'
-      };
-    }) : [];
+    const pins = hasResults ? ls.map((l, i) => ({
+      rank: l.rank, x: l.x + '%', y: l.y + '%', delay: (i * 110) + 'ms',
+      cls: i === this.state.sel ? 'is-on' : '',
+      label: 'Mặt bằng ' + l.rank + ': ' + l.name,
+      pressed: i === this.state.sel ? 'true' : 'false',
+      pick: () => this.setState({ sel: i })
+    })) : [];
     const compPts = [[58,30],[68,44],[66,33],[55,42],[29,52],[38,62],[27,61],[36,50],[44,18],[51,27],[42,26],[75,60],[20,30],[82,22]];
     const competitors = phase === 'ask' ? [] : compPts.slice(0, phase === 'analyzing' ? 3 + agentDone * 2 : compPts.length).map((p) => ({ x: p[0] + '%', y: p[1] + '%' }));
-    const tab = (on) => 'min-height: 36px; padding: 0 14px; border-radius: 999px; border: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; '
-      + (on ? 'background: #1F1C19; color: #FBF8F2' : 'background: none; color: #1F1C19');
     const doneSteps = hasResults ? 5 : answers.length;
+    const curStep = Math.min(doneSteps + 1, 5);
+    const asking = phase === 'ask';
     return {
       messages, agents, results, pins, competitors,
-      showOptions: phase === 'ask',
-      options: phase === 'ask' ? qs[step].options.map((label) => ({ label, pick: () => this.answer(label) })) : [],
-      placeholder: phase === 'ask' ? qs[step].ph : 'Hỏi thêm về các mặt bằng được đề xuất',
-      stepLabel: String(Math.min(doneSteps + 1, 5)).padStart(2, '0'),
+      showOptions: asking && !typing,
+      optionsKey: 'q' + answers.length,
+      options: asking ? qs[step].options.map((label, i) => ({ label, n: i + 1, pick: () => this.answer(label) })) : [],
+      placeholder: asking ? qs[step].ph : 'Hỏi thêm về các mặt bằng được đề xuất',
+      composerHint: asking ? 'Gõ câu trả lời, hoặc bấm số 1–' + qs[step].options.length + ' để chọn nhanh. Bấm vào câu đã trả lời để sửa.' : 'Bản mô phỏng MVP. Kết quả và số liệu là dữ liệu minh hoạ.',
+      stepText: hasResults ? 'Đã hoàn tất 5 bước' : phase === 'analyzing' ? 'Đang thẩm định' : 'Bước ' + curStep + ' trên 5',
+      stepBars: [0, 1, 2, 3, 4].map((i) => ({ cls: i < doneSteps ? 'on' : '' })),
       headerTitle: hasResults ? 'Đề xuất Top 3 mặt bằng' : phase === 'analyzing' ? 'Đang thẩm định' : 'Xác định nhu cầu',
-      progress: (doneSteps / 5 * 100) + '%',
       isMap: view === 'map',
       is3d: view === '3d',
       analyzing: phase === 'analyzing',
       hasResults,
       noResults: !hasResults,
-      mapHint: phase === 'analyzing' ? 'Đang quét khu vực…' : 'Hoàn tất 5 bước để xem kết quả',
+      mapHint: phase === 'analyzing' ? 'Đang quét khu vực' : 'Trả lời 5 câu hỏi để xem kết quả',
       areaLabel: answers[1] || 'TP. Hồ Chí Minh',
-      sel: { ...sel, selName: sel.name },
+      sel,
+      selCode: sel.code,
       selPin: { x: sel.x + '%', y: sel.y + '%' },
       faces: this.model(this.state.sel),
       rot: rot,
       rotVal: Math.round(((rot % 360) + 360) % 360),
+      dragCls: this.state.dragging ? 'is-dragging' : '',
       onRot: (e) => this.setState({ rot: Number(e.target.value) }),
-      rotLeft: () => this.setState({ rot: this.state.rot - 30 }),
-      rotRight: () => this.setState({ rot: this.state.rot + 30 }),
-      dragStart: (e) => { this.drag = { x: e.clientX, rot: this.state.rot }; },
+      rotLeft: () => this.setState({ rot: this.state.rot - 45 }),
+      rotRight: () => this.setState({ rot: this.state.rot + 45 }),
+      dragStart: (e) => { if (e.target.closest && e.target.closest('button, input')) return; this.drag = { x: e.clientX, rot: this.state.rot }; this.setState({ dragging: true }); },
       dragMove: (e) => { if (this.drag) this.setState({ rot: this.drag.rot + (e.clientX - this.drag.x) * 0.5 }); },
-      dragEnd: () => { this.drag = null; },
+      dragEnd: () => { if (this.drag) { this.drag = null; this.setState({ dragging: false }); } },
       viewMap: () => this.setState({ view: 'map' }),
       view3d: () => this.setState({ view: '3d' }),
+      vtabX: view === '3d' ? '100%' : '0%',
       mapPressed: view === 'map' ? 'true' : 'false',
       d3Pressed: view === '3d' ? 'true' : 'false',
-      mapTabStyle: tab(view === 'map'),
-      d3TabStyle: tab(view === '3d'),
-      tabsOffset: view === '3d' && !hasResults ? 'top: 64px' : '',
       draft: this.state.draft,
+      sendCls: this.state.draft.trim() ? '' : 'is-empty',
       onDraft: (e) => this.setState({ draft: e.target.value }),
       onKey: (e) => { if (e.key === 'Enter') this.answer(this.state.draft); },
-      send: () => this.answer(this.state.draft),
+      send: () => {
+        if (!this.state.draft.trim()) { const el = document.getElementById('chat-input'); if (el) el.focus(); return; }
+        this.answer(this.state.draft);
+      },
       threadRef: (el) => { this.thread = el; },
+      undoable: !!this.state.undo,
+      undo: () => {
+        const u = this.state.undo;
+        if (!u) return;
+        if (this.undoTimer) clearTimeout(this.undoTimer);
+        this.setState({ ...u, undo: null });
+        if (u.phase === 'analyzing') this.runAgents();
+      },
       reset: () => {
-        if (this.timer) clearInterval(this.timer);
-        this.timer = null;
-        this.setState({ answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map' });
+        const s = this.state;
+        this.stopTimers();
+        const snap = s.answers.length ? { answers: s.answers, phase: s.phase, agentDone: s.agentDone, sel: s.sel, view: s.view, extra: s.extra } : null;
+        this.setState({ answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', typing: false, undo: snap, extra: [] });
+        if (this.undoTimer) clearTimeout(this.undoTimer);
+        if (snap) this.undoTimer = setTimeout(() => this.setState({ undo: null }), 6000);
       }
     };
   }
