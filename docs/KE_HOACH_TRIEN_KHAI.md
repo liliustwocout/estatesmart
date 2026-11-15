@@ -16,7 +16,7 @@ GitHub ──(1) GitHub Actions: build kiểm tra (CI)
       │
       └─(2) Webhook POST https://estatesmart.online/hooks/deploy  (ký HMAC bằng secret)
                         │
-VPS 103.28.35.137       ▼
+VPS 103.126.161.50       ▼
 ┌───────────────────────────────────────────────────────────┐
 │ Caddy (Docker, cổng 80/443, HTTPS tự động Let's Encrypt)  │
 │   ├─ /hooks/*  → webhook (systemd, cổng 9000, user deploy)│
@@ -47,13 +47,13 @@ VPS 103.28.35.137       ▼
 
 ---
 
-## 3. Bước 1 — VPS (đã thuê: Cloud Starter, 1 core, 2 GB RAM, 25 GB SSD)
+## 3. Bước 1 — VPS (2 GB RAM, 1–2 CPU, Ubuntu 24.04)
 
 | Việc | Cách làm | Ghi chú |
 |---|---|---|
 | **Đổi mật khẩu root ngay** | Panel nhà cung cấp hoặc `passwd` | Mật khẩu hiện tại đã xuất hiện trong ảnh chụp màn hình, coi như đã lộ |
 | **Cài lại hệ điều hành Ubuntu 24.04 (hoặc 22.04)** | Panel nhà cung cấp → Reinstall OS | Ubuntu 20.04 đã hết hỗ trợ chuẩn từ 05/2025; kho Docker chính thức không còn hỗ trợ 20.04 |
-| Đăng nhập bằng SSH key | Máy cá nhân: `ssh-keygen -t ed25519`, rồi `ssh-copy-id root@103.28.35.137` | |
+| Đăng nhập bằng SSH key | Máy cá nhân: `ssh-keygen -t ed25519`, rồi `ssh-copy-id root@103.126.161.50` | |
 | Tắt đăng nhập bằng mật khẩu | `/etc/ssh/sshd_config`: `PasswordAuthentication no`, `systemctl restart ssh` | Làm sau khi đã đăng nhập được bằng key |
 | Swap 2 GB | Script `setup-vps.sh` tự tạo | `npm ci` + build trên 2 GB RAM cần thêm swap |
 
@@ -65,8 +65,8 @@ Tại trang quản lý DNS của nhà đăng ký tên miền:
 
 | Loại | Tên | Giá trị | TTL |
 |---|---|---|---|
-| A | `@` | `103.28.35.137` | 300 |
-| A | `www` | `103.28.35.137` | 300 |
+| A | `@` | `103.126.161.50` | 300 |
+| A | `www` | `103.126.161.50` | 300 |
 
 Kiểm tra (đợi 5–30 phút):
 
@@ -74,7 +74,7 @@ Kiểm tra (đợi 5–30 phút):
 nslookup estatesmart.online
 ```
 
-Kết quả phải trả về `103.28.35.137`. **Phải xong bước này trước Bước 3**, vì Caddy chỉ xin được chứng chỉ HTTPS khi tên miền đã trỏ đúng về VPS và cổng 80/443 mở.
+Kết quả phải trả về `103.126.161.50`. **Phải xong bước này trước Bước 3**, vì Caddy chỉ xin được chứng chỉ HTTPS khi tên miền đã trỏ đúng về VPS và cổng 80/443 mở.
 
 ---
 
@@ -169,14 +169,14 @@ Nếu build lỗi, lệnh dừng trước khi thay container, **phiên bản cũ
 | Cần quay lại bản trước | `git -C /opt/estatesmart/app reset --hard <commit>` rồi `docker compose up -d --build` (lần push main kế tiếp sẽ ghi đè) |
 | Chứng chỉ HTTPS | Caddy tự gia hạn; dữ liệu chứng chỉ nằm trong volume `caddy_data` |
 | Đầy ổ đĩa | `deploy.sh` đã `docker image prune`; kiểm tra định kỳ `df -h` |
-| VPS hết hạn 14/12/2026 | Tự động gia hạn đang tắt, cần bật hoặc nhắc lịch gia hạn |
+| VPS hết hạn | Bật tự động gia hạn hoặc đặt lịch nhắc trước ngày hết hạn |
 
 ---
 
 ## 10. Checklist
 
 - [ ] Đổi mật khẩu root, cài lại Ubuntu 24.04, đăng nhập bằng SSH key
-- [ ] Bản ghi DNS A `@` và `www` → `103.28.35.137`, `nslookup` trả đúng IP
+- [ ] Bản ghi DNS A `@` và `www` → `103.126.161.50`, `nslookup` trả đúng IP
 - [ ] Push commit khởi tạo lên `liliustwocout/estatesmart`
 - [ ] Chạy `setup-vps.sh`, mở được `https://estatesmart.online`
 - [ ] Tạo GitHub Webhook, ping trả 200
