@@ -90,8 +90,29 @@ img{max-width:100%}
 
 /* Giới thiệu */
 .sec{padding-block:clamp(88px,11vw,180px)}
+/* Phần giới thiệu nền be: hero dính phía sau, mây trồi lên, ảnh lớn thu nhỏ vào ô trong câu (4 pose to pose, 6 slow in/out, 8 secondary action) */
+.intro{position:relative}
+.intro .hero{position:sticky;top:0;z-index:0}
+.about{position:relative;z-index:1;--ink:#1B1916;--ink-2:rgba(27,25,22,.72);--line-2:rgba(27,25,22,.3);--shadow:0 18px 40px -16px rgba(27,25,22,.35);--focus:#9E3B22;background:#EDE6D6;color:var(--ink)}
+.clouds{position:absolute;left:0;right:0;top:0;height:0;z-index:2;pointer-events:none}
+.cloud{position:absolute;left:0;bottom:-2px;width:100%;max-width:none;height:auto;display:block;will-change:transform}
+.cloud.c2{bottom:-34%;opacity:.95}
+.about-stage{position:relative;padding-block:clamp(88px,11vw,180px) 0}
 .statement{margin:0;max-width:1120px;font-size:clamp(28px,3.8vw,58px);font-weight:400;line-height:1.12;letter-spacing:-.025em;text-wrap:pretty}
-.statement img{display:inline-block;width:2.2em;height:1.05em;object-fit:cover;border-radius:12px;vertical-align:-.12em;margin-right:.18em}
+.slot{display:inline-block;width:2.2em;height:1.05em;border-radius:12px;overflow:hidden;vertical-align:-.12em;margin-right:.18em;background:rgba(27,25,22,.08)}
+.slot img{width:100%;height:100%;object-fit:cover;display:block}
+.about-box{display:none}
+.about-rest{padding-bottom:clamp(88px,11vw,180px)}
+.about.is-live .about-track{height:340svh}
+.about.is-live .about-stage{position:sticky;top:0;height:100svh;padding:0;display:flex;align-items:center;overflow:hidden}
+.about.is-live .about-stage .wrap{width:100%}
+.about.is-live .slot img{visibility:hidden}
+.about.is-live .statement .w{opacity:clamp(.16,calc(var(--wp,0) * (var(--n) + 6) - var(--i)),1)}
+.about.is-live .about-box{display:block;position:absolute;inset:0;z-index:3;pointer-events:none;clip-path:inset(24px round 24px);will-change:clip-path}
+.about-box-in{position:absolute;inset:0;transform-origin:50% 50%;will-change:transform}
+.about-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 600ms var(--ease-in-out)}
+.about-slide.is-active{opacity:1}
+.about-count{position:absolute;right:calc(var(--gutter) + 16px);bottom:40px;z-index:4;margin:0;padding:6px 12px;border-radius:999px;background:rgba(18,16,14,.6);color:#F7F3EC;font-size:14px;font-variant-numeric:tabular-nums}
 .about-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 64px;max-width:860px;margin-top:40px;padding-top:32px;border-top:1px solid var(--line-2)}
 .about-cols p{margin:0;max-width:44ch}
 .strip{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:clamp(56px,7vw,96px);height:clamp(240px,30vw,440px)}
@@ -246,6 +267,7 @@ img{max-width:100%}
 </div>
 
 <main id="noi-dung">
+<div class="intro">
 <!-- HERO -->
 <section class="hero">
 <img class="hero-img" src="/_blob/88da756d7bdf21acce5e115ce122899b" alt="Công trình hai tầng tường trắng, hàng cột thẳng đứng và sân lát đá lúc hoàng hôn">
@@ -261,9 +283,28 @@ img{max-width:100%}
 </section>
 
 <!-- GIỚI THIỆU -->
-<section id="gioi-thieu" class="sec wrap">
+<section id="gioi-thieu" class="about {{aboutCls}}" ref="{{aboutRef}}">
+<div class="clouds" aria-hidden="true">
+<img class="cloud c2" ref="{{cloud2Ref}}" src="/assets/images/cloud-2-full-beige.webp" alt="">
+<img class="cloud c1" ref="{{cloud1Ref}}" src="/assets/images/cloud-1-cropped-beige.webp" alt="">
+</div>
+<div class="about-track">
+<div class="about-stage" ref="{{stageRef}}">
+<div class="wrap">
 <h2 class="sr-only">Giới thiệu</h2>
-<p class="statement"><img src="/_blob/3517a4dd3d9a82c4b088e7f9bcd011df" alt="" loading="lazy"> estateSmartAI thẩm định mặt bằng như một chuyên viên phát triển mạng lưới: vị trí, khả năng tiếp cận, cạnh tranh và giá thuê, trước khi bạn ký hợp đồng.</p>
+<p class="statement" ref="{{stmtRef}}" style="--n: {{wordCount}}"><span class="slot" ref="{{slotRef}}"><img src="/_blob/3517a4dd3d9a82c4b088e7f9bcd011df" alt="" loading="lazy"></span> <sc-for list="{{words}}" as="w" hint-placeholder-count="20"><span class="w" style="--i: {{w.i}}">{{w.t}} </span></sc-for></p>
+</div>
+<div class="about-box" ref="{{boxRef}}" aria-hidden="true">
+<div class="about-box-in" ref="{{boxInRef}}">
+<sc-for list="{{aboutSlides}}" as="a" hint-placeholder-count="4">
+<img class="about-slide {{a.cls}}" src="{{a.src}}" alt="">
+</sc-for>
+</div>
+<p class="about-count" ref="{{countRef}}">01 / 04</p>
+</div>
+</div>
+</div>
+<div class="wrap about-rest">
 <div class="about-cols">
 <p>Dành cho chủ quán F&amp;B và cửa hàng bán lẻ nhỏ. Hệ thống tổng hợp tin cho thuê, dữ liệu giao thông, đối thủ trên GrabFood và ShopeeFood, rồi đề xuất ba mặt bằng đáng khảo sát nhất.</p>
 <p class="muted">Chuỗi lớn có bộ phận phát triển mặt bằng riêng. Doanh nghiệp nhỏ thường chỉ dựa vào tin rao và kinh nghiệm cá nhân. estateSmartAI thu hẹp khoảng cách đó.</p>
@@ -273,7 +314,9 @@ img{max-width:100%}
 <img src="/_blob/16bfb5cd9c78a2ff917437809efcd6ff" alt="Khu bếp và bàn dài bên cửa kính" loading="lazy">
 <img src="/_blob/c1d785e9fac6c74b8e90d82cae82af92" alt="Hiên nhà rộng mở ra khu vườn" loading="lazy">
 </div>
+</div>
 </section>
+</div>
 
 <!-- SO SÁNH -->
 <section class="sec wrap compare" style="padding-top: 0">
@@ -396,11 +439,27 @@ img{max-width:100%}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { chapter: 0, dir: 0, study: 0, menuOpen: false, scrolled: false };
+    this.state = { chapter: 0, dir: 0, study: 0, menuOpen: false, scrolled: false, aboutLive: false };
+    this.el = {};
+    this.refs_ = {};
+    this.ref = (k) => this.refs_[k] || (this.refs_[k] = (node) => { this.el[k] = node; });
+    this.cur = 0;
+    this.raf = 0;
+    this.slideIdx = -1;
+    this.tick = () => {
+      this.raf = 0;
+      const target = this.aboutTarget();
+      const d = target - this.cur;
+      this.cur = Math.abs(d) < 0.0005 ? target : this.cur + d * 0.14;
+      this.paintAbout(this.cur);
+      if (this.cur !== target) this.raf = requestAnimationFrame(this.tick);
+    };
+    this.kick = () => { if (!this.raf) this.raf = requestAnimationFrame(this.tick); };
     this.downX = null;
     this.onScroll = () => {
       const s = window.scrollY > 24;
       if (s !== this.state.scrolled) this.setState({ scrolled: s });
+      if (this.state.aboutLive) this.kick();
     };
     this.onKey = (e) => {
       if (e.key === 'Escape' && this.state.menuOpen) this.setState({ menuOpen: false });
@@ -409,15 +468,66 @@ class Component extends DCLogic {
   componentDidMount() {
     window.addEventListener('scroll', this.onScroll, { passive: true });
     window.addEventListener('keydown', this.onKey);
+    window.addEventListener('resize', this.kick);
     this.onScroll();
+    const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!still) this.setState({ aboutLive: true }, () => { this.cur = this.aboutTarget(); this.paintAbout(this.cur); });
   }
   componentWillUnmount() {
     window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('keydown', this.onKey);
+    window.removeEventListener('resize', this.kick);
+    if (this.raf) cancelAnimationFrame(this.raf);
     document.body.style.overflow = '';
   }
   componentDidUpdate(prevProps, prevState) {
     if (prevState.menuOpen !== this.state.menuOpen) document.body.style.overflow = this.state.menuOpen ? 'hidden' : '';
+  }
+  // Tiến độ cuộn qua phần giới thiệu, 0 → 1
+  aboutTarget() {
+    const sec = this.el.about;
+    if (!sec) return 0;
+    const track = sec.querySelector('.about-track');
+    const r = track.getBoundingClientRect();
+    const len = r.height - window.innerHeight;
+    return len > 0 ? Math.min(1, Math.max(0, -r.top / len)) : 0;
+  }
+  paintAbout(p) {
+    const { about, stage, slot, box, boxIn, stmt, cloud1, cloud2, count } = this.el;
+    if (!about || !stage || !slot || !box || !boxIn) return;
+    const clamp = (v) => Math.min(1, Math.max(0, v));
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const lerp = (a, b, t) => a + (b - a) * t;
+    // Mây trồi lên khi phần be trượt qua hero
+    const top = about.getBoundingClientRect().top;
+    const enter = clamp(1 - top / window.innerHeight);
+    if (cloud1) cloud1.style.transform = 'translate3d(0,' + ((1 - enter) * 12).toFixed(2) + 'vh,0)';
+    if (cloud2) cloud2.style.transform = 'translate3d(0,' + ((1 - enter) * 34 - 10).toFixed(2) + 'vh,0)';
+    // Khung ảnh: giữ lớn, đổi ảnh, rồi thu nhỏ vào ô trong câu
+    const st = stage.getBoundingClientRect();
+    const sl = slot.getBoundingClientRect();
+    const W = st.width, H = st.height;
+    const g = W < 640 ? 12 : 24;
+    const s = ease(clamp((p - 0.5) / 0.3));
+    const R = {
+      x: lerp(g, sl.left - st.left, s), y: lerp(g, sl.top - st.top, s),
+      w: lerp(W - 2 * g, sl.width, s), h: lerp(H - 2 * g, sl.height, s)
+    };
+    const rad = lerp(24, 12, s);
+    box.style.clipPath = 'inset(' + R.y.toFixed(1) + 'px ' + (W - R.x - R.w).toFixed(1) + 'px ' + (H - R.y - R.h).toFixed(1) + 'px ' + R.x.toFixed(1) + 'px round ' + rad.toFixed(1) + 'px)';
+    const k = Math.max(R.w / W, R.h / H);
+    boxIn.style.transform = 'translate3d(' + (R.x + R.w / 2 - W / 2).toFixed(1) + 'px,' + (R.y + R.h / 2 - H / 2).toFixed(1) + 'px,0) scale(' + k.toFixed(4) + ')';
+    const slides = boxIn.children;
+    const n = slides.length;
+    const idx = Math.min(n - 1, Math.floor(clamp((p - 0.04) / 0.42) * n));
+    if (idx !== this.slideIdx) {
+      for (let i = 0; i < n; i++) slides[i].classList.toggle('is-active', i === idx);
+      this.slideIdx = idx;
+      if (count) count.textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(n).padStart(2, '0');
+    }
+    if (count) count.style.opacity = String(1 - clamp((p - 0.48) / 0.06));
+    // Chữ sáng dần theo cuộn
+    if (stmt) stmt.style.setProperty('--wp', clamp((p - 0.6) / 0.34).toFixed(3));
   }
   go(i, dir) {
     this.setState({ chapter: i, dir });
@@ -444,7 +554,20 @@ class Component extends DCLogic {
     const si = this.state.study;
     const open = this.state.menuOpen;
     const pad = (i) => String(i + 1).padStart(2, '0');
+    const statement = 'estateSmartAI thẩm định mặt bằng như một chuyên viên phát triển mạng lưới: vị trí, khả năng tiếp cận, cạnh tranh và giá thuê, trước khi bạn ký hợp đồng.';
+    const words = statement.split(' ').map((t, i) => ({ t, i }));
     return {
+      aboutCls: this.state.aboutLive ? 'is-live' : '',
+      aboutRef: this.ref('about'), stageRef: this.ref('stage'), slotRef: this.ref('slot'), boxRef: this.ref('box'),
+      boxInRef: this.ref('boxIn'), stmtRef: this.ref('stmt'), cloud1Ref: this.ref('cloud1'), cloud2Ref: this.ref('cloud2'), countRef: this.ref('count'),
+      words,
+      wordCount: words.length,
+      aboutSlides: [
+        '/_blob/75748c213ca7441c1ce9472de5d61042',
+        '/_blob/526999b39fdb3b7b29959da9e7531ab5',
+        '/_blob/16bfb5cd9c78a2ff917437809efcd6ff',
+        '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df'
+      ].map((src, i) => ({ src, cls: i === 0 ? 'is-active' : '' })),
       overlay: this.props.overlay ?? 0.2,
       topbarCls: (this.state.scrolled && !open) ? 'is-solid' : '',
       menuCls: open ? 'is-open' : '',

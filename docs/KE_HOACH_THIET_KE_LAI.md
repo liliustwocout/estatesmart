@@ -126,3 +126,13 @@ Câu hỏi tự do sau khi có kết quả nhận được câu trả lời trun
 | 20 | Frequency of use | Đổi hồ sơ ở mọi vị trí cuộn; phím ↑/↓ để duyệt các không gian |
 
 Thông báo sau khi gửi nói rõ đây là bản mô phỏng, yêu cầu chưa tới chủ nhà (trước đây trang hứa “chủ nhà sẽ liên hệ trong 24 giờ”).
+
+## 8. Hiệu ứng cuộn ở phần giới thiệu (tham khảo stillform.homes)
+
+- **Hero dính phía sau:** hero và phần giới thiệu nằm chung khối `.intro`; hero `position: sticky`, phần giới thiệu nền be `#EDE6D6` trượt lên che dần.
+- **Mây:** `public/assets/images/cloud-*-beige.webp` đặt ở mép trên phần be; hai lớp mây trồi lên với tốc độ khác nhau khi phần be đi vào màn hình.
+- **Ảnh lớn thu nhỏ vào câu:** phần giới thiệu dài 340svh, sân khấu dính 100svh. Theo tiến độ cuộn `p` (làm mượt bằng nội suy mỗi khung hình):
+  - `p` 0–0,46: khung ảnh gần kín màn hình, lần lượt đổi 4 ảnh (có bộ đếm 01/04).
+  - `p` 0,5–0,8: khung thu nhỏ khít vào ô ảnh trong câu, dùng `clip-path: inset()` cho khung và `transform` cho ảnh bên trong.
+  - `p` 0,6–0,94: từng chữ trong câu sáng dần.
+- **Không có chuyển động / tắt JS:** câu, ô ảnh và mây hiển thị tĩnh như bình thường; hiệu ứng chỉ bật khi trình duyệt không yêu cầu giảm chuyển động.
