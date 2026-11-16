@@ -87,7 +87,7 @@ Luật cứng: chỉ animate `transform`, `opacity` (và `clip-path` cho menu); 
 3. Trợ lý & Hồ sơ: làm lại theo chế độ *Operate* (mục 7).
 4. Kiểm tra: 1440, 1024, 768, 390px; hero + nút chính nằm trong màn hình 1280×800; phím Tab đi hết; reduced motion; không cuộn ngang; console sạch.
 
-> Lưu ý: nếu tải lại `design/*.dc.html` từ canvas Claude Design, các thay đổi ở đây sẽ bị ghi đè. Hãy đưa bản mới lên canvas trước.
+> `design/*.dc.html` trong repo là nguồn duy nhất; không tải đè từ canvas hay file bên ngoài.
 
 ## 7. Trang Trợ lý AI và Hồ sơ mặt bằng
 

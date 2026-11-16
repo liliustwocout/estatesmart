@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Cài đặt máy chủ lần đầu cho estateSmartAI. Chạy bằng root trên Ubuntu 22.04 hoặc 24.04:
 #   curl -fsSL https://raw.githubusercontent.com/liliustwocout/estatesmart/main/deploy/setup-vps.sh -o setup-vps.sh
-#   sudo REPO_URL=https://github.com/liliustwocout/estatesmart.git DOMAIN=estatesmart.online bash setup-vps.sh
+#   sudo REPO_URL=https://github.com/liliustwocout/estatesmart.git DOMAIN=estatesmart.site bash setup-vps.sh
 set -euo pipefail
 
 REPO_URL=${REPO_URL:-https://github.com/liliustwocout/estatesmart.git}
-DOMAIN=${DOMAIN:-estatesmart.online}
+DOMAIN=${DOMAIN:-estatesmart.site}
 BASE=/opt/estatesmart
 APP=$BASE/app
 

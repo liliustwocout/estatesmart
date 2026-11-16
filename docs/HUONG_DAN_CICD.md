@@ -7,10 +7,10 @@ Thông tin hiện tại của dự án:
 | Mục | Giá trị |
 |---|---|
 | Repo | `https://github.com/liliustwocout/estatesmart` (nhánh `main`) |
-| Tên miền | `estatesmart.online` (và `www.estatesmart.online` chuyển hướng về tên chính) |
-| VPS | `103.126.161.50`, Ubuntu 24.04, 2 GB RAM |
+| Tên miền | `estatesmart.site` (và `www.estatesmart.site` chuyển hướng về tên chính) |
+| VPS | `103.28.35.137`, Ubuntu 24.04, 2 GB RAM |
 | Thư mục trên VPS | `/opt/estatesmart` |
-| Kiểm tra phiên bản đang chạy | `https://estatesmart.online/version.txt` |
+| Kiểm tra phiên bản đang chạy | `https://estatesmart.site/version.txt` |
 
 > Khi đổi VPS, tên miền hoặc repo, thay các giá trị trên ở mọi lệnh bên dưới.
 
@@ -42,11 +42,11 @@ Lập trình viên  ──git push──▶  GitHub (nhánh main)
              ┌────────────────────┴─────────────────────┐
              ▼                                          ▼
    (CI) GitHub Actions                      (CD) GitHub Webhook
-   npm ci + npm run build                   POST https://estatesmart.online/hooks/deploy
+   npm ci + npm run build                   POST https://estatesmart.site/hooks/deploy
    docker build thử                          kèm chữ ký HMAC-SHA256 bằng secret
    → báo xanh/đỏ trên GitHub                          │
                                                        ▼
-                         VPS 103.126.161.50 ─────────────────────────────────────────────┐
+                         VPS 103.28.35.137 ─────────────────────────────────────────────┐
                          │ Caddy (container, cổng 80/443, tự cấp HTTPS Let's Encrypt)    │
                          │   ├─ /hooks/*  → webhook (dịch vụ systemd, cổng 9000)         │
                          │   │               kiểm tra chữ ký + nhánh main                │
@@ -82,7 +82,7 @@ Các file **chỉ có trên VPS**, không nằm trong repo:
 | File trên VPS | Nội dung |
 |---|---|
 | `/opt/estatesmart/webhook.env` | `WEBHOOK_SECRET=...` (quyền 600, chủ sở hữu `deploy`) |
-| `/opt/estatesmart/app/.env` | `DOMAIN=estatesmart.online` cho docker compose (đã có trong `.gitignore`) |
+| `/opt/estatesmart/app/.env` | `DOMAIN=estatesmart.site` cho docker compose (đã có trong `.gitignore`) |
 | `/opt/estatesmart/deploy.log` | Nhật ký mỗi lần deploy |
 | `/opt/estatesmart/deploy.lock` | Khoá để không chạy 2 lần deploy cùng lúc |
 | `/etc/systemd/system/estatesmart-webhook.service` | Dịch vụ webhook |
@@ -92,7 +92,7 @@ Các file **chỉ có trên VPS**, không nằm trong repo:
 ## 3. Chuẩn bị
 
 - VPS Ubuntu **24.04** (hoặc 22.04), tối thiểu 1 CPU, 2 GB RAM, 20 GB ổ đĩa, có IPv4 công khai. Không dùng Ubuntu 20.04: đã hết hỗ trợ chuẩn và kho Docker chính thức không còn hỗ trợ.
-- Quyền quản lý DNS của tên miền `estatesmart.online`.
+- Quyền quản lý DNS của tên miền `estatesmart.site`.
 - Quyền **Admin** trên repo GitHub (để tạo webhook).
 - Máy cá nhân có `ssh` (Windows dùng Git Bash hoặc PowerShell đều được).
 
@@ -116,16 +116,16 @@ ssh-keygen -t ed25519 -C "estatesmart-vps"
 Chép public key lên VPS (nhập mật khẩu root một lần):
 
 ```bash
-ssh-copy-id root@103.126.161.50
+ssh-copy-id root@103.28.35.137
 ```
 
 > Windows không có `ssh-copy-id`: dùng
-> `type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@103.126.161.50 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"`
+> `type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh root@103.28.35.137 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"`
 
 Thử đăng nhập lại, lần này không được hỏi mật khẩu:
 
 ```bash
-ssh root@103.126.161.50
+ssh root@103.28.35.137
 ```
 
 ### 4.3 Tắt đăng nhập bằng mật khẩu
@@ -140,7 +140,7 @@ sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh
 sudo systemctl restart ssh
 ```
 
-Mở một cửa sổ terminal **mới** và thử `ssh root@103.126.161.50` trước khi đóng phiên đang mở.
+Mở một cửa sổ terminal **mới** và thử `ssh root@103.28.35.137` trước khi đóng phiên đang mở.
 
 ### 4.4 Cập nhật hệ thống
 
@@ -158,8 +158,8 @@ Vào trang quản lý DNS của nhà đăng ký tên miền, tạo hoặc sửa 
 
 | Loại | Tên (Host) | Giá trị | TTL |
 |---|---|---|---|
-| A | `@` | `103.126.161.50` | 300 |
-| A | `www` | `103.126.161.50` | 300 |
+| A | `@` | `103.28.35.137` | 300 |
+| A | `www` | `103.28.35.137` | 300 |
 
 - **Xoá** mọi bản ghi `A`/`AAAA`/`CNAME` cũ khác cho `@` và `www` (ví dụ bản ghi trỏ về trang đỗ tên miền của nhà đăng ký). Bản ghi `AAAA` sai làm Let's Encrypt cấp chứng chỉ thất bại.
 - Nếu dùng Cloudflare: để **DNS only** (đám mây xám) trong lúc cài đặt, để Caddy tự xin chứng chỉ.
@@ -167,14 +167,14 @@ Vào trang quản lý DNS của nhà đăng ký tên miền, tạo hoặc sửa 
 Kiểm tra (đợi 5–30 phút sau khi lưu):
 
 ```bash
-nslookup estatesmart.online
+nslookup estatesmart.site
 ```
 
 ```bash
-nslookup www.estatesmart.online
+nslookup www.estatesmart.site
 ```
 
-Cả hai phải trả về `103.126.161.50`. **Phải xong bước này trước Bước 3**, vì Caddy chỉ xin được chứng chỉ HTTPS khi tên miền đã trỏ đúng VPS và cổng 80/443 mở.
+Cả hai phải trả về `103.28.35.137`. **Phải xong bước này trước Bước 3**, vì Caddy chỉ xin được chứng chỉ HTTPS khi tên miền đã trỏ đúng VPS và cổng 80/443 mở.
 
 ---
 
@@ -195,7 +195,7 @@ less setup-vps.sh
 Chạy:
 
 ```bash
-sudo REPO_URL=https://github.com/liliustwocout/estatesmart.git DOMAIN=estatesmart.online bash setup-vps.sh
+sudo REPO_URL=https://github.com/liliustwocout/estatesmart.git DOMAIN=estatesmart.site bash setup-vps.sh
 ```
 
 Script làm lần lượt:
@@ -218,7 +218,7 @@ Cuối cùng script in ra:
 ```
 Hoàn tất. Secret cho GitHub Webhook (chỉ hiện ở đây, lưu vào GitHub rồi đóng cửa sổ):
 <chuỗi 64 ký tự hex>
-Payload URL: https://estatesmart.online/hooks/deploy
+Payload URL: https://estatesmart.site/hooks/deploy
 ```
 
 **Chép secret này để dùng ở Bước 4.** Nếu lỡ đóng cửa sổ, xem lại bằng:
@@ -248,9 +248,9 @@ tail -n 20 /opt/estatesmart/deploy.log
 ```
 
 Trên trình duyệt:
-- `https://estatesmart.online` hiện trang chủ, ổ khoá HTTPS hợp lệ.
-- `https://www.estatesmart.online` chuyển về `https://estatesmart.online`.
-- `https://estatesmart.online/version.txt` hiện mã commit 7 ký tự, trùng với commit mới nhất trên `main`.
+- `https://estatesmart.site` hiện trang chủ, ổ khoá HTTPS hợp lệ.
+- `https://www.estatesmart.site` chuyển về `https://estatesmart.site`.
+- `https://estatesmart.site/version.txt` hiện mã commit 7 ký tự, trùng với commit mới nhất trên `main`.
 
 > Chứng chỉ HTTPS có thể mất 10–60 giây ở lần đầu. Nếu báo lỗi chứng chỉ, xem `docker compose logs caddy` (mục 12).
 
@@ -262,7 +262,7 @@ Trên GitHub: repo `liliustwocout/estatesmart` → **Settings** → **Webhooks**
 
 | Trường | Giá trị |
 |---|---|
-| Payload URL | `https://estatesmart.online/hooks/deploy` |
+| Payload URL | `https://estatesmart.site/hooks/deploy` |
 | Content type | `application/json` (**bắt buộc**, `hooks.json` đọc `ref` từ JSON) |
 | Secret | secret đã chép ở Bước 3 |
 | SSL verification | **Enable SSL verification** |
@@ -310,7 +310,7 @@ Nếu build lỗi, lệnh dừng ở bước 3 trước khi thay container: **b�
 Thử request giả (mục 5):
 
 ```bash
-curl -i -X POST https://estatesmart.online/hooks/deploy
+curl -i -X POST https://estatesmart.site/hooks/deploy
 ```
 
 Theo dõi một lần deploy trực tiếp trên VPS:
@@ -320,6 +320,16 @@ tail -f /opt/estatesmart/deploy.log
 ```
 
 > **Không tạo commit rỗng** (`git commit --allow-empty`) chỉ để thử deploy. Dùng **Redeliver** trong Recent Deliveries hoặc chạy deploy thủ công (mục 11).
+
+> Bấm **Redeliver** thì GitHub gửi lại **nguyên chữ ký cũ**. Vì vậy chỉ redeliver được những push gửi đi *sau* lần đổi secret gần nhất. Push gửi trước lần đổi sẽ nhận `Hook rules were not satisfied.`. Khi đó, thử bằng một payload tự ký trên VPS:
+>
+> ```bash
+> S=$(sudo cut -d= -f2 /opt/estatesmart/webhook.env); B='{"ref":"refs/heads/main"}'
+> SIG=$(printf '%s' "$B" | openssl dgst -sha256 -hmac "$S" | sed 's/^.*= //')
+> curl -sS -X POST https://estatesmart.site/hooks/deploy -H 'Content-Type: application/json' -H "X-Hub-Signature-256: sha256=$SIG" -d "$B"
+> ```
+>
+> Kết quả đúng là `Đã nhận yêu cầu deploy`, sau đó `deploy.log` có thêm dòng `deploy xong`.
 
 ---
 
@@ -377,7 +387,7 @@ sudo systemctl restart estatesmart-webhook
 2. Sửa bản ghi DNS `A` của `@` và `www` sang IP mới ([Bước 2](#5-bước-2-trỏ-tên-miền-dns)), đợi `nslookup` trả IP mới.
 3. Chạy `setup-vps.sh` trên VPS mới ([Bước 3](#6-bước-3-cài-đặt-và-deploy-lần-đầu)). Script sinh **secret mới**.
 4. Cập nhật secret trên GitHub ([9.1](#91-đổi-secret-khi-nghi-bị-lộ-hoặc-định-kỳ), phần GitHub). Payload URL giữ nguyên vì dùng tên miền.
-5. Redeliver một push, kiểm tra `version.txt`.
+5. Gửi payload tự ký (xem ghi chú ở mục 8), vì push cũ mang chữ ký của secret cũ. Sau đó kiểm tra `version.txt`.
 6. Tắt VPS cũ sau khi chắc chắn VPS mới chạy ổn.
 7. Cập nhật IP trong tài liệu này và `docs/KE_HOACH_TRIEN_KHAI.md`.
 
@@ -392,11 +402,11 @@ cd /opt/estatesmart/app && sudo -u deploy docker compose up -d
 ```
 
 3. Sửa Payload URL của webhook trên GitHub thành `https://ten-mien-moi.com/hooks/deploy`.
-4. Đổi giá trị mặc định `estatesmart.online` trong `docker-compose.yml` và `deploy/setup-vps.sh` cho lần cài sau.
+4. Đổi giá trị mặc định `estatesmart.site` trong `docker-compose.yml` và `deploy/setup-vps.sh` cho lần cài sau.
 
-### 10.3 Chuyển sang repo khác (ví dụ repo chính thức của nhóm)
+### 10.3 Chuyển sang repo khác hoặc đổi repo sang private
 
-1. Đẩy code lên repo mới.
+1. Đẩy code lên repo mới (bỏ qua nếu chỉ đổi `liliustwocout/estatesmart` sang private).
 2. Trên VPS, đổi địa chỉ remote:
 
 ```bash
@@ -427,7 +437,7 @@ sudo -u deploy git -C /opt/estatesmart/app remote set-url origin git@github.com:
 
 | Việc | Lệnh (trên VPS) |
 |---|---|
-| Xem phiên bản đang chạy | `curl -s https://estatesmart.online/version.txt` |
+| Xem phiên bản đang chạy | `curl -s https://estatesmart.site/version.txt` |
 | Xem log deploy | `tail -n 50 /opt/estatesmart/deploy.log` |
 | Theo dõi deploy trực tiếp | `tail -f /opt/estatesmart/deploy.log` |
 | Deploy thủ công (không cần push) | `sudo -u deploy /opt/estatesmart/app/deploy/deploy.sh` |
@@ -465,7 +475,7 @@ sudo -u deploy env GIT_SHA=<mã-commit> docker compose up -d --build
 | Recent Deliveries báo **404** `Hook not found` | Payload URL sai `id` | URL phải là `/hooks/deploy`, khớp `"id": "deploy"` trong `hooks.json` |
 | Push lên `main` nhưng phản hồi `Hook rules were not satisfied.` | Sai secret, hoặc Content type là `x-www-form-urlencoded` | Kiểm tra secret (9.1), đổi Content type sang `application/json` |
 | Không có delivery nào sau khi push | Webhook không Active, hoặc chọn sai sự kiện | Settings → Webhooks: Active, *Just the push event* |
-| Recent Deliveries báo lỗi SSL / timeout | DNS chưa trỏ đúng, HTTPS chưa được cấp, VPS tắt | `nslookup`, mở thử `https://estatesmart.online`, xem `docker compose logs caddy` |
+| Recent Deliveries báo lỗi SSL / timeout | DNS chưa trỏ đúng, HTTPS chưa được cấp, VPS tắt | `nslookup`, mở thử `https://estatesmart.site`, xem `docker compose logs caddy` |
 | Trình duyệt báo lỗi chứng chỉ | Caddy chưa xin được chứng chỉ: DNS sai, có bản ghi `AAAA` thừa, cổng 80 bị chặn, hoặc vượt giới hạn Let's Encrypt | Sửa DNS, `sudo ufw status` (80/443 mở), `docker compose logs caddy`, đợi rồi `docker compose restart caddy` |
 | Log dừng ở `npm ci`/`npm run build` kèm `Killed` | Hết RAM | Kiểm tra swap `swapon --show`; nếu vẫn thiếu, chuyển sang build image trên GitHub Actions rồi đẩy lên GHCR, VPS chỉ `docker pull` |
 | `permission denied ... docker.sock` | User `deploy` chưa nhận nhóm `docker` | `sudo usermod -aG docker deploy && sudo systemctl restart estatesmart-webhook` |
@@ -483,14 +493,14 @@ sudo -u deploy env GIT_SHA=<mã-commit> docker compose up -d --build
 - [ ] Đăng nhập được bằng SSH key, đã tắt đăng nhập mật khẩu
 
 **DNS**
-- [ ] Bản ghi `A` cho `@` và `www` → `103.126.161.50`, không còn `AAAA`/`A` cũ
+- [ ] Bản ghi `A` cho `@` và `www` → `103.28.35.137`, không còn `AAAA`/`A` cũ
 - [ ] `nslookup` trả đúng IP cho cả hai
 
 **Cài đặt**
 - [ ] Chạy `setup-vps.sh` thành công, đã lưu secret
 - [ ] `docker compose ps` có `web` và `caddy` đang chạy
 - [ ] `systemctl status estatesmart-webhook` là `active (running)`
-- [ ] `https://estatesmart.online` mở được, HTTPS hợp lệ, `www` chuyển về tên chính
+- [ ] `https://estatesmart.site` mở được, HTTPS hợp lệ, `www` chuyển về tên chính
 - [ ] `version.txt` đúng commit mới nhất
 
 **Webhook**

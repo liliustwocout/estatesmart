@@ -1,5 +1,5 @@
-// Chuyển các artboard Claude Design (design/*.dc.html) thành component React (src/generated/*.jsx).
-// Nguồn chuẩn là thư mục design/: sửa trên canvas, tải file về design/, rồi chạy `npm run sync`.
+// Chuyển các artboard trong design/*.dc.html thành component React (src/generated/*.jsx).
+// Nguồn chuẩn là thư mục design/ trong repo: sửa trực tiếp file ở đó rồi chạy `npm run sync`.
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { parseDocument } from 'htmlparser2';
 

@@ -15,9 +15,9 @@ npm install
 npm run dev
 ```
 
-## Cập nhật giao diện từ Claude Design
+## Sửa giao diện
 
-Giao diện gốc nằm trong `design/*.dc.html` (tải từ canvas Claude Design). `npm run sync` chuyển chúng thành component React trong `src/generated/` (tự sinh, không commit). `npm run dev` và `npm run build` tự chạy bước này.
+Giao diện gốc nằm trong `design/*.dc.html` và được sửa trực tiếp trong repo này; không còn đồng bộ với file hay canvas bên ngoài. `npm run sync` chuyển chúng thành component React trong `src/generated/` (tự sinh, không commit). `npm run dev` và `npm run build` tự chạy bước này.
 
 ## Triển khai
 

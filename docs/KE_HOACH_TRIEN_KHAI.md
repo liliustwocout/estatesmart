@@ -1,8 +1,8 @@
 # Kế hoạch triển khai CI/CD, hạ tầng và tên miền — estateSmartAI
 
-**Mục tiêu:** mỗi commit mới trên nhánh `main` → VPS tự lấy code mới, build lại → người dùng mở `https://estatesmart.online` thấy phiên bản mới.
+**Mục tiêu:** mỗi commit mới trên nhánh `main` → VPS tự lấy code mới, build lại → người dùng mở `https://estatesmart.site` thấy phiên bản mới.
 
-**Nguyên tắc:** làm và kiểm thử toàn bộ trên repo phụ `liliustwocout/estatesmart` trước. Chỉ khi chạy ổn mới trỏ VPS sang repo thật của nhóm.
+**Repo:** `liliustwocout/estatesmart` là repo chính thức, nguồn duy nhất để deploy. Thư mục dự án này độc lập, không phụ thuộc file nào bên ngoài repo.
 
 ---
 
@@ -14,9 +14,9 @@ Dev push lên main
       ▼
 GitHub ──(1) GitHub Actions: build kiểm tra (CI)
       │
-      └─(2) Webhook POST https://estatesmart.online/hooks/deploy  (ký HMAC bằng secret)
+      └─(2) Webhook POST https://estatesmart.site/hooks/deploy  (ký HMAC bằng secret)
                         │
-VPS 103.126.161.50       ▼
+VPS 103.28.35.137       ▼
 ┌───────────────────────────────────────────────────────────┐
 │ Caddy (Docker, cổng 80/443, HTTPS tự động Let's Encrypt)  │
 │   ├─ /hooks/*  → webhook (systemd, cổng 9000, user deploy)│
@@ -33,7 +33,7 @@ VPS 103.126.161.50       ▼
 | `webhook` | Nhận sự kiện push từ GitHub, kiểm tra chữ ký và nhánh, chạy deploy | `deploy/hooks.json`, `deploy/deploy.sh` |
 | CI | Build thử mỗi PR và mỗi lần push main | `.github/workflows/ci.yml` |
 | Cài đặt VPS | Docker, swap, user `deploy`, tường lửa, dịch vụ webhook | `deploy/setup-vps.sh` |
-| Kiểm tra phiên bản | Mã commit đang chạy | `https://estatesmart.online/version.txt` |
+| Kiểm tra phiên bản | Mã commit đang chạy | `https://estatesmart.site/version.txt` |
 
 ---
 
@@ -53,28 +53,28 @@ VPS 103.126.161.50       ▼
 |---|---|---|
 | **Đổi mật khẩu root ngay** | Panel nhà cung cấp hoặc `passwd` | Mật khẩu hiện tại đã xuất hiện trong ảnh chụp màn hình, coi như đã lộ |
 | **Cài lại hệ điều hành Ubuntu 24.04 (hoặc 22.04)** | Panel nhà cung cấp → Reinstall OS | Ubuntu 20.04 đã hết hỗ trợ chuẩn từ 05/2025; kho Docker chính thức không còn hỗ trợ 20.04 |
-| Đăng nhập bằng SSH key | Máy cá nhân: `ssh-keygen -t ed25519`, rồi `ssh-copy-id root@103.126.161.50` | |
+| Đăng nhập bằng SSH key | Máy cá nhân: `ssh-keygen -t ed25519`, rồi `ssh-copy-id root@103.28.35.137` | |
 | Tắt đăng nhập bằng mật khẩu | `/etc/ssh/sshd_config`: `PasswordAuthentication no`, `systemctl restart ssh` | Làm sau khi đã đăng nhập được bằng key |
 | Swap 2 GB | Script `setup-vps.sh` tự tạo | `npm ci` + build trên 2 GB RAM cần thêm swap |
 
 ---
 
-## 4. Bước 2 — Gắn tên miền `estatesmart.online`
+## 4. Bước 2 — Gắn tên miền `estatesmart.site`
 
 Tại trang quản lý DNS của nhà đăng ký tên miền:
 
 | Loại | Tên | Giá trị | TTL |
 |---|---|---|---|
-| A | `@` | `103.126.161.50` | 300 |
-| A | `www` | `103.126.161.50` | 300 |
+| A | `@` | `103.28.35.137` | 300 |
+| A | `www` | `103.28.35.137` | 300 |
 
 Kiểm tra (đợi 5–30 phút):
 
 ```bash
-nslookup estatesmart.online
+nslookup estatesmart.site
 ```
 
-Kết quả phải trả về `103.126.161.50`. **Phải xong bước này trước Bước 3**, vì Caddy chỉ xin được chứng chỉ HTTPS khi tên miền đã trỏ đúng về VPS và cổng 80/443 mở.
+Kết quả phải trả về `103.28.35.137`. **Phải xong bước này trước Bước 3**, vì Caddy chỉ xin được chứng chỉ HTTPS khi tên miền đã trỏ đúng về VPS và cổng 80/443 mở.
 
 ---
 
@@ -87,7 +87,7 @@ curl -fsSL https://raw.githubusercontent.com/liliustwocout/estatesmart/main/depl
 ```
 
 ```bash
-sudo REPO_URL=https://github.com/liliustwocout/estatesmart.git DOMAIN=estatesmart.online bash setup-vps.sh
+sudo REPO_URL=https://github.com/liliustwocout/estatesmart.git DOMAIN=estatesmart.site bash setup-vps.sh
 ```
 
 Script sẽ:
@@ -104,7 +104,7 @@ Kiểm tra:
 docker compose -f /opt/estatesmart/app/docker-compose.yml ps
 ```
 
-Mở `https://estatesmart.online` thấy landing page, `https://estatesmart.online/version.txt` thấy mã commit.
+Mở `https://estatesmart.site` thấy landing page, `https://estatesmart.site/version.txt` thấy mã commit.
 
 ---
 
@@ -114,7 +114,7 @@ GitHub repo → **Settings → Webhooks → Add webhook**:
 
 | Trường | Giá trị |
 |---|---|
-| Payload URL | `https://estatesmart.online/hooks/deploy` |
+| Payload URL | `https://estatesmart.site/hooks/deploy` |
 | Content type | `application/json` |
 | Secret | secret do `setup-vps.sh` in ra |
 | SSL verification | Enable |
@@ -142,21 +142,14 @@ Nếu build lỗi, lệnh dừng trước khi thay container, **phiên bản cũ
 | 2 | Một commit thật lên `main` | Trong 1–3 phút trang hiển thị nội dung mới | `version.txt` đổi sang mã commit mới; `tail -f /opt/estatesmart/deploy.log` |
 | 3 | Redeliver một push cũ | Deploy chạy lại, không cần commit mới | Log có thêm một dòng "deploy xong" |
 | 4 | Push nhánh `test/*` | Không deploy, chỉ chạy CI | `version.txt` không đổi |
-| 5 | Request giả không có chữ ký | Bị từ chối | `curl -X POST https://estatesmart.online/hooks/deploy` trả "Hook rules were not satisfied" |
+| 5 | Request giả không có chữ ký | Bị từ chối | `curl -X POST https://estatesmart.site/hooks/deploy` trả "Hook rules were not satisfied" |
 | 6 | Commit làm build lỗi (thử trên nhánh, không merge) | CI báo đỏ; nếu lỡ vào main, trang vẫn chạy bản cũ | GitHub Actions, `deploy.log` |
 
 ---
 
-## 8. Chuyển sang repo thật của nhóm
+## 8. Repo private (nếu sau này chuyển repo sang private)
 
-1. Đẩy code lên repo thật (một commit hoặc một PR).
-2. Trên VPS:
-   ```bash
-   sudo -u deploy git -C /opt/estatesmart/app remote set-url origin <URL repo thật>
-   ```
-3. Repo thật là **private**: tạo deploy key chỉ đọc (`ssh-keygen` cho user `deploy`, thêm public key vào repo → Settings → Deploy keys), đổi URL sang dạng SSH.
-4. Tạo webhook trên repo thật với cùng secret; xoá webhook ở repo phụ.
-5. Redeliver một lần để xác nhận.
+Repo hiện clone qua HTTPS nên phải để public. Nếu đổi sang private: tạo deploy key chỉ đọc cho user `deploy`, thêm vào repo → Settings → Deploy keys, rồi đổi remote trên VPS sang `git@github.com:liliustwocout/estatesmart.git`. Chi tiết ở `docs/HUONG_DAN_CICD.md` mục 10.3.
 
 ---
 
@@ -176,10 +169,9 @@ Nếu build lỗi, lệnh dừng trước khi thay container, **phiên bản cũ
 ## 10. Checklist
 
 - [ ] Đổi mật khẩu root, cài lại Ubuntu 24.04, đăng nhập bằng SSH key
-- [ ] Bản ghi DNS A `@` và `www` → `103.126.161.50`, `nslookup` trả đúng IP
+- [ ] Bản ghi DNS A `@` và `www` → `103.28.35.137`, `nslookup` trả đúng IP
 - [ ] Push commit khởi tạo lên `liliustwocout/estatesmart`
-- [ ] Chạy `setup-vps.sh`, mở được `https://estatesmart.online`
+- [ ] Chạy `setup-vps.sh`, mở được `https://estatesmart.site`
 - [ ] Tạo GitHub Webhook, ping trả 200
 - [ ] Redeliver → deploy chạy lại, `version.txt` đúng
 - [ ] Commit thật đầu tiên → trang cập nhật trong 1–3 phút
-- [ ] Chuyển sang repo thật của nhóm
