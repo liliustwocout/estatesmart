@@ -48,7 +48,22 @@ input::placeholder{color:rgba(31,28,25,.5)}
 .thread{flex:1 1 auto;overflow-y:auto;padding:24px 28px;scroll-behavior:smooth}
 .msgs{display:flex;flex-direction:column;gap:18px}
 .bot{display:flex;gap:12px;align-items:flex-start}
-.avatar{flex:0 0 32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center}
+.avatar{flex:0 0 34px;height:34px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center}
+/* Avatar robot: mắt nhìn theo con trỏ (--lx/--ly do JS đặt), chớp mắt, ăng-ten nhấp nháy; nghiêng đầu theo hướng nhìn */
+.botmark{overflow:visible}
+.bot-head{transform-origin:16px 26px;transform:rotate(calc(var(--lx,0) * 3deg));transition:transform var(--dur-3) var(--ease-spring)}
+.bot-look{transform:translate(calc(var(--lx,0) * 1.6px),calc(var(--ly,0) * 1.2px));transition:transform 160ms var(--ease-out)}
+.bot-eyes{transform-box:fill-box;transform-origin:center;animation:bot-blink 4.6s infinite}
+.bot-ant{transform-box:fill-box;transform-origin:center;animation:bot-ant 2.4s var(--ease-in-out) infinite}
+.avatar.is-thinking .botmark{animation:bot-bob 900ms var(--ease-in-out) infinite}
+.avatar.is-thinking .bot-ant{animation-duration:700ms}
+.avatar.is-thinking .bot-eyes{animation:bot-scan 1.4s var(--ease-in-out) infinite}
+@media (hover:hover){.bot:hover .botmark{animation:bot-hop 520ms var(--ease-spring)}}
+@keyframes bot-blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes bot-ant{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
+@keyframes bot-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes bot-hop{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-3px) rotate(-8deg)}70%{transform:translateY(0) rotate(4deg)}}
+@keyframes bot-scan{0%,100%{transform:translateX(-1.4px)}50%{transform:translateX(1.4px)}}
 .who{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .bot p.text{margin:0;font-size:16px}
 .me{display:flex;justify-content:flex-end}
@@ -167,7 +182,7 @@ input::placeholder{color:rgba(31,28,25,.5)}
 .sel img{flex:0 0 88px;width:88px;height:88px;border-radius:12px;object-fit:cover;display:block}
 .sel-body{min-width:0;display:flex;flex-direction:column;gap:2px}
 
-@media (prefers-reduced-motion:reduce){.pulse,.typing i,.ico.run{animation:none}}
+@media (prefers-reduced-motion:reduce){.pulse,.typing i,.ico.run,.botmark,.bot-eyes,.bot-ant,.avatar.is-thinking .botmark,.avatar.is-thinking .bot-eyes{animation:none}.bot-head,.bot-look{transition:none}}
 @media (max-width:900px){
 .shell{flex-direction:column;height:auto}
 .chatcol{flex:none;height:80vh;height:80dvh;min-height:560px;border-right:0;border-bottom:1px solid var(--line)}
@@ -200,7 +215,7 @@ input::placeholder{color:rgba(31,28,25,.5)}
 
 <sc-if value="{{m.isBot}}" hint-placeholder-val="{{ true }}">
 <div class="bot es-enter">
-<span class="avatar" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 32 32" fill="none"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg></span>
+<span class="avatar" aria-hidden="true"><svg class="botmark" width="26" height="26" viewBox="0 0 32 32" fill="none"><g class="bot-head"><path d="M16 7.5V4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><circle class="bot-ant" cx="16" cy="3.4" r="2" fill="#D39A6A"></circle><rect x="3" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="25.8" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="5.5" y="7.5" width="21" height="18" rx="6" fill="currentColor"></rect><rect x="8.5" y="11" width="15" height="9" rx="4.5" fill="#1F1C19"></rect><g class="bot-look"><g class="bot-eyes"><circle cx="12.9" cy="15.5" r="1.9" fill="#D39A6A"></circle><circle cx="19.1" cy="15.5" r="1.9" fill="#D39A6A"></circle></g></g><path d="M13.6 22.3q2.4 1.6 4.8 0" stroke="#1F1C19" stroke-width="1.5" stroke-linecap="round"></path></g></svg></span>
 <div>
 <p class="who">estateSmartAI</p>
 <p class="text">{{m.text}}</p>
@@ -210,7 +225,7 @@ input::placeholder{color:rgba(31,28,25,.5)}
 
 <sc-if value="{{m.isTyping}}" hint-placeholder-val="{{ false }}">
 <div class="bot es-enter">
-<span class="avatar" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 32 32" fill="none"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg></span>
+<span class="avatar is-thinking" aria-hidden="true"><svg class="botmark" width="26" height="26" viewBox="0 0 32 32" fill="none"><g class="bot-head"><path d="M16 7.5V4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><circle class="bot-ant" cx="16" cy="3.4" r="2" fill="#D39A6A"></circle><rect x="3" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="25.8" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="5.5" y="7.5" width="21" height="18" rx="6" fill="currentColor"></rect><rect x="8.5" y="11" width="15" height="9" rx="4.5" fill="#1F1C19"></rect><g class="bot-look"><g class="bot-eyes"><circle cx="12.9" cy="15.5" r="1.9" fill="#D39A6A"></circle><circle cx="19.1" cy="15.5" r="1.9" fill="#D39A6A"></circle></g></g><path d="M13.6 22.3q2.4 1.6 4.8 0" stroke="#1F1C19" stroke-width="1.5" stroke-linecap="round"></path></g></svg></span>
 <span class="typing" role="status" aria-label="Trợ lý đang soạn câu trả lời"><i></i><i></i><i></i></span>
 </div>
 </sc-if>
@@ -420,6 +435,25 @@ class Component extends DCLogic {
   }
   componentDidMount() {
     window.addEventListener('keydown', this.onGlobalKey);
+    // Mắt robot nhìn theo con trỏ / ngón tay: gom về một khung hình bằng requestAnimationFrame
+    this.onLook = (e) => {
+      this.lookAt = { x: e.clientX, y: e.clientY };
+      if (this.lookRaf) return;
+      this.lookRaf = requestAnimationFrame(() => {
+        this.lookRaf = null;
+        const { x, y } = this.lookAt;
+        document.querySelectorAll('.avatar').forEach((a) => {
+          const r = a.getBoundingClientRect();
+          const dx = x - (r.left + r.width / 2);
+          const dy = y - (r.top + r.height / 2);
+          const d = Math.hypot(dx, dy) || 1;
+          const k = Math.min(d / 160, 1);
+          a.style.setProperty('--lx', (dx / d * k).toFixed(3));
+          a.style.setProperty('--ly', (dy / d * k).toFixed(3));
+        });
+      });
+    };
+    window.addEventListener('pointermove', this.onLook, { passive: true });
   }
   componentDidUpdate(prevProps, prevState) {
     if (this.thread && prevState && (prevState.answers !== this.state.answers || prevState.phase !== this.state.phase || prevState.agentDone !== this.state.agentDone || prevState.typing !== this.state.typing || prevState.extra !== this.state.extra)) {
@@ -428,6 +462,8 @@ class Component extends DCLogic {
   }
   componentWillUnmount() {
     window.removeEventListener('keydown', this.onGlobalKey);
+    window.removeEventListener('pointermove', this.onLook);
+    if (this.lookRaf) cancelAnimationFrame(this.lookRaf);
     [this.timer, this.typeTimer, this.undoTimer].forEach((t) => { if (t) { clearInterval(t); clearTimeout(t); } });
   }
   questions() {
