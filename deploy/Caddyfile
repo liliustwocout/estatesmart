@@ -7,6 +7,13 @@
 		reverse_proxy host.docker.internal:9000
 	}
 
+	# API trợ lý AI; flush_interval -1 để chữ được đẩy tới trình duyệt ngay khi mô hình sinh ra
+	handle /api/* {
+		reverse_proxy api:8787 {
+			flush_interval -1
+		}
+	}
+
 	handle {
 		reverse_proxy web:80
 	}

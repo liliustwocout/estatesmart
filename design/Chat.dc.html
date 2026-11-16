@@ -65,7 +65,10 @@ input::placeholder{color:rgba(31,28,25,.5)}
 @keyframes bot-hop{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-3px) rotate(-8deg)}70%{transform:translateY(0) rotate(4deg)}}
 @keyframes bot-scan{0%,100%{transform:translateX(-1.4px)}50%{transform:translateX(1.4px)}}
 .who{margin:0 0 2px;font-size:13px;font-weight:600;color:var(--ink-2)}
-.bot p.text{margin:0;font-size:16px}
+.bot p.text{margin:0;font-size:16px;white-space:pre-line}
+/* Con trỏ nhấp nháy khi trợ lý đang viết dần câu trả lời */
+.bot p.text.is-streaming::after{content:'';display:inline-block;width:8px;height:1em;margin-left:2px;vertical-align:-2px;background:var(--accent);border-radius:1px;animation:caret 900ms steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
 .me{display:flex;justify-content:flex-end}
 .bubble{position:relative;max-width:82%;padding:11px 16px;border:0;border-radius:18px 18px 4px 18px;background:var(--ink);color:var(--paper);font-size:16px;line-height:1.45;text-align:left}
 .bubble .edit{display:block;max-height:0;opacity:0;overflow:hidden;font-size:12px;color:rgba(244,239,230,.7);transition:opacity var(--dur-1)}
@@ -215,10 +218,10 @@ input::placeholder{color:rgba(31,28,25,.5)}
 
 <sc-if value="{{m.isBot}}" hint-placeholder-val="{{ true }}">
 <div class="bot es-enter">
-<span class="avatar" aria-hidden="true"><svg class="botmark" width="26" height="26" viewBox="0 0 32 32" fill="none"><g class="bot-head"><path d="M16 7.5V4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><circle class="bot-ant" cx="16" cy="3.4" r="2" fill="#D39A6A"></circle><rect x="3" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="25.8" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="5.5" y="7.5" width="21" height="18" rx="6" fill="currentColor"></rect><rect x="8.5" y="11" width="15" height="9" rx="4.5" fill="#1F1C19"></rect><g class="bot-look"><g class="bot-eyes"><circle cx="12.9" cy="15.5" r="1.9" fill="#D39A6A"></circle><circle cx="19.1" cy="15.5" r="1.9" fill="#D39A6A"></circle></g></g><path d="M13.6 22.3q2.4 1.6 4.8 0" stroke="#1F1C19" stroke-width="1.5" stroke-linecap="round"></path></g></svg></span>
+<span class="avatar {{m.avatarCls}}" aria-hidden="true"><svg class="botmark" width="26" height="26" viewBox="0 0 32 32" fill="none"><g class="bot-head"><path d="M16 7.5V4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><circle class="bot-ant" cx="16" cy="3.4" r="2" fill="#D39A6A"></circle><rect x="3" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="25.8" y="13" width="3.2" height="7" rx="1.6" fill="currentColor"></rect><rect x="5.5" y="7.5" width="21" height="18" rx="6" fill="currentColor"></rect><rect x="8.5" y="11" width="15" height="9" rx="4.5" fill="#1F1C19"></rect><g class="bot-look"><g class="bot-eyes"><circle cx="12.9" cy="15.5" r="1.9" fill="#D39A6A"></circle><circle cx="19.1" cy="15.5" r="1.9" fill="#D39A6A"></circle></g></g><path d="M13.6 22.3q2.4 1.6 4.8 0" stroke="#1F1C19" stroke-width="1.5" stroke-linecap="round"></path></g></svg></span>
 <div>
 <p class="who">estateSmartAI</p>
-<p class="text">{{m.text}}</p>
+<p class="text {{m.textCls}}">{{m.text}}</p>
 </div>
 </div>
 </sc-if>
@@ -463,6 +466,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('keydown', this.onGlobalKey);
     window.removeEventListener('pointermove', this.onLook);
+    if (this.askCtrl) this.askCtrl.abort();
     if (this.lookRaf) cancelAnimationFrame(this.lookRaf);
     [this.timer, this.typeTimer, this.undoTimer].forEach((t) => { if (t) { clearInterval(t); clearTimeout(t); } });
   }
@@ -545,7 +549,7 @@ class Component extends DCLogic {
   answer(text) {
     let t = String(text || '').trim();
     if (t && this.state.phase === 'results') {
-      this.setState({ draft: '', extra: [...this.state.extra, { isUserPlain: true, text: t }, { isBot: true, text: 'Bản mô phỏng chưa hỗ trợ hỏi đáp tự do. Anh/chị có thể bấm vào từng mặt bằng để xem bản đồ, mô hình 3D hoặc hồ sơ chi tiết.' }] });
+      if (!this.state.asking) this.ask(t);
       return;
     }
     if (!t || this.state.phase !== 'ask' || this.state.typing) return;
@@ -562,8 +566,68 @@ class Component extends DCLogic {
     this.setState({ answers, draft: '', phase: 'analyzing', agentDone: 0, view: 'map' });
     this.runAgents();
   }
+  // Hỏi trợ lý AI (máy chủ /api/chat), nhận câu trả lời dần từng đoạn.
+  async ask(question) {
+    const prior = this.state.extra.filter((x) => x.role && x.text);
+    const history = prior.map((x) => ({ role: x.role, content: x.text }));
+    const a = this.state.answers;
+    const criteria = { model: a[0], area: a[1], budget: a[2], size: a[3], needs: a[4] };
+    const ctrl = new AbortController();
+    this.askCtrl = ctrl;
+    const bot = { isBot: true, role: 'assistant', text: '', streaming: true };
+    this.setState({ draft: '', asking: true, extra: [...this.state.extra, { isUserPlain: true, role: 'user', text: question }, bot] });
+    const update = (patch) => {
+      if (this.askCtrl !== ctrl) return;
+      Object.assign(bot, patch);
+      this.setState({ extra: [...this.state.extra] });
+    };
+    const fail = 'Hiện chưa kết nối được trợ lý AI. Anh/chị có thể bấm vào từng mặt bằng để xem bản đồ, mô hình 3D hoặc hồ sơ chi tiết.';
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ message: question, criteria, history }),
+        signal: ctrl.signal
+      });
+      if (!res.ok || !res.body) {
+        const err = await res.json().catch(() => ({}));
+        update({ text: err.error || fail, streaming: false });
+        return;
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let text = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n\n')) >= 0) {
+          const ev = buf.slice(0, i);
+          buf = buf.slice(i + 2);
+          if (!ev.startsWith('data:')) continue;
+          let d;
+          try { d = JSON.parse(ev.slice(5)); } catch (e) { continue; }
+          if (d.delta) { text += d.delta; update({ text: text.replace(/\*\*|^#+\s*/gm, '') }); }
+          if (d.error) update({ text: (text ? text + '\n\n' : '') + d.error });
+        }
+      }
+      update({ streaming: false, text: bot.text || fail });
+    } catch (e) {
+      if (e.name !== 'AbortError') update({ text: bot.text || fail, streaming: false });
+    } finally {
+      if (this.askCtrl === ctrl) { this.askCtrl = null; this.setState({ asking: false }); }
+    }
+  }
+  stopAsk() {
+    if (this.askCtrl) { this.askCtrl.abort(); this.askCtrl = null; }
+    this.state.extra.forEach((x) => { if (x.streaming) { x.streaming = false; if (!x.text) x.text = 'Đã dừng câu trả lời.'; } });
+    if (this.state.asking) this.setState({ asking: false });
+  }
   editFrom(i) {
     this.stopTimers();
+    this.stopAsk();
     const prev = this.state.answers[i];
     this.setState({ answers: this.state.answers.slice(0, i), phase: 'ask', agentDone: 0, typing: false, extra: [], draft: prev || '' }, () => {
       const el = document.getElementById('chat-input');
@@ -590,8 +654,12 @@ class Component extends DCLogic {
     if (hasResults) {
       messages.push({ isBot: true, text: 'Đây là ba mặt bằng phù hợp nhất, xếp theo điểm. Chọn một mặt bằng để xem vị trí trên bản đồ hoặc mô hình khối 3D.' });
       messages.push({ isResults: true });
-      this.state.extra.forEach((x) => messages.push(x));
+      this.state.extra.forEach((x) => {
+        if (x.streaming && !x.text) messages.push({ isTyping: true });
+        else messages.push({ ...x, avatarCls: x.streaming ? 'is-thinking' : '', textCls: x.streaming ? 'is-streaming' : '' });
+      });
     }
+    messages.forEach((m) => { if (m.isBot) { m.avatarCls = m.avatarCls || ''; m.textCls = m.textCls || ''; } });
     const agentNames = ['Phân tích nhu cầu', 'Sàng lọc mặt bằng', 'Đánh giá vị trí', 'Phân tích cạnh tranh', 'Chấm điểm và khuyến nghị'];
     const agents = agentNames.map((label, i) => {
       const done = i < agentDone;
@@ -622,8 +690,8 @@ class Component extends DCLogic {
       showOptions: asking && !typing,
       optionsKey: 'q' + answers.length,
       options: asking ? qs[step].options.map((label, i) => ({ label, n: i + 1, pick: () => this.answer(label) })) : [],
-      placeholder: asking ? qs[step].ph : 'Hỏi thêm về các mặt bằng được đề xuất',
-      composerHint: asking ? 'Gõ câu trả lời, hoặc bấm số 1–' + qs[step].options.length + ' để chọn nhanh. Bấm vào câu đã trả lời để sửa.' : 'Bản mô phỏng MVP. Kết quả và số liệu là dữ liệu minh hoạ.',
+      placeholder: asking ? qs[step].ph : (this.state.asking ? 'Trợ lý đang trả lời…' : 'Hỏi thêm về các mặt bằng được đề xuất'),
+      composerHint: asking ? 'Gõ câu trả lời, hoặc bấm số 1–' + qs[step].options.length + ' để chọn nhanh. Bấm vào câu đã trả lời để sửa.' : 'Hỏi trợ lý AI về ba mặt bằng. Câu hỏi được gửi tới mô hình AI bên thứ ba (DeepSeek), đừng nhập thông tin cá nhân. Số liệu là dữ liệu minh hoạ.',
       stepText: hasResults ? 'Đã hoàn tất 5 bước' : phase === 'analyzing' ? 'Đang thẩm định' : 'Bước ' + curStep + ' trên 5',
       stepBars: [0, 1, 2, 3, 4].map((i) => ({ cls: i < doneSteps ? 'on' : '' })),
       headerTitle: hasResults ? 'Đề xuất Top 3 mặt bằng' : phase === 'analyzing' ? 'Đang thẩm định' : 'Xác định nhu cầu',
@@ -672,6 +740,7 @@ class Component extends DCLogic {
       reset: () => {
         const s = this.state;
         this.stopTimers();
+        this.stopAsk();
         const snap = s.answers.length ? { answers: s.answers, phase: s.phase, agentDone: s.agentDone, sel: s.sel, view: s.view, extra: s.extra } : null;
         this.setState({ answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', typing: false, undo: snap, extra: [] });
         if (this.undoTimer) clearTimeout(this.undoTimer);

@@ -8,6 +8,16 @@ services:
     expose:
       - "80"
 
+  # Máy chủ API gọi mô hình ngôn ngữ. Khoá API nằm ngoài repo, trong /opt/estatesmart/api.env (xem api/.env.example).
+  api:
+    build: ./api
+    restart: unless-stopped
+    env_file:
+      - path: ${API_ENV_FILE:-/opt/estatesmart/api.env}
+        required: false
+    expose:
+      - "8787"
+
   caddy:
     image: caddy:2.8-alpine
     restart: unless-stopped
@@ -24,6 +34,7 @@ services:
       - caddy_config:/config
     depends_on:
       - web
+      - api
 
 volumes:
   caddy_data:

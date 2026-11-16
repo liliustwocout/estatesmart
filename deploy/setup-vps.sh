@@ -55,6 +55,10 @@ if [ ! -f $BASE/webhook.env ]; then
   chmod 600 $BASE/webhook.env
   chown deploy:deploy $BASE/webhook.env
 fi
+# File khoá API cho trợ lý AI (điền DEEPSEEK_API_KEY sau, xem docs/HUONG_DAN_CICD.md mục 14)
+if [ ! -f $BASE/api.env ]; then
+  install -m 600 -o deploy -g deploy /dev/null $BASE/api.env
+fi
 echo "DOMAIN=$DOMAIN" > $APP/.env
 chown deploy:deploy $APP/.env
 

@@ -31,6 +31,7 @@ Thông tin hiện tại của dự án:
 11. [Vận hành hằng ngày](#11-vận-hành-hằng-ngày)
 12. [Xử lý sự cố](#12-xử-lý-sự-cố)
 13. [Checklist](#13-checklist)
+14. [Bật trợ lý AI (DeepSeek)](#14-bật-trợ-lý-ai-deepseek)
 
 ---
 
@@ -70,8 +71,9 @@ Lập trình viên  ──git push──▶  GitHub (nhánh main)
 | `.github/workflows/ci.yml` | CI: cài Node 22, `npm ci`, `npm run build`, `docker build` thử |
 | `Dockerfile` | Build 2 bước: Node 22 build web tĩnh → nginx 1.27 phục vụ. Ghi mã commit vào `version.txt` |
 | `deploy/nginx.conf` | Cấu hình nginx trong container `web`: nén gzip, cache dài cho `/assets/`, không cache HTML và `version.txt` |
-| `docker-compose.yml` | Hai container: `web` (nginx) và `caddy` (reverse proxy + HTTPS) |
-| `deploy/Caddyfile` | Caddy: `/hooks/*` → webhook trên máy chủ cổng 9000, còn lại → `web`; `www` chuyển về tên chính |
+| `docker-compose.yml` | Ba container: `web` (nginx), `api` (trợ lý AI) và `caddy` (reverse proxy + HTTPS) |
+| `api/` | Máy chủ API Node 22 gọi DeepSeek, có `Dockerfile` riêng (xem [mục 14](#14-bật-trợ-lý-ai-deepseek)) |
+| `deploy/Caddyfile` | Caddy: `/hooks/*` → webhook trên máy chủ cổng 9000, `/api/*` → `api`, còn lại → `web`; `www` chuyển về tên chính |
 | `deploy/hooks.json` | Luật của webhook: chỉ chạy khi chữ ký `X-Hub-Signature-256` đúng **và** `ref` là `refs/heads/main` |
 | `deploy/deploy.sh` | Script deploy: khoá chống chạy trùng, lấy code mới, build và thay container, dọn image cũ, ghi log |
 | `deploy/setup-vps.sh` | Cài đặt VPS lần đầu: Docker, swap, user `deploy`, clone repo, secret, dịch vụ webhook, tường lửa, deploy lần đầu |
@@ -83,6 +85,7 @@ Các file **chỉ có trên VPS**, không nằm trong repo:
 |---|---|
 | `/opt/estatesmart/webhook.env` | `WEBHOOK_SECRET=...` (quyền 600, chủ sở hữu `deploy`) |
 | `/opt/estatesmart/app/.env` | `DOMAIN=estatesmart.site` cho docker compose (đã có trong `.gitignore`) |
+| `/opt/estatesmart/api.env` | `DEEPSEEK_API_KEY=...` cho container `api` (quyền 600, chủ sở hữu `deploy`) |
 | `/opt/estatesmart/deploy.log` | Nhật ký mỗi lần deploy |
 | `/opt/estatesmart/deploy.lock` | Khoá để không chạy 2 lần deploy cùng lúc |
 | `/etc/systemd/system/estatesmart-webhook.service` | Dịch vụ webhook |
@@ -442,7 +445,7 @@ sudo -u deploy git -C /opt/estatesmart/app remote set-url origin git@github.com:
 | Theo dõi deploy trực tiếp | `tail -f /opt/estatesmart/deploy.log` |
 | Deploy thủ công (không cần push) | `sudo -u deploy /opt/estatesmart/app/deploy/deploy.sh` |
 | Trạng thái container | `cd /opt/estatesmart/app && docker compose ps` |
-| Log container web / caddy | `cd /opt/estatesmart/app && docker compose logs --tail=100 web` (hoặc `caddy`) |
+| Log container web / api / caddy | `cd /opt/estatesmart/app && docker compose logs --tail=100 web` (hoặc `api`, `caddy`) |
 | Log dịch vụ webhook | `journalctl -u estatesmart-webhook -n 100 --no-pager` |
 | Khởi động lại webhook | `sudo systemctl restart estatesmart-webhook` |
 | Dung lượng ổ đĩa | `df -h` và `docker system df` |
@@ -513,3 +516,70 @@ sudo -u deploy env GIT_SHA=<mã-commit> docker compose up -d --build
 
 **CI**
 - [ ] Tab Actions có lượt chạy `CI` xanh cho commit mới nhất
+
+---
+
+## 14. Bật trợ lý AI (DeepSeek)
+
+Container `api` (thư mục `api/`) nhận câu hỏi tự do ở trang Trợ lý tại `/api/chat`, gọi DeepSeek và trả lời dần từng đoạn chữ. Khi chưa có khoá API, trợ lý vẫn chạy luồng 5 câu hỏi như cũ, câu hỏi tự do nhận thông báo "chưa kết nối được trợ lý AI".
+
+### 14.1 Lấy khoá và đặt lên VPS
+
+1. Tạo khoá API tại trang quản lý của DeepSeek (platform.deepseek.com), nạp ít tiền để dùng.
+2. Trên VPS, mở file khoá (script cài đặt đã tạo sẵn, quyền 600):
+
+```bash
+sudo -u deploy nano /opt/estatesmart/api.env
+```
+
+3. Điền dòng `DEEPSEEK_API_KEY=sk-...`, lưu lại, rồi khởi động lại container `api`:
+
+```bash
+cd /opt/estatesmart/app && sudo -u deploy docker compose up -d api
+```
+
+4. Kiểm tra: `curl -s https://estatesmart.site/api/health` phải trả `"llm":true`.
+
+Nếu VPS được cài trước khi có trợ lý AI (chưa có file `api.env`), tạo file trước bước 2:
+
+```bash
+sudo install -m 600 -o deploy -g deploy /dev/null /opt/estatesmart/api.env
+```
+
+Không đưa khoá vào repo, vào code giao diện hay vào ảnh chụp màn hình. Nếu nghi bị lộ, xoá khoá trên trang DeepSeek, tạo khoá mới và làm lại bước 2–3.
+
+### 14.2 Các biến cấu hình (trong `api.env`)
+
+| Biến | Mặc định | Ý nghĩa |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | (trống) | Khoá API DeepSeek |
+| `LLM_BASE_URL` | `https://api.deepseek.com` | Địa chỉ API theo chuẩn OpenAI; đổi để dùng nhà cung cấp khác |
+| `LLM_MODEL` | `deepseek-chat` | Tên mô hình |
+| `LLM_API_KEY` | (trống) | Khoá cho nhà cung cấp khác, được ưu tiên hơn `DEEPSEEK_API_KEY` |
+| `LLM_MAX_TOKENS` | `700` | Độ dài tối đa một câu trả lời |
+| `RATE_LIMIT_MAX` | `20` | Số câu hỏi tối đa của một IP trong 10 phút |
+| `DAILY_LIMIT` | `1000` | Trần số lần gọi mô hình mỗi ngày, để kiểm soát chi phí |
+
+Sửa xong chạy lại `docker compose up -d api`.
+
+### 14.3 Chạy trên máy
+
+```bash
+cp api/.env.example api/.env
+```
+
+Điền khoá vào `api/.env`, rồi chạy song song hai lệnh (Vite chuyển `/api` sang cổng 8787):
+
+```bash
+cd api && npm run dev
+```
+
+```bash
+npm run dev
+```
+
+### 14.4 Dữ liệu và quyền riêng tư
+
+- Gửi tới DeepSeek: tiêu chí 5 câu hỏi, câu hỏi tự do và tối đa 10 lượt hội thoại trước. Máy chủ DeepSeek đặt ở Trung Quốc; ô nhập trên trang có ghi chú để người dùng không nhập thông tin cá nhân.
+- Form đặt lịch (họ tên, số điện thoại) **không** đi qua API này.
+- Log container `api` chỉ ghi độ dài và thời gian trả lời, không ghi nội dung câu hỏi: `docker compose logs --tail=50 api`.

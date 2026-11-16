@@ -19,3 +19,4 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: docker build --build-arg GIT_SHA=${GITHUB_SHA::7} -t estatesmart-web:ci .
+      - run: node --check api/server.mjs && docker build -t estatesmart-api:ci api
