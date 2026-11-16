@@ -526,7 +526,7 @@ class Component extends DCLogic {
         this.io.observe(this.el.about);
       } else this.visible = true;
       if ('IntersectionObserver' in window && this.el.study) {
-        this.io2 = new IntersectionObserver((es) => { this.studyVisible = es.some((e) => e.isIntersecting); }, { rootMargin: '20% 0px' });
+        this.io2 = new IntersectionObserver((es) => { this.studyVisible = es.some((e) => e.isIntersecting); if (this.studyVisible) this.checkStudy(); }, { rootMargin: '20% 0px' });
         this.io2.observe(this.el.study);
       } else this.studyVisible = true;
     });
