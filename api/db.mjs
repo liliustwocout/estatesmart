@@ -26,8 +26,10 @@ export const FIELDS = {
   deposit_months: { type: 'int', label: 'Đặt cọc (tháng)', min: 0, max: 24, def: 3 },
   min_term_years: { type: 'int', label: 'Hợp đồng tối thiểu (năm)', min: 0, max: 20, def: 2 },
   divider: { type: 'bool', label: 'Có dải phân cách cứng', def: 0 },
+  uturn_m: { type: 'int', label: 'Điểm quay đầu cách (m)', min: 0, max: 5000 },
   two_way: { type: 'bool', label: 'Đường hai chiều', def: 1 },
   car_parking_m: { type: 'int', label: 'Bãi đỗ ô tô gần nhất (m)', min: 0, max: 5000, def: 300 },
+  sidewalk_m: { type: 'num', label: 'Vỉa hè trước cửa (m)', min: 0, max: 30 },
   moto_slots: { type: 'int', label: 'Chỗ để xe máy', min: 0, max: 500, def: 0 },
   yard_m2: { type: 'num', label: 'Sân (m²)', min: 0, max: 2000, def: 0 },
   kitchen: { type: 'bool', label: 'Đã có bếp', def: 0 },
@@ -46,10 +48,16 @@ db.exec(`CREATE TABLE IF NOT EXISTS listings (
   id INTEGER PRIMARY KEY,
   code TEXT NOT NULL UNIQUE, name TEXT NOT NULL, zone TEXT NOT NULL, type TEXT NOT NULL,
   lat REAL NOT NULL, lng REAL NOT NULL, area_m2 REAL NOT NULL, floors INTEGER, frontage_m REAL, road_m REAL,
-  rent_million REAL NOT NULL, deposit_months INTEGER, min_term_years INTEGER, divider INTEGER, two_way INTEGER,
-  car_parking_m INTEGER, moto_slots INTEGER, yard_m2 REAL, kitchen INTEGER, suited TEXT, image TEXT,
+  rent_million REAL NOT NULL, deposit_months INTEGER, min_term_years INTEGER, divider INTEGER, uturn_m INTEGER, two_way INTEGER,
+  car_parking_m INTEGER, sidewalk_m REAL, moto_slots INTEGER, yard_m2 REAL, kitchen INTEGER, suited TEXT, image TEXT,
   status TEXT NOT NULL DEFAULT 'active', updated TEXT, note TEXT
 )`);
+
+// Nâng cấp cơ sở dữ liệu cũ: thêm cột mới nếu thiếu.
+const ADDED = { uturn_m: 'INTEGER', sidewalk_m: 'REAL' };
+const have = new Set(db.prepare('PRAGMA table_info(listings)').all().map((c) => c.name));
+const justAdded = Object.keys(ADDED).filter((c) => !have.has(c));
+for (const c of justAdded) db.exec(`ALTER TABLE listings ADD COLUMN ${c} ${ADDED[c]}`);
 
 export class ValidationError extends Error {
   constructor(errors) { super('Dữ liệu không hợp lệ'); this.errors = errors; this.status = 400; }
@@ -174,6 +182,16 @@ export function importRows(records, { replace = false } = {}) {
     db.exec('ROLLBACK');
     throw e;
   }
+}
+
+// Cột vừa thêm: lấy giá trị từ dữ liệu mẫu cho các mã trùng (chỉ điền ô đang trống).
+if (justAdded.length && stmts.count.get().n > 0) {
+  const seed = parseCsv(readFileSync(here('./data/listings.csv'), 'utf8'));
+  for (const c of justAdded) {
+    const up = db.prepare(`UPDATE listings SET ${c} = ? WHERE code = ? AND ${c} IS NULL`);
+    for (const r of seed) if (r[c] !== undefined && r[c] !== '') up.run(Number(r[c]), r.code);
+  }
+  console.log('Đã thêm cột', justAdded.join(', '), 'và điền từ dữ liệu mẫu');
 }
 
 // Lần chạy đầu: nạp dữ liệu mẫu.

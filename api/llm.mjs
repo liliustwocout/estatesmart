@@ -16,6 +16,34 @@ export class LlmError extends Error {
   }
 }
 
+// Gọi một lần, không truyền dần, yêu cầu mô hình trả về một đối tượng JSON.
+// Trả về { data, tokens }; ném LlmError nếu nhà cung cấp lỗi hoặc nội dung không phải JSON.
+export async function completeJson(messages, { signal, maxTokens = 300 } = {}) {
+  if (!llmConfig.apiKey) throw new LlmError('Chưa cấu hình khoá API cho mô hình ngôn ngữ', 503);
+  const timeout = AbortSignal.timeout(Math.min(llmConfig.timeoutMs, 20000));
+  const res = await fetch(llmConfig.baseUrl + '/chat/completions', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + llmConfig.apiKey },
+    body: JSON.stringify({
+      model: llmConfig.model,
+      messages,
+      response_format: { type: 'json_object' },
+      temperature: 0.2,
+      max_tokens: maxTokens
+    }),
+    signal: signal ? AbortSignal.any([signal, timeout]) : timeout
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new LlmError(`Nhà cung cấp trả lỗi ${res.status}: ${detail.slice(0, 200)}`, res.status === 429 ? 429 : 502);
+  }
+  const json = await res.json();
+  const text = json.choices?.[0]?.message?.content || '';
+  let data;
+  try { data = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, '')); } catch { throw new LlmError('Mô hình không trả về JSON hợp lệ', 502); }
+  return { data, tokens: Number(json.usage?.total_tokens) || 0 };
+}
+
 // Trả về từng đoạn chữ (delta) mô hình sinh ra, theo thứ tự.
 // onUsage(totalTokens) được gọi nếu nhà cung cấp trả số token đã dùng ở cuối luồng.
 export async function* streamChat(messages, { signal, onUsage } = {}) {

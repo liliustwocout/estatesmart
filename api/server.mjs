@@ -2,13 +2,17 @@
 //   GET  /api/health      → trạng thái
 //   POST /api/recommend   → 5 Agent thẩm định, trả Top 3 mặt bằng + đối thủ quanh đó
 //   POST /api/profiles    → hồ sơ chi tiết của các mặt bằng (trang /mat-bang/)
+//   POST /api/parse       → đọc câu mô tả tự do thành tiêu chí, báo mục còn thiếu (có khoá mô hình thì dùng AI, xem intake.mjs)
+//   POST /api/report      → báo cáo một mặt bằng cho trang Trợ lý (bản đồ 3D, đối thủ, lưu lượng ước lượng…)
 //   POST /api/chat        → trợ lý AI trả lời câu hỏi tự do, truyền dần từng đoạn chữ (text/event-stream)
 //   /api/admin/*          → trang quản trị (xem admin.mjs)
 import { createServer } from 'node:http';
 import { streamChat, llmConfig } from './llm.mjs';
 import { systemPrompt } from './prompt.mjs';
 import { acquire, usage } from './limits.mjs';
+import { parseSmart } from './intake.mjs';
 import { recommend, profile } from './engine.mjs';
+import { report } from './report.mjs';
 import { handleAdmin, adminEnabled } from './admin.mjs';
 import { listActive } from './db.mjs';
 
@@ -135,9 +139,19 @@ async function route(req, res, url, ip) {
     return;
   }
 
-  if (m !== 'POST') return sendJson(res, p.match(/^\/api\/(chat|recommend|profiles)$/) ? 405 : 404, { error: 'Không tìm thấy' });
+  if (m !== 'POST') return sendJson(res, p.match(/^\/api\/(chat|recommend|profiles|parse|report)$/) ? 405 : 404, { error: 'Không tìm thấy' });
 
   if (p === '/api/chat') return handleChat(req, res, ip);
+
+  if (p === '/api/parse' || p === '/api/report') {
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    const body = await readJson(req);
+    if (p === '/api/parse') return sendJson(res, 200, await parseSmart(cleanText(body.text, 500), cleanCriteria(body.prev), ip, body.step));
+    const code = cleanCodes([body.code])[0];
+    if (!code) throw new HttpError(400, 'Thiếu mã mặt bằng');
+    const r = report(code, cleanCriteria(body.criteria));
+    return r ? sendJson(res, 200, r) : sendJson(res, 404, { error: 'Không tìm thấy mặt bằng' });
+  }
 
   if (p === '/api/recommend' || p === '/api/profiles') {
     if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });

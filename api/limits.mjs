@@ -38,22 +38,34 @@ function rollDay() {
 
 const deny = (status, error, retryAfter) => ({ ok: false, status, error, retryAfter: Math.max(1, Math.ceil(retryAfter)) });
 
+// Bước tiếp nhận nhu cầu (/api/intake) có bộ đếm theo IP riêng, nhẹ hơn: câu ngắn, gửi liên tiếp,
+// trả lời trùng ("không", "ok") là bình thường. Trần chung trong ngày vẫn dùng chung với /api/chat.
+export const intakeLimits = {
+  minIntervalMs: num('INTAKE_MIN_INTERVAL_MS', 800),
+  windowMax: num('INTAKE_LIMIT_MAX', 40),
+  ipDailyMax: num('INTAKE_IP_DAILY_LIMIT', 150),
+  allowDuplicate: true
+};
+
 // Kiểm tra trước khi gọi mô hình. Nếu được phép, ghi nhận lượt gọi và trả về hàm release(tokens) phải gọi khi xong.
-export function acquire(ip, message) {
+// opts.bucket tách bộ đếm theo IP (ví dụ 'intake'); các giới hạn trong opts ghi đè giá trị mặc định.
+export function acquire(ip, message, opts = {}) {
+  const lim = { ...limits, ...opts };
+  const key = opts.bucket ? ip + '|' + opts.bucket : ip;
   const now = Date.now();
   const d = rollDay();
-  let s = ips.get(ip);
-  if (!s) { s = { hits: [], last: 0, active: 0, day: d, dayCount: 0, recent: new Map() }; ips.set(ip, s); }
+  let s = ips.get(key);
+  if (!s) { s = { hits: [], last: 0, active: 0, day: d, dayCount: 0, recent: new Map() }; ips.set(key, s); }
   if (s.day !== d) { s.day = d; s.dayCount = 0; }
-  s.hits = s.hits.filter((t) => now - t < limits.windowMs);
-  for (const [h, t] of s.recent) if (now - t >= limits.duplicateMs) s.recent.delete(h);
+  s.hits = s.hits.filter((t) => now - t < lim.windowMs);
+  for (const [h, t] of s.recent) if (now - t >= lim.duplicateMs) s.recent.delete(h);
 
-  if (s.active >= limits.perIpConcurrent) return deny(429, 'Trợ lý đang trả lời câu trước, anh/chị đợi một chút nhé.', 3);
-  if (now - s.last < limits.minIntervalMs) return deny(429, 'Anh/chị gửi hơi nhanh, đợi vài giây rồi hỏi tiếp nhé.', (limits.minIntervalMs - (now - s.last)) / 1000);
-  if (s.hits.length >= limits.windowMax) return deny(429, 'Anh/chị đã hỏi nhiều trong ít phút, vui lòng thử lại sau.', (limits.windowMs - (now - s.hits[0])) / 1000);
-  if (s.dayCount >= limits.ipDailyMax) return deny(429, 'Anh/chị đã dùng hết lượt hỏi hôm nay, vui lòng quay lại vào ngày mai.', secondsToMidnightVN());
+  if (s.active >= lim.perIpConcurrent) return deny(429, 'Trợ lý đang trả lời câu trước, anh/chị đợi một chút nhé.', 3);
+  if (now - s.last < lim.minIntervalMs) return deny(429, 'Anh/chị gửi hơi nhanh, đợi vài giây rồi hỏi tiếp nhé.', (lim.minIntervalMs - (now - s.last)) / 1000);
+  if (s.hits.length >= lim.windowMax) return deny(429, 'Anh/chị đã hỏi nhiều trong ít phút, vui lòng thử lại sau.', (lim.windowMs - (now - s.hits[0])) / 1000);
+  if (s.dayCount >= lim.ipDailyMax) return deny(429, 'Anh/chị đã dùng hết lượt hỏi hôm nay, vui lòng quay lại vào ngày mai.', secondsToMidnightVN());
   const h = hashOf(message);
-  if (s.recent.has(h)) return deny(429, 'Câu hỏi này vừa được gửi, anh/chị xem câu trả lời ở trên nhé.', (limits.duplicateMs - (now - s.recent.get(h))) / 1000);
+  if (!lim.allowDuplicate && s.recent.has(h)) return deny(429, 'Câu hỏi này vừa được gửi, anh/chị xem câu trả lời ở trên nhé.', (lim.duplicateMs - (now - s.recent.get(h))) / 1000);
   if (global.active >= limits.globalConcurrent) return deny(503, 'Trợ lý đang bận, anh/chị thử lại sau ít giây.', 5);
   if (global.count >= limits.dailyMax || global.tokens >= limits.dailyTokens) return deny(503, 'Trợ lý đã đạt giới hạn sử dụng trong ngày, vui lòng quay lại vào ngày mai.', secondsToMidnightVN());
 

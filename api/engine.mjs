@@ -58,7 +58,8 @@ export function parseCriteria(raw = {}) {
       noDivider: /phân cách/.test(n),
       office: /văn phòng/.test(n),
       school: /trường|sinh viên|học sinh/.test(n),
-      kitchen: /bếp/.test(n)
+      kitchen: /bếp/.test(n),
+      moto: /xe máy|xe may/.test(n)
     }
   };
 }
@@ -142,6 +143,10 @@ export function assess(l, crit) {
     if (l.kitchen) a += 5; else { a -= crit.model === 'nha_hang' ? 15 : 5; cons.push('Chưa có bếp, cần chi phí cải tạo.'); }
   }
   if (l.yard_m2 >= 30 && crit.model === 'cafe') { a += 5; pros.push(`Có sân ${l.yard_m2} m² để bố trí chỗ ngồi ngoài trời.`); }
+  if (crit.needs.moto) {
+    if (l.moto_slots >= 15) { a += 8; pros.push(`Để được khoảng ${l.moto_slots} xe máy trước cửa.`); }
+    else if (l.moto_slots < 8) { a -= 10; cons.push(`Chỗ để xe máy hạn chế (khoảng ${l.moto_slots} xe).`); }
+  }
   parts.access = clamp(a);
 
   const score = Math.round(parts.budget * 0.25 + parts.size * 0.2 + parts.location * 0.2 + parts.competition * 0.15 + parts.access * 0.2);

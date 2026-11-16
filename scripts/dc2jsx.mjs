@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { parseDocument } from 'htmlparser2';
 
-const PAGES = { 'Main.dc.html': 'Main', 'Chat.dc.html': 'Chat', 'Listing.dc.html': 'Listing' };
+const PAGES = { 'Main.dc.html': 'Main', 'Listing.dc.html': 'Listing' }; // Trang Trợ lý viết tay ở src/assistant/
 const ROUTES = { 'Main.dc.html': '/', 'Chat.dc.html': '/tro-ly/', 'Listing.dc.html': '/mat-bang/' };
 const BLOBS = {
   '88da756d7bdf21acce5e115ce122899b': 'hero3', '3517a4dd3d9a82c4b088e7f9bcd011df': 'nightSide',
