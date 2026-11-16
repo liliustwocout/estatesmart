@@ -14,12 +14,18 @@ main() {
   {
     echo "=== $(date -Is) bắt đầu deploy"
     cd "$app_dir"
+    local old
+    old=$(git rev-parse HEAD)
     git fetch --prune origin main
     git reset --hard origin/main
     export GIT_SHA
     GIT_SHA=$(git rev-parse --short HEAD)
     # Nếu build lỗi, lệnh dừng tại đây và container cũ vẫn tiếp tục chạy.
     docker compose up -d --build --remove-orphans
+    # Caddyfile được mount dạng file: git thay file mới nên container vẫn thấy bản cũ, phải khởi động lại caddy.
+    if ! git diff --quiet "$old" HEAD -- deploy/Caddyfile; then
+      docker compose restart caddy
+    fi
     docker image prune -f
     echo "=== $(date -Is) deploy xong: $GIT_SHA"
   } >> "$log" 2>&1

@@ -9,6 +9,10 @@
 
 	# API trợ lý AI; flush_interval -1 để chữ được đẩy tới trình duyệt ngay khi mô hình sinh ra
 	handle /api/* {
+		# Chặn sớm request quá lớn trước khi tới máy chủ API
+		request_body {
+			max_size 16KB
+		}
 		reverse_proxy api:8787 {
 			flush_interval -1
 		}

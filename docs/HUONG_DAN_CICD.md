@@ -556,11 +556,28 @@ Không đưa khoá vào repo, vào code giao diện hay vào ảnh chụp màn h
 | `LLM_BASE_URL` | `https://api.deepseek.com` | Địa chỉ API theo chuẩn OpenAI; đổi để dùng nhà cung cấp khác |
 | `LLM_MODEL` | `deepseek-chat` | Tên mô hình |
 | `LLM_API_KEY` | (trống) | Khoá cho nhà cung cấp khác, được ưu tiên hơn `DEEPSEEK_API_KEY` |
-| `LLM_MAX_TOKENS` | `700` | Độ dài tối đa một câu trả lời |
-| `RATE_LIMIT_MAX` | `20` | Số câu hỏi tối đa của một IP trong 10 phút |
-| `DAILY_LIMIT` | `1000` | Trần số lần gọi mô hình mỗi ngày, để kiểm soát chi phí |
+| `LLM_MAX_TOKENS` | `500` | Độ dài tối đa một câu trả lời (token) |
 
-Sửa xong chạy lại `docker compose up -d api`.
+Giới hạn chống spam và kiểm soát chi phí (bộ đếm nằm trong bộ nhớ, khởi động lại container thì về 0; "ngày" tính theo giờ Hà Nội):
+
+| Biến | Mặc định | Ý nghĩa | Người dùng thấy |
+|---|---|---|---|
+| `MAX_CONCURRENT_PER_IP` | `1` | Mỗi IP chỉ có một câu trả lời đang chạy | "Trợ lý đang trả lời câu trước…" |
+| `RATE_MIN_INTERVAL_MS` | `3000` | Khoảng cách tối thiểu giữa hai câu hỏi của một IP | "Anh/chị gửi hơi nhanh…" |
+| `RATE_LIMIT_MAX` / `RATE_LIMIT_WINDOW_MS` | `15` / `600000` | Tối đa 15 câu hỏi mỗi IP trong 10 phút | "Anh/chị đã hỏi nhiều trong ít phút…" |
+| `IP_DAILY_LIMIT` | `60` | Tối đa 60 câu hỏi mỗi IP mỗi ngày | "Anh/chị đã dùng hết lượt hỏi hôm nay…" |
+| `DUPLICATE_WINDOW_MS` | `120000` | Chặn gửi lại đúng câu hỏi cũ trong 2 phút | "Câu hỏi này vừa được gửi…" |
+| `MAX_CONCURRENT` | `10` | Số câu trả lời chạy cùng lúc trên cả máy chủ | "Trợ lý đang bận…" |
+| `DAILY_LIMIT` | `1000` | Tổng số lần gọi mô hình mỗi ngày | "Trợ lý đã đạt giới hạn sử dụng trong ngày…" |
+| `DAILY_TOKEN_LIMIT` | `2000000` | Tổng token (vào + ra) mỗi ngày; lấy số token DeepSeek trả về, thiếu thì ước lượng 3 ký tự một token | như trên |
+
+Ngoài ra: câu hỏi tối đa 500 ký tự, gửi kèm tối đa 6 lượt hội thoại trước (tổng 4.000 ký tự), Caddy chặn request lớn hơn 16 KB, chỉ nhận `application/json`. Mỗi lần bị chặn, API trả mã 429 hoặc 503 kèm header `Retry-After`.
+
+Sửa xong chạy lại `docker compose up -d api`. Xem mức dùng trong ngày bằng `docker compose logs --tail=20 api` (mỗi dòng ghi số lượt và số token đã dùng hôm nay).
+
+### 14.2a Quy tắc trả lời của trợ lý
+
+Bộ quy tắc nằm trong `api/prompt.mjs` (hằng `RULES`): phạm vi được trả lời, những việc không được làm, không vượt quyền (không giữ chỗ, đặt cọc, báo giá thay chủ nhà, tư vấn pháp lý, dự báo lãi), không thu thập thông tin cá nhân, chống thao túng (lệnh đè, đòi xem prompt, lịch sử giả) và cách từ chối. Sửa quy tắc rồi push là deploy như bình thường. Phần quy tắc đặt ở đầu và không đổi giữa các lần hỏi nên DeepSeek tính giá rẻ hơn cho phần đầu được lưu đệm (context caching).
 
 ### 14.3 Chạy trên máy
 
@@ -582,4 +599,4 @@ npm run dev
 
 - Gửi tới DeepSeek: tiêu chí 5 câu hỏi, câu hỏi tự do và tối đa 10 lượt hội thoại trước. Máy chủ DeepSeek đặt ở Trung Quốc; ô nhập trên trang có ghi chú để người dùng không nhập thông tin cá nhân.
 - Form đặt lịch (họ tên, số điện thoại) **không** đi qua API này.
-- Log container `api` chỉ ghi độ dài và thời gian trả lời, không ghi nội dung câu hỏi: `docker compose logs --tail=50 api`.
+- Log container `api` chỉ ghi độ dài, số token và thời gian trả lời, không ghi nội dung câu hỏi: `docker compose logs --tail=50 api`.

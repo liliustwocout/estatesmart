@@ -5,7 +5,7 @@ export const llmConfig = {
   baseUrl: (process.env.LLM_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, ''),
   model: process.env.LLM_MODEL || 'deepseek-chat',
   apiKey: process.env.LLM_API_KEY || process.env.DEEPSEEK_API_KEY || '',
-  maxTokens: Number(process.env.LLM_MAX_TOKENS || 700),
+  maxTokens: Number(process.env.LLM_MAX_TOKENS || 500),
   timeoutMs: Number(process.env.LLM_TIMEOUT_MS || 60000)
 };
 
@@ -17,7 +17,8 @@ export class LlmError extends Error {
 }
 
 // Trả về từng đoạn chữ (delta) mô hình sinh ra, theo thứ tự.
-export async function* streamChat(messages, { signal } = {}) {
+// onUsage(totalTokens) được gọi nếu nhà cung cấp trả số token đã dùng ở cuối luồng.
+export async function* streamChat(messages, { signal, onUsage } = {}) {
   if (!llmConfig.apiKey) throw new LlmError('Chưa cấu hình khoá API cho mô hình ngôn ngữ', 503);
 
   const timeout = AbortSignal.timeout(llmConfig.timeoutMs);
@@ -28,6 +29,7 @@ export async function* streamChat(messages, { signal } = {}) {
       model: llmConfig.model,
       messages,
       stream: true,
+      stream_options: { include_usage: true },
       temperature: 0.5,
       max_tokens: llmConfig.maxTokens
     }),
@@ -53,6 +55,7 @@ export async function* streamChat(messages, { signal } = {}) {
       if (data === '[DONE]') return;
       let json;
       try { json = JSON.parse(data); } catch { continue; }
+      if (json.usage && onUsage) onUsage(Number(json.usage.total_tokens) || 0);
       const delta = json.choices?.[0]?.delta?.content;
       if (delta) yield delta;
     }

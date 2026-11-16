@@ -4,50 +4,22 @@
 import { createServer } from 'node:http';
 import { streamChat, llmConfig, LlmError } from './llm.mjs';
 import { systemPrompt } from './prompt.mjs';
+import { acquire, usage } from './limits.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
-const RATE_MAX = Number(process.env.RATE_LIMIT_MAX || 20); // số câu hỏi tối đa mỗi IP…
-const RATE_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000); // …trong 10 phút
-const DAILY_MAX = Number(process.env.DAILY_LIMIT || 1000); // trần số lần gọi mô hình mỗi ngày (kiểm soát chi phí)
-const MAX_MESSAGE = 500;
-const MAX_HISTORY = 10;
-const MAX_BODY = 32 * 1024;
-
-const hits = new Map(); // ip → [mốc thời gian]
-let day = new Date().toISOString().slice(0, 10);
-let dayCount = 0;
+const MAX_MESSAGE = 500; // ký tự mỗi câu hỏi
+const MAX_HISTORY = 6; // số lượt hội thoại trước gửi kèm
+const MAX_HISTORY_CHARS = 4000; // tổng ký tự lịch sử gửi kèm
+const MAX_BODY = 16 * 1024;
 
 function clientIp(req) {
-  // Caddy đặt X-Forwarded-For; lấy địa chỉ đầu tiên.
+  // Caddy thay X-Forwarded-For bằng IP thật của người dùng (không tin giá trị do trình duyệt tự gửi).
   const xff = req.headers['x-forwarded-for'];
   return (typeof xff === 'string' && xff.split(',')[0].trim()) || req.socket.remoteAddress || 'unknown';
 }
 
-function allow(ip) {
-  const now = Date.now();
-  const list = (hits.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS);
-  if (list.length >= RATE_MAX) { hits.set(ip, list); return false; }
-  list.push(now);
-  hits.set(ip, list);
-  return true;
-}
-
-// Dọn bộ đếm IP cũ để bộ nhớ không phình ra.
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, list] of hits) if (!list.some((t) => now - t < RATE_WINDOW_MS)) hits.delete(ip);
-}, 60 * 1000).unref();
-
-function underDailyCap() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (today !== day) { day = today; dayCount = 0; }
-  if (dayCount >= DAILY_MAX) return false;
-  dayCount++;
-  return true;
-}
-
-function sendJson(res, status, body) {
-  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+function sendJson(res, status, body, headers = {}) {
+  res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers });
   res.end(JSON.stringify(body));
 }
 
@@ -71,22 +43,28 @@ function buildMessages(body) {
   if (!message) throw new LlmError('Thiếu câu hỏi', 400);
   const criteria = typeof body.criteria === 'object' && body.criteria ? body.criteria : {};
   const history = Array.isArray(body.history) ? body.history.slice(-MAX_HISTORY) : [];
-  const turns = history
+  let turns = history
     .filter((m) => m && (m.role === 'user' || m.role === 'assistant'))
-    .map((m) => ({ role: m.role, content: cleanText(m.content, m.role === 'user' ? MAX_MESSAGE : 2000) }))
+    .map((m) => ({ role: m.role, content: cleanText(m.content, m.role === 'user' ? MAX_MESSAGE : 1500) }))
     .filter((m) => m.content);
-  return [{ role: 'system', content: systemPrompt(criteria) }, ...turns, { role: 'user', content: message }];
+  // Giữ các lượt gần nhất trong giới hạn tổng ký tự, để lịch sử dài không đốt token.
+  let total = 0;
+  turns = turns.reverse().filter((m) => (total += m.content.length) <= MAX_HISTORY_CHARS).reverse();
+  return { message, messages: [{ role: 'system', content: systemPrompt(criteria) }, ...turns, { role: 'user', content: message }] };
 }
 
 async function handleChat(req, res) {
   const ip = clientIp(req);
-  if (!allow(ip)) return sendJson(res, 429, { error: 'Anh/chị hỏi hơi nhanh, vui lòng thử lại sau ít phút.' });
+  if (!String(req.headers['content-type'] || '').includes('application/json')) return sendJson(res, 415, { error: 'Chỉ nhận JSON' });
 
-  let messages;
-  try { messages = buildMessages(await readJson(req)); } catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
+  let built;
+  try { built = buildMessages(await readJson(req)); } catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
+  const { message, messages } = built;
 
   if (!llmConfig.apiKey) return sendJson(res, 503, { error: 'Trợ lý AI chưa được bật trên máy chủ.' });
-  if (!underDailyCap()) return sendJson(res, 503, { error: 'Trợ lý đã đạt giới hạn sử dụng trong ngày, vui lòng quay lại sau.' });
+
+  const slot = acquire(ip, message);
+  if (!slot.ok) return sendJson(res, slot.status, { error: slot.error }, { 'retry-after': String(slot.retryAfter) });
 
   const abort = new AbortController();
   res.on('close', () => { if (!res.writableEnded) abort.abort(); });
@@ -100,8 +78,9 @@ async function handleChat(req, res) {
 
   const started = Date.now();
   let chars = 0;
+  let tokens = 0;
   try {
-    for await (const delta of streamChat(messages, { signal: abort.signal })) {
+    for await (const delta of streamChat(messages, { signal: abort.signal, onUsage: (t) => { tokens = t; } })) {
       chars += delta.length;
       send({ delta });
     }
@@ -112,8 +91,12 @@ async function handleChat(req, res) {
       send({ error: 'Trợ lý đang bận, anh/chị thử lại sau ít phút.' });
     }
   } finally {
-    // Chỉ ghi độ dài và thời gian, không ghi nội dung câu hỏi.
-    console.log(new Date().toISOString(), `chat ${chars} ký tự trong ${Date.now() - started} ms`);
+    // Nhà cung cấp không trả số token (hoặc bị ngắt giữa chừng) thì ước lượng: khoảng 3 ký tự tiếng Việt một token.
+    if (!tokens) tokens = Math.ceil((messages.reduce((n, m) => n + m.content.length, 0) + chars) / 3);
+    slot.release(tokens);
+    // Chỉ ghi độ dài, token và thời gian, không ghi nội dung câu hỏi.
+    const u = usage();
+    console.log(new Date().toISOString(), `chat ${chars} ký tự, ${tokens} token, ${Date.now() - started} ms; hôm nay ${u.requests} lượt, ${u.tokens} token`);
     res.end();
   }
 }
