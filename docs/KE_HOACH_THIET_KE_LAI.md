@@ -8,7 +8,7 @@ Tài liệu này ghi lại hướng thiết kế lại web (landing `/`, trợ l
 
 | Mục | Nội dung |
 |---|---|
-| Người xem | Chủ doanh nghiệp F&B, bán lẻ nhỏ tại TP.HCM, xem trên điện thoại nhiều |
+| Người xem | Chủ doanh nghiệp F&B, bán lẻ nhỏ tại Hà Nội (thí điểm ở Vinhomes Ocean Park 1), xem trên điện thoại nhiều |
 | Hành động chính | **Bắt đầu tư vấn** với Trợ lý AI |
 | Hành động phụ | Xem hồ sơ mặt bằng mẫu |
 | Chế độ (impeccable) | Landing = *Persuade* (được phép có một khoảnh khắc chuyển động chủ đạo). Trợ lý & Hồ sơ = *Operate* (chuyển động chỉ để phản hồi và giữ mạch) |

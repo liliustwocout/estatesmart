@@ -469,7 +469,7 @@ class Component extends DCLogic {
   questions() {
     return [
       { key: 'MÔ HÌNH', q: 'Xin chào, tôi là trợ lý thẩm định mặt bằng của estateSmartAI. Anh/chị dự định triển khai mô hình kinh doanh nào?', options: ['Quán cà phê', 'Trà sữa', 'Nhà hàng', 'Tạp hoá', 'Cửa hàng tiện lợi'], ph: 'Ví dụ: quán cà phê mang đi' },
-      { key: 'KHU VỰC', q: 'Khu vực mục tiêu của anh/chị là ở đâu?', options: ['Quận 1', 'Quận 3', 'Bình Thạnh', 'Phú Nhuận', 'TP. Thủ Đức'], ph: 'Ví dụ: Bình Thạnh, gần Hàng Xanh' },
+      { key: 'KHU VỰC', q: 'Khu vực mục tiêu của anh/chị là ở đâu?', options: ['Vinhomes Ocean Park 1', 'Gia Lâm', 'Long Biên', 'Cầu Giấy', 'Hoàn Kiếm'], ph: 'Ví dụ: Ocean Park 1, gần hồ Ngọc Trai' },
       { key: 'NGÂN SÁCH', q: 'Ngân sách thuê dự kiến mỗi tháng là bao nhiêu?', options: ['Dưới 30 triệu', '30–60 triệu', '60–100 triệu', 'Trên 100 triệu'], ph: 'Ví dụ: tối đa 70 triệu/tháng' },
       { key: 'DIỆN TÍCH', q: 'Diện tích sử dụng mong muốn?', options: ['Dưới 80 m²', '80–150 m²', '150–300 m²', 'Trên 300 m²'], ph: 'Ví dụ: khoảng 200 m²' },
       { key: 'YÊU CẦU', q: 'Anh/chị có yêu cầu vận hành đặc thù nào không? Ví dụ: chỗ đỗ xe cho khách mang đi, tránh tuyến đường có dải phân cách cứng.', options: ['Cần chỗ đỗ ô tô', 'Tránh dải phân cách cứng', 'Gần khu văn phòng', 'Không có yêu cầu thêm'], ph: 'Mô tả yêu cầu chi tiết' }
@@ -477,9 +477,9 @@ class Component extends DCLogic {
   }
   listings() {
     return [
-      { code: 'MB-01', rank: 1, score: 88, name: 'Biệt thự sân vườn, Thảo Điền', meta: 'TP. Thủ Đức, 320 m²', size: '320 m²', price: '85 triệu/tháng', x: 62, y: 38, src: '/_blob/88da756d7bdf21acce5e115ce122899b', alt: 'Biệt thự hai tầng tường trắng, sân lát đá', massing: 'Hai tầng, sảnh kính và sân vườn' },
-      { code: 'MB-02', rank: 2, score: 81, name: 'Nhà một tầng có sân, Bình Thạnh', meta: 'Bình Thạnh, 180 m²', size: '180 m²', price: '52 triệu/tháng', x: 33, y: 57, src: '/_blob/75748c213ca7441c1ce9472de5d61042', alt: 'Nhà một tầng ốp gỗ có sân cỏ', massing: 'Một tầng, ốp gỗ, sân trước' },
-      { code: 'MB-03', rank: 3, score: 76, name: 'Căn góc hai mặt tiền, Phú Nhuận', meta: 'Phú Nhuận, 240 m²', size: '240 m²', price: '68 triệu/tháng', x: 47, y: 22, src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', alt: 'Công trình hai tầng có sân đỗ xe', massing: 'Hai tầng, căn góc hai mặt đường' }
+      { code: 'MB-01', rank: 1, score: 88, name: 'Biệt thự sân vườn ven hồ, Ngọc Trai', meta: 'Ocean Park 1, 300 m²', size: '300 m²', price: '75 triệu/tháng', x: 62, y: 38, src: '/_blob/88da756d7bdf21acce5e115ce122899b', alt: 'Biệt thự hai tầng tường trắng, sân lát đá', massing: 'Hai tầng, sảnh kính và sân vườn' },
+      { code: 'MB-02', rank: 2, score: 81, name: 'Nhà phố có sân, Hải Âu', meta: 'Ocean Park 1, 180 m²', size: '180 m²', price: '45 triệu/tháng', x: 33, y: 57, src: '/_blob/75748c213ca7441c1ce9472de5d61042', alt: 'Nhà một tầng ốp gỗ có sân cỏ', massing: 'Một tầng, ốp gỗ, sân trước' },
+      { code: 'MB-03', rank: 3, score: 76, name: 'Shophouse căn góc, San Hô', meta: 'Ocean Park 1, 240 m²', size: '240 m²', price: '62 triệu/tháng', x: 47, y: 22, src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', alt: 'Công trình hai tầng có sân đỗ xe', massing: 'Hai tầng, căn góc hai mặt đường' }
     ];
   }
   box(cx, cz, w, h, d, base, opts) {
@@ -633,7 +633,7 @@ class Component extends DCLogic {
       hasResults,
       noResults: !hasResults,
       mapHint: phase === 'analyzing' ? 'Đang quét khu vực' : 'Trả lời 5 câu hỏi để xem kết quả',
-      areaLabel: answers[1] || 'TP. Hồ Chí Minh',
+      areaLabel: answers[1] || 'Vinhomes Ocean Park 1',
       sel,
       selCode: sel.code,
       selPin: { x: sel.x + '%', y: sel.y + '%' },
