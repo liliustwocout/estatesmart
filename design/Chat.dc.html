@@ -691,7 +691,7 @@ class Component extends DCLogic {
       optionsKey: 'q' + answers.length,
       options: asking ? qs[step].options.map((label, i) => ({ label, n: i + 1, pick: () => this.answer(label) })) : [],
       placeholder: asking ? qs[step].ph : (this.state.asking ? 'Trợ lý đang trả lời…' : 'Hỏi thêm về các mặt bằng được đề xuất'),
-      composerHint: asking ? 'Gõ câu trả lời, hoặc bấm số 1–' + qs[step].options.length + ' để chọn nhanh. Bấm vào câu đã trả lời để sửa.' : 'Hỏi trợ lý AI về ba mặt bằng. Câu hỏi được gửi tới mô hình AI bên thứ ba (DeepSeek), đừng nhập thông tin cá nhân. Số liệu là dữ liệu minh hoạ.',
+      composerHint: asking ? 'Gõ câu trả lời, hoặc bấm số 1–' + qs[step].options.length + ' để chọn nhanh. Bấm vào câu đã trả lời để sửa.' : 'Hỏi trợ lý AI về ba mặt bằng. Câu hỏi được gửi tới mô hình AI bên thứ ba, đừng nhập thông tin cá nhân. Số liệu là dữ liệu minh hoạ.',
       stepText: hasResults ? 'Đã hoàn tất 5 bước' : phase === 'analyzing' ? 'Đang thẩm định' : 'Bước ' + curStep + ' trên 5',
       stepBars: [0, 1, 2, 3, 4].map((i) => ({ cls: i < doneSteps ? 'on' : '' })),
       headerTitle: hasResults ? 'Đề xuất Top 3 mặt bằng' : phase === 'analyzing' ? 'Đang thẩm định' : 'Xác định nhu cầu',
