@@ -7,6 +7,14 @@
 		reverse_proxy host.docker.internal:9000
 	}
 
+	# Trang quản trị: cho phép tải lên file CSV tới 1 MB
+	handle /api/admin/* {
+		request_body {
+			max_size 1MB
+		}
+		reverse_proxy api:8787
+	}
+
 	# API trợ lý AI; flush_interval -1 để chữ được đẩy tới trình duyệt ngay khi mô hình sinh ra
 	handle /api/* {
 		# Chặn sớm request quá lớn trước khi tới máy chủ API

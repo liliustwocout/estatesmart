@@ -4,3 +4,4 @@ src/generated/
 .env
 .claude/
 api/.env
+api/data/*.db*

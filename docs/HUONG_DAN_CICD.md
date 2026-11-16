@@ -32,6 +32,7 @@ Thông tin hiện tại của dự án:
 12. [Xử lý sự cố](#12-xử-lý-sự-cố)
 13. [Checklist](#13-checklist)
 14. [Bật trợ lý AI (DeepSeek)](#14-bật-trợ-lý-ai-deepseek)
+15. [Dữ liệu mặt bằng và trang quản trị](#15-dữ-liệu-mặt-bằng-và-trang-quản-trị)
 
 ---
 
@@ -72,7 +73,7 @@ Lập trình viên  ──git push──▶  GitHub (nhánh main)
 | `Dockerfile` | Build 2 bước: Node 22 build web tĩnh → nginx 1.27 phục vụ. Ghi mã commit vào `version.txt` |
 | `deploy/nginx.conf` | Cấu hình nginx trong container `web`: nén gzip, cache dài cho `/assets/`, không cache HTML và `version.txt` |
 | `docker-compose.yml` | Ba container: `web` (nginx), `api` (trợ lý AI) và `caddy` (reverse proxy + HTTPS) |
-| `api/` | Máy chủ API Node 22 gọi DeepSeek, có `Dockerfile` riêng (xem [mục 14](#14-bật-trợ-lý-ai-deepseek)) |
+| `api/` | Máy chủ API Node 22: chấm điểm 5 Agent, cơ sở dữ liệu SQLite, trang quản trị, gọi DeepSeek; có `Dockerfile` riêng (xem [mục 14](#14-bật-trợ-lý-ai-deepseek), [mục 15](#15-dữ-liệu-mặt-bằng-và-trang-quản-trị)) |
 | `deploy/Caddyfile` | Caddy: `/hooks/*` → webhook trên máy chủ cổng 9000, `/api/*` → `api`, còn lại → `web`; `www` chuyển về tên chính |
 | `deploy/hooks.json` | Luật của webhook: chỉ chạy khi chữ ký `X-Hub-Signature-256` đúng **và** `ref` là `refs/heads/main` |
 | `deploy/deploy.sh` | Script deploy: khoá chống chạy trùng, lấy code mới, build và thay container, dọn image cũ, ghi log |
@@ -85,7 +86,8 @@ Các file **chỉ có trên VPS**, không nằm trong repo:
 |---|---|
 | `/opt/estatesmart/webhook.env` | `WEBHOOK_SECRET=...` (quyền 600, chủ sở hữu `deploy`) |
 | `/opt/estatesmart/app/.env` | `DOMAIN=estatesmart.site` cho docker compose (đã có trong `.gitignore`) |
-| `/opt/estatesmart/api.env` | `DEEPSEEK_API_KEY=...` cho container `api` (quyền 600, chủ sở hữu `deploy`) |
+| `/opt/estatesmart/api.env` | `DEEPSEEK_API_KEY=...`, `ADMIN_PASSWORD=...` cho container `api` (quyền 600, chủ sở hữu `deploy`) |
+| Volume Docker `api_data` | Cơ sở dữ liệu mặt bằng `estatesmart.db` (giữ qua các lần deploy) |
 | `/opt/estatesmart/deploy.log` | Nhật ký mỗi lần deploy |
 | `/opt/estatesmart/deploy.lock` | Khoá để không chạy 2 lần deploy cùng lúc |
 | `/etc/systemd/system/estatesmart-webhook.service` | Dịch vụ webhook |
@@ -600,3 +602,68 @@ npm run dev
 - Gửi tới DeepSeek: tiêu chí 5 câu hỏi, câu hỏi tự do và tối đa 10 lượt hội thoại trước. Máy chủ DeepSeek đặt ở Trung Quốc; ô nhập trên trang có ghi chú để người dùng không nhập thông tin cá nhân.
 - Form đặt lịch (họ tên, số điện thoại) **không** đi qua API này.
 - Log container `api` chỉ ghi độ dài, số token và thời gian trả lời, không ghi nội dung câu hỏi: `docker compose logs --tail=50 api`.
+
+---
+
+## 15. Dữ liệu mặt bằng và trang quản trị
+
+### 15.1 Dữ liệu nằm ở đâu
+
+| Dữ liệu | Nơi lưu | Cập nhật |
+|---|---|---|
+| Mặt bằng (giá, diện tích, toạ độ, lối tiếp cận…) | SQLite `/data/estatesmart.db` trong volume Docker `api_data` | Trang `/quan-tri/` |
+| Dữ liệu mẫu ban đầu | `api/data/listings.csv` (30 mặt bằng **mô phỏng** ở Vinhomes Ocean Park 1) | Chỉ nạp khi cơ sở dữ liệu trống |
+| Chung cư, trường, Vincom, xe buýt, quán cùng ngành | `api/data/pois.json` (ảnh chụp OpenStreetMap) | `cd api && npm run osm`, rồi commit file mới |
+| Bản đồ nền | OpenFreeMap (miễn phí, không cần khoá) | Không cần làm gì |
+
+Volume `api_data` được giữ qua các lần deploy. Sửa `listings.csv` trong repo **không** ghi đè dữ liệu đang chạy; muốn nạp lại thì dùng *Nhập CSV* trên trang quản trị.
+
+### 15.2 Bật trang quản trị
+
+Trang quản trị chỉ bật khi có `ADMIN_PASSWORD` (tối thiểu 12 ký tự) trong `/opt/estatesmart/api.env`. `setup-vps.sh` tự tạo một mật khẩu ngẫu nhiên khi cài mới. Với VPS đã cài trước đó:
+
+```bash
+echo "ADMIN_PASSWORD=$(openssl rand -base64 18)" | sudo tee -a /opt/estatesmart/api.env > /dev/null
+```
+
+```bash
+cd /opt/estatesmart/app && sudo -u deploy docker compose up -d api
+```
+
+Xem mật khẩu (chỉ trên VPS, không gửi qua chat hay email):
+
+```bash
+sudo grep ADMIN_PASSWORD /opt/estatesmart/api.env
+```
+
+Kiểm tra: `curl -s https://estatesmart.site/api/health` có `"admin":true`. Mở `https://estatesmart.site/quan-tri/` để đăng nhập.
+
+Bảo vệ: sai mật khẩu 5 lần trong 15 phút thì IP bị khoá 15 phút; phiên đăng nhập 8 giờ, cookie `HttpOnly`, `Secure`, `SameSite=Strict`; khởi động lại container `api` thì mọi phiên bị đăng xuất. Đổi mật khẩu: sửa dòng `ADMIN_PASSWORD` rồi chạy lại lệnh `docker compose up -d api`.
+
+### 15.3 Thêm dữ liệu thật
+
+- Từng mặt bằng: *Thêm mặt bằng* hoặc bấm vào một dòng để sửa. Toạ độ lấy bằng cách nhấp chuột phải trên openstreetmap.org hoặc Google Maps. Muốn tạm ẩn thì đổi *Trạng thái* sang `hidden` thay vì xoá.
+- Hàng loạt: *Xuất CSV* để lấy file mẫu đúng cột, sửa bằng Excel hoặc Google Sheets (lưu dạng CSV UTF-8), rồi *Nhập CSV*. Có lỗi ở bất kỳ dòng nào thì không ghi dòng nào và trang báo dòng lỗi. Chọn *Thay toàn bộ* để xoá các mặt bằng không có trong file.
+- Cột `suited` (mô hình phù hợp) nhận `cafe`, `tra_sua`, `nha_hang`, `tap_hoa`, `tien_loi`, cách nhau bằng dấu `;`. Cột `type` nhận `villa`, `shophouse`, `townhouse`, `podium`, `kiosk`.
+
+### 15.4 Sao lưu
+
+```bash
+cd /opt/estatesmart/app && sudo -u deploy docker compose cp api:/data/estatesmart.db /opt/estatesmart/backup-$(date +%F).db
+```
+
+Hoặc đơn giản hơn: tải *Xuất CSV* trên trang quản trị định kỳ.
+
+### 15.5 Cách 5 Agent chấm điểm
+
+Tính bằng code trong `api/engine.mjs` (không dùng mô hình ngôn ngữ, nên cùng tiêu chí luôn ra cùng kết quả):
+
+| Agent | Việc | Trọng số trong điểm |
+|---|---|---|
+| Phân tích nhu cầu | Đọc 5 câu trả lời: mô hình, khu vực, khoảng ngân sách, khoảng diện tích, yêu cầu (ô tô, dải phân cách, bếp…) | — |
+| Sàng lọc | Loại mặt bằng vượt ngân sách quá 25% hoặc lệch diện tích nhiều; còn dưới 3 thì nới điều kiện | Ngân sách 25%, diện tích 20% |
+| Đánh giá vị trí | Đếm chung cư, trường, xe buýt, công viên trong 500 m, khoảng cách tới Vincom (OpenStreetMap) | 20% |
+| Phân tích cạnh tranh | Đếm cơ sở cùng ngành trong 500 m (OpenStreetMap; dữ liệu quán nhỏ có thể thiếu) | 15% |
+| Chấm điểm và khuyến nghị | Lối tiếp cận, dải phân cách, bãi đỗ, bếp, sân, mô hình phù hợp; tổng hợp Top 3, ưu điểm và rủi ro | Tiếp cận 20% |
+
+Trợ lý chat nhận đúng dữ liệu và điểm thành phần của ba mặt bằng đang hiển thị, nên giải thích được vì sao mặt bằng này xếp trên mặt bằng kia.

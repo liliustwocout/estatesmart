@@ -5,7 +5,8 @@
   "type": "module",
   "engines": { "node": ">=22" },
   "scripts": {
-    "start": "node server.mjs",
-    "dev": "node --env-file-if-exists=.env --watch server.mjs"
+    "start": "node --disable-warning=ExperimentalWarning server.mjs",
+    "osm": "node scripts/fetch-osm.mjs",
+    "dev": "node --disable-warning=ExperimentalWarning --env-file-if-exists=.env --watch server.mjs"
   }
 }

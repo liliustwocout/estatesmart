@@ -144,11 +144,18 @@ input::placeholder{color:rgba(31,28,25,.5)}
 /* Bản đồ & 3D */
 .stage{position:relative;flex:1 1 auto;border-radius:24px;overflow:hidden;background:var(--map)}
 .view{position:absolute;inset:0;animation:fade var(--dur-2) var(--ease-out) both}
+/* Bản đồ MapLibre: luôn gắn trong trang để không phải tải lại khi chuyển qua lại 3D */
+.mapview.is-hidden{visibility:hidden}
+.mapview .mapbox{position:absolute;inset:0;background:var(--map)}
+.mapbox .maplibregl-ctrl-bottom-left{margin-bottom:0}
+.map-pin-wrap{width:40px;height:40px}
+.map-pin{position:relative;margin:0;cursor:pointer}
+.pulse{pointer-events:none}
 @keyframes fade{from{opacity:0}}
 .float{position:absolute;padding:12px 16px;border-radius:14px;background:rgba(251,248,242,.95)}
 .float .label{margin:0;font-size:13px;color:var(--ink-2)}
 .float .val{margin:2px 0 0;font-size:16px;font-weight:500}
-.legend{left:20px;bottom:20px;display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 14px;font-size:13px}
+.legend{left:20px;bottom:36px;display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 14px;font-size:13px}
 .legend span{display:flex;align-items:center;gap:6px}
 @keyframes pulse{0%{transform:scale(.4);opacity:.7}100%{transform:scale(1.6);opacity:0}}
 .pulse{position:absolute;left:50%;top:42%;width:360px;height:360px;margin:-180px 0 0 -180px;border-radius:50%;border:2px solid var(--accent);animation:pulse 1.6s var(--ease-out) infinite}
@@ -272,7 +279,7 @@ input::placeholder{color:rgba(31,28,25,.5)}
 <div class="card-actions">
 <button type="button" class="tlink" onClick="{{r.showMap}}">Bản đồ</button>
 <button type="button" class="tlink" onClick="{{r.show3d}}">Xem 3D</button>
-<a class="tlink accent" href="Listing.dc.html">Hồ sơ<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a class="tlink accent" href="{{r.href}}">Hồ sơ<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
 </article>
@@ -306,42 +313,12 @@ input::placeholder{color:rgba(31,28,25,.5)}
 <section class="viz" aria-label="Bản đồ và mô hình 3D">
 <div class="stage">
 
-<sc-if value="{{isMap}}" hint-placeholder-val="{{ true }}">
-<div class="view">
-<svg viewBox="0 0 1000 800" preserveAspectRatio="none" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block">
-<rect width="1000" height="800" fill="#ECE5D7"></rect>
-<path d="M0 640 C 200 580, 380 720, 560 655 S 860 575, 1000 615 L1000 800 L0 800 Z" fill="#CFD8D3"></path>
-<rect x="520" y="330" width="120" height="96" rx="8" fill="#D8DCC5"></rect>
-<rect x="130" y="430" width="96" height="74" rx="8" fill="#D8DCC5"></rect>
-<rect x="800" y="180" width="90" height="70" rx="8" fill="#D8DCC5"></rect>
-<g stroke="#F8F4EC" stroke-width="5" fill="none">
-<path d="M0 200 L1000 190"></path><path d="M0 420 L1000 395"></path><path d="M0 520 L1000 500"></path>
-<path d="M120 0 L160 640"></path><path d="M250 0 L270 600"></path><path d="M560 0 L540 660"></path><path d="M860 0 L830 600"></path><path d="M960 0 L940 610"></path>
-<path d="M0 60 L1000 40"></path>
-</g>
-<g stroke="#FFFFFF" stroke-width="16" fill="none" stroke-linecap="round">
-<path d="M0 310 L1000 270"></path>
-<path d="M380 0 L460 800"></path>
-<path d="M720 0 L650 640"></path>
-<path d="M0 130 C 300 170, 600 90, 1000 150"></path>
-</g>
-</svg>
+<div class="view mapview {{mapViewCls}}" aria-hidden="{{mapHidden}}">
+<div class="mapbox" ref="{{mapRef}}" role="region" aria-label="Bản đồ khu vực Vinhomes Ocean Park 1"></div>
 
 <sc-if value="{{analyzing}}" hint-placeholder-val="{{ false }}">
 <span class="pulse" aria-hidden="true"></span>
 </sc-if>
-
-<sc-for list="{{competitors}}" as="c" hint-placeholder-count="10">
-<span class="comp-dot" title="Cơ sở cùng ngành" style="left: {{c.x}}; top: {{c.y}}"></span>
-</sc-for>
-
-<sc-if value="{{hasResults}}" hint-placeholder-val="{{ false }}">
-<span class="ring" key="{{selCode}}" aria-hidden="true" style="left: {{selPin.x}}; top: {{selPin.y}}"></span>
-</sc-if>
-
-<sc-for list="{{pins}}" as="p" hint-placeholder-count="3">
-<button type="button" class="pin {{p.cls}}" onClick="{{p.pick}}" aria-label="{{p.label}}" aria-pressed="{{p.pressed}}" style="left: {{p.x}}; top: {{p.y}}; animation-delay: {{p.delay}}">{{p.rank}}</button>
-</sc-for>
 
 <div class="float" style="left: 20px; top: 20px">
 <p class="label">Khu vực</p>
@@ -350,18 +327,17 @@ input::placeholder{color:rgba(31,28,25,.5)}
 
 <div class="float legend">
 <span><span style="width: 12px; height: 12px; border-radius: 50%; background: #1F1C19"></span>Mặt bằng đề xuất</span>
-<span><span style="width: 10px; height: 10px; border-radius: 50%; background: #FBF8F2; border: 2px solid #6B625A"></span>Cơ sở cùng ngành</span>
+<span><span style="width: 10px; height: 10px; border-radius: 50%; background: #FBF8F2; border: 2px solid #6B625A"></span>Cơ sở cùng ngành (OpenStreetMap)</span>
 <span><span style="width: 12px; height: 12px; border-radius: 50%; border: 1.5px dashed #A3562B"></span>Bán kính 500 m</span>
 </div>
 
 <sc-if value="{{noResults}}" hint-placeholder-val="{{ true }}">
 <div class="empty">
 <p style="font-weight: 500">{{mapHint}}</p>
-<p class="sub">Mặt bằng phù hợp và cơ sở cùng ngành sẽ hiện ở đây.</p>
+<p class="sub">{{mapSub}}</p>
 </div>
 </sc-if>
 </div>
-</sc-if>
 
 <sc-if value="{{is3d}}" hint-placeholder-val="{{ false }}">
 <div class="view scene {{dragCls}}" onPointerDown="{{dragStart}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragEnd}}" onPointerLeave="{{dragEnd}}" onPointerCancel="{{dragEnd}}">
@@ -401,7 +377,7 @@ input::placeholder{color:rgba(31,28,25,.5)}
 <p class="meta">Hạng {{sel.rank}}, {{sel.score}}/100 điểm</p>
 <p style="margin: 0; font-size: 16px; font-weight: 500; line-height: 1.3">{{sel.name}}</p>
 <p class="meta">{{sel.price}}, {{sel.size}}</p>
-<a class="tlink accent" href="Listing.dc.html" style="margin-top: auto">Xem hồ sơ<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a class="tlink accent" href="{{profileHref}}" style="margin-top: auto">Xem hồ sơ<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
 </sc-if>
@@ -419,7 +395,9 @@ input::placeholder{color:rgba(31,28,25,.5)}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', rot: 35, typing: false, dragging: false, undo: null, extra: [] };
+    this.state = { answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', rot: 35, typing: false, dragging: false, undo: null, extra: [], recs: null, comps: [], recNotes: [], recStats: null };
+    this.recsSettled = false;
+    this.map = null;
     this.thread = null;
     this.timer = null;
     this.typeTimer = null;
@@ -459,6 +437,7 @@ class Component extends DCLogic {
     window.addEventListener('pointermove', this.onLook, { passive: true });
   }
   componentDidUpdate(prevProps, prevState) {
+    this.syncMap();
     if (this.thread && prevState && (prevState.answers !== this.state.answers || prevState.phase !== this.state.phase || prevState.agentDone !== this.state.agentDone || prevState.typing !== this.state.typing || prevState.extra !== this.state.extra)) {
       this.thread.scrollTop = this.thread.scrollHeight;
     }
@@ -479,11 +458,13 @@ class Component extends DCLogic {
       { key: 'YÊU CẦU', q: 'Anh/chị có yêu cầu vận hành đặc thù nào không? Ví dụ: chỗ đỗ xe cho khách mang đi, tránh tuyến đường có dải phân cách cứng.', options: ['Cần chỗ đỗ ô tô', 'Tránh dải phân cách cứng', 'Gần khu văn phòng', 'Không có yêu cầu thêm'], ph: 'Mô tả yêu cầu chi tiết' }
     ];
   }
+  // Kết quả từ API (/api/recommend); nếu chưa có hoặc lỗi thì dùng ba mặt bằng mẫu dưới đây.
   listings() {
+    if (this.state.recs && this.state.recs.length) return this.state.recs;
     return [
-      { code: 'MB-01', rank: 1, score: 88, name: 'Biệt thự sân vườn ven hồ, Ngọc Trai', meta: 'Ocean Park 1, 300 m²', size: '300 m²', price: '75 triệu/tháng', x: 62, y: 38, src: '/_blob/88da756d7bdf21acce5e115ce122899b', alt: 'Biệt thự hai tầng tường trắng, sân lát đá', massing: 'Hai tầng, sảnh kính và sân vườn' },
-      { code: 'MB-02', rank: 2, score: 81, name: 'Nhà phố có sân, Hải Âu', meta: 'Ocean Park 1, 180 m²', size: '180 m²', price: '45 triệu/tháng', x: 33, y: 57, src: '/_blob/75748c213ca7441c1ce9472de5d61042', alt: 'Nhà một tầng ốp gỗ có sân cỏ', massing: 'Một tầng, ốp gỗ, sân trước' },
-      { code: 'MB-03', rank: 3, score: 76, name: 'Shophouse căn góc, San Hô', meta: 'Ocean Park 1, 240 m²', size: '240 m²', price: '62 triệu/tháng', x: 47, y: 22, src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', alt: 'Công trình hai tầng có sân đỗ xe', massing: 'Hai tầng, căn góc hai mặt đường' }
+      { code: 'MB-01', rank: 1, score: 88, name: 'Biệt thự sân vườn ven hồ, Ngọc Trai', meta: 'Ocean Park 1, 300 m²', size: '300 m²', price: '75 triệu/tháng', lat: 20.9895, lng: 105.9505, massingIdx: 0, src: '/_blob/88da756d7bdf21acce5e115ce122899b', alt: 'Biệt thự hai tầng tường trắng, sân lát đá', massing: 'Hai tầng, sảnh kính và sân vườn' },
+      { code: 'MB-02', rank: 2, score: 81, name: 'Nhà phố có sân, Hải Âu', meta: 'Ocean Park 1, 180 m²', size: '180 m²', price: '45 triệu/tháng', lat: 20.9975, lng: 105.9505, massingIdx: 1, src: '/_blob/75748c213ca7441c1ce9472de5d61042', alt: 'Nhà một tầng ốp gỗ có sân cỏ', massing: 'Một tầng, ốp gỗ, sân trước' },
+      { code: 'MB-03', rank: 3, score: 76, name: 'Shophouse căn góc, San Hô', meta: 'Ocean Park 1, 240 m²', size: '240 m²', price: '62 triệu/tháng', lat: 20.9935, lng: 105.956, massingIdx: 2, src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', alt: 'Công trình hai tầng có sân đỗ xe', massing: 'Hai tầng, căn góc hai mặt đường' }
     ];
   }
   box(cx, cz, w, h, d, base, opts) {
@@ -527,6 +508,50 @@ class Component extends DCLogic {
       this.box(0, 0, 230, 86, 230, white, { y: 86, front: win, side: win }),
       this.box(0, 0, 240, 6, 240, '#E4DED2', { y: 172 }));
   }
+  criteriaOf(a) {
+    return { model: a[0] || '', area: a[1] || '', budget: a[2] || '', size: a[3] || '', needs: a[4] || '' };
+  }
+  // Gọi 5 Agent trên máy chủ. Lỗi mạng thì giữ ba mặt bằng mẫu để trang vẫn dùng được.
+  async fetchRecs(answers) {
+    this.recsSettled = false;
+    this.waitTicks = 0;
+    const token = (this.recToken = (this.recToken || 0) + 1);
+    const criteria = this.criteriaOf(answers);
+    try {
+      const res = await fetch('/api/recommend', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ criteria }) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+      if (token !== this.recToken) return;
+      const recs = d.results.map((r) => ({ ...r, src: r.src }));
+      this.setState({ recs, comps: d.competitors || [], recNotes: d.notes || [], recStats: d.stats || null });
+      try { sessionStorage.setItem('es-recs', JSON.stringify({ codes: recs.map((r) => r.code), criteria })); } catch (e) { /* trình duyệt chặn lưu trữ: bỏ qua */ }
+    } catch (e) {
+      if (token !== this.recToken) return;
+      this.setState({ recs: null, comps: [], recNotes: ['Chưa kết nối được máy chủ thẩm định, đang hiển thị ba mặt bằng mẫu.'], recStats: null });
+    } finally {
+      if (token === this.recToken) this.recsSettled = true;
+    }
+  }
+  // Bản đồ được nạp động khi khung bản đồ xuất hiện, rồi đồng bộ sau mỗi lần cập nhật.
+  attachMap(el) {
+    if (!el || this.mapEl === el) return;
+    this.mapEl = el;
+    import('../map/siteMap.js').then((m) => {
+      if (this.mapEl !== el) return;
+      if (this.map) this.map.destroy();
+      this.map = m.createSiteMap(el, { onPick: (i) => this.setState({ sel: i, view: 'map' }) });
+      this.syncMap();
+    }).catch(() => { el.classList.add('map-failed'); });
+  }
+  syncMap() {
+    if (!this.map) return;
+    const { phase, agentDone, sel } = this.state;
+    const hasResults = phase === 'results';
+    const ls = this.listings();
+    const comps = phase === 'ask' ? [] : this.state.comps.slice(0, hasResults ? undefined : Math.ceil(this.state.comps.length * agentDone / 5));
+    this.map.update({ pins: hasResults ? ls : [], sel, competitors: comps });
+    if (this.lastView !== this.state.view) { this.lastView = this.state.view; if (this.state.view === 'map') this.map.resize(); }
+  }
   stopTimers() {
     if (this.timer) clearInterval(this.timer);
     if (this.typeTimer) clearTimeout(this.typeTimer);
@@ -537,6 +562,7 @@ class Component extends DCLogic {
     if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => {
       const next = this.state.agentDone + 1;
+      if (next >= 5 && !this.recsSettled && (this.waitTicks = (this.waitTicks || 0) + 1) < 10) return;
       if (next >= 5) {
         clearInterval(this.timer);
         this.timer = null;
@@ -563,7 +589,8 @@ class Component extends DCLogic {
       this.typeTimer = setTimeout(() => { this.typeTimer = null; this.setState({ typing: false }); }, 420);
       return;
     }
-    this.setState({ answers, draft: '', phase: 'analyzing', agentDone: 0, view: 'map' });
+    this.setState({ answers, draft: '', phase: 'analyzing', agentDone: 0, view: 'map', sel: 0, recs: null, comps: [], recNotes: [], recStats: null });
+    this.fetchRecs(answers);
     this.runAgents();
   }
   // Hỏi trợ lý AI (máy chủ /api/chat), nhận câu trả lời dần từng đoạn.
@@ -586,7 +613,7 @@ class Component extends DCLogic {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ message: question, criteria, history }),
+        body: JSON.stringify({ message: question, criteria, history, codes: this.listings().map((l) => l.code) }),
         signal: ctrl.signal
       });
       if (!res.ok || !res.body) {
@@ -628,8 +655,9 @@ class Component extends DCLogic {
   editFrom(i) {
     this.stopTimers();
     this.stopAsk();
+    this.recToken = (this.recToken || 0) + 1;
     const prev = this.state.answers[i];
-    this.setState({ answers: this.state.answers.slice(0, i), phase: 'ask', agentDone: 0, typing: false, extra: [], draft: prev || '' }, () => {
+    this.setState({ answers: this.state.answers.slice(0, i), phase: 'ask', agentDone: 0, typing: false, extra: [], draft: prev || '', recs: null, comps: [], recNotes: [], sel: 0 }, () => {
       const el = document.getElementById('chat-input');
       if (el) { el.focus(); el.select(); }
     });
@@ -638,7 +666,8 @@ class Component extends DCLogic {
     const qs = this.questions();
     const { answers, phase, agentDone, view, rot, typing } = this.state;
     const ls = this.listings();
-    const sel = ls[this.state.sel];
+    const sel = ls[Math.min(this.state.sel, ls.length - 1)];
+    const profileHref = (code) => '/mat-bang/?ma=' + encodeURIComponent(code);
     const hasResults = phase === 'results';
     const step = Math.min(answers.length, qs.length - 1);
     const messages = [];
@@ -652,7 +681,9 @@ class Component extends DCLogic {
       messages.push({ isAgents: true });
     }
     if (hasResults) {
-      messages.push({ isBot: true, text: 'Đây là ba mặt bằng phù hợp nhất, xếp theo điểm. Chọn một mặt bằng để xem vị trí trên bản đồ hoặc mô hình khối 3D.' });
+      this.state.recNotes.forEach((t) => messages.push({ isBot: true, text: t }));
+      const st = this.state.recStats;
+      messages.push({ isBot: true, text: (st ? 'Đã sàng lọc ' + st.screened + ' trên ' + st.total + ' mặt bằng. ' : '') + 'Đây là ba mặt bằng phù hợp nhất, xếp theo điểm. Chọn một mặt bằng để xem vị trí trên bản đồ hoặc mô hình khối 3D.' });
       messages.push({ isResults: true });
       this.state.extra.forEach((x) => {
         if (x.streaming && !x.text) messages.push({ isTyping: true });
@@ -671,22 +702,19 @@ class Component extends DCLogic {
       cls: i === this.state.sel ? 'is-on' : '',
       pressed: i === this.state.sel ? 'true' : 'false',
       showMap: () => this.setState({ sel: i, view: 'map' }),
-      show3d: () => this.setState({ sel: i, view: '3d' })
+      show3d: () => this.setState({ sel: i, view: '3d' }),
+      href: profileHref(l.code)
     }));
-    const pins = hasResults ? ls.map((l, i) => ({
-      rank: l.rank, x: l.x + '%', y: l.y + '%', delay: (i * 110) + 'ms',
-      cls: i === this.state.sel ? 'is-on' : '',
-      label: 'Mặt bằng ' + l.rank + ': ' + l.name,
-      pressed: i === this.state.sel ? 'true' : 'false',
-      pick: () => this.setState({ sel: i })
-    })) : [];
-    const compPts = [[58,30],[68,44],[66,33],[55,42],[29,52],[38,62],[27,61],[36,50],[44,18],[51,27],[42,26],[75,60],[20,30],[82,22]];
-    const competitors = phase === 'ask' ? [] : compPts.slice(0, phase === 'analyzing' ? 3 + agentDone * 2 : compPts.length).map((p) => ({ x: p[0] + '%', y: p[1] + '%' }));
     const doneSteps = hasResults ? 5 : answers.length;
     const curStep = Math.min(doneSteps + 1, 5);
     const asking = phase === 'ask';
     return {
-      messages, agents, results, pins, competitors,
+      messages, agents, results,
+      mapRef: (el) => this.attachMap(el),
+      mapViewCls: view === 'map' ? '' : 'is-hidden',
+      mapHidden: view === 'map' ? 'false' : 'true',
+      mapSub: 'Mặt bằng phù hợp và cơ sở cùng ngành (theo OpenStreetMap) sẽ hiện ở đây.',
+      profileHref: profileHref(sel.code),
       showOptions: asking && !typing,
       optionsKey: 'q' + answers.length,
       options: asking ? qs[step].options.map((label, i) => ({ label, n: i + 1, pick: () => this.answer(label) })) : [],
@@ -704,8 +732,7 @@ class Component extends DCLogic {
       areaLabel: answers[1] || 'Vinhomes Ocean Park 1',
       sel,
       selCode: sel.code,
-      selPin: { x: sel.x + '%', y: sel.y + '%' },
-      faces: this.model(this.state.sel),
+      faces: this.model(sel.massingIdx !== undefined ? sel.massingIdx : this.state.sel),
       rot: rot,
       rotVal: Math.round(((rot % 360) + 360) % 360),
       dragCls: this.state.dragging ? 'is-dragging' : '',
@@ -735,14 +762,16 @@ class Component extends DCLogic {
         if (!u) return;
         if (this.undoTimer) clearTimeout(this.undoTimer);
         this.setState({ ...u, undo: null });
-        if (u.phase === 'analyzing') this.runAgents();
+        if (u.phase === 'analyzing') { if (!u.recs) this.fetchRecs(u.answers); this.runAgents(); }
       },
       reset: () => {
         const s = this.state;
         this.stopTimers();
         this.stopAsk();
-        const snap = s.answers.length ? { answers: s.answers, phase: s.phase, agentDone: s.agentDone, sel: s.sel, view: s.view, extra: s.extra } : null;
-        this.setState({ answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', typing: false, undo: snap, extra: [] });
+        const snap = s.answers.length ? { answers: s.answers, phase: s.phase, agentDone: s.agentDone, sel: s.sel, view: s.view, extra: s.extra, recs: s.recs, comps: s.comps, recNotes: s.recNotes, recStats: s.recStats } : null;
+        this.recToken = (this.recToken || 0) + 1;
+        this.recsSettled = true;
+        this.setState({ answers: [], draft: '', phase: 'ask', agentDone: 0, sel: 0, view: 'map', typing: false, undo: snap, extra: [], recs: null, comps: [], recNotes: [], recStats: null });
         if (this.undoTimer) clearTimeout(this.undoTimer);
         if (snap) this.undoTimer = setTimeout(() => this.setState({ undo: null }), 6000);
       }

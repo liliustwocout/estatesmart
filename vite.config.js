@@ -12,7 +12,8 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         troLy: resolve(__dirname, 'tro-ly/index.html'),
-        matBang: resolve(__dirname, 'mat-bang/index.html')
+        matBang: resolve(__dirname, 'mat-bang/index.html'),
+        quanTri: resolve(__dirname, 'quan-tri/index.html')
       }
     }
   }

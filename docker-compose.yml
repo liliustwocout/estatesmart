@@ -17,6 +17,8 @@ services:
         required: false
     expose:
       - "8787"
+    volumes:
+      - api_data:/data
 
   caddy:
     image: caddy:2.8-alpine
@@ -37,5 +39,6 @@ services:
       - api
 
 volumes:
+  api_data: # cơ sở dữ liệu mặt bằng (SQLite); giữ nguyên qua các lần deploy
   caddy_data:
   caddy_config:

@@ -1,16 +1,27 @@
 // Máy chủ API của estateSmartAI. Chạy: node server.mjs (Node 22, không cần thư viện ngoài).
-//   GET  /api/health  → trạng thái, có khoá API hay chưa
-//   POST /api/chat    → trả lời câu hỏi tự do, truyền dần từng đoạn chữ (text/event-stream)
+//   GET  /api/health      → trạng thái
+//   POST /api/recommend   → 5 Agent thẩm định, trả Top 3 mặt bằng + đối thủ quanh đó
+//   POST /api/profiles    → hồ sơ chi tiết của các mặt bằng (trang /mat-bang/)
+//   POST /api/chat        → trợ lý AI trả lời câu hỏi tự do, truyền dần từng đoạn chữ (text/event-stream)
+//   /api/admin/*          → trang quản trị (xem admin.mjs)
 import { createServer } from 'node:http';
-import { streamChat, llmConfig, LlmError } from './llm.mjs';
+import { streamChat, llmConfig } from './llm.mjs';
 import { systemPrompt } from './prompt.mjs';
 import { acquire, usage } from './limits.mjs';
+import { recommend, profile } from './engine.mjs';
+import { handleAdmin, adminEnabled } from './admin.mjs';
+import { listActive } from './db.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const MAX_MESSAGE = 500; // ký tự mỗi câu hỏi
 const MAX_HISTORY = 6; // số lượt hội thoại trước gửi kèm
 const MAX_HISTORY_CHARS = 4000; // tổng ký tự lịch sử gửi kèm
 const MAX_BODY = 16 * 1024;
+const MAX_ADMIN_BODY = 1024 * 1024; // nhập CSV
+
+class HttpError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
 
 function clientIp(req) {
   // Caddy thay X-Forwarded-For bằng IP thật của người dùng (không tin giá trị do trình duyệt tự gửi).
@@ -23,25 +34,45 @@ function sendJson(res, status, body, headers = {}) {
   res.end(JSON.stringify(body));
 }
 
-async function readJson(req) {
+async function readJson(req, max = MAX_BODY) {
+  if (!String(req.headers['content-type'] || '').includes('application/json')) throw new HttpError(415, 'Chỉ nhận JSON');
   let size = 0;
   const chunks = [];
   for await (const c of req) {
     size += c.length;
-    if (size > MAX_BODY) throw new LlmError('Yêu cầu quá lớn', 413);
+    if (size > max) throw new HttpError(413, 'Yêu cầu quá lớn');
     chunks.push(c);
   }
-  try { return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'); } catch { throw new LlmError('JSON không hợp lệ', 400); }
+  try {
+    const v = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+    if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error();
+    return v;
+  } catch { throw new HttpError(400, 'JSON không hợp lệ'); }
 }
 
-function cleanText(v, max) {
-  return typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '';
+const cleanText = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
+const cleanCriteria = (c) => {
+  const o = c && typeof c === 'object' ? c : {};
+  return Object.fromEntries(['model', 'area', 'budget', 'size', 'needs'].map((k) => [k, cleanText(o[k], 120)]));
+};
+const cleanCodes = (v) => (Array.isArray(v) ? v : []).filter((c) => typeof c === 'string' && /^[A-Za-z0-9-]{2,20}$/.test(c)).slice(0, 3).map((c) => c.toUpperCase());
+
+// Giới hạn nhẹ cho các API tính toán (không tốn token): 30 lần mỗi phút mỗi IP.
+const light = new Map();
+function lightAllow(ip) {
+  const now = Date.now();
+  const l = (light.get(ip) || []).filter((t) => now - t < 60000);
+  if (l.length >= 30) { light.set(ip, l); return false; }
+  l.push(now);
+  light.set(ip, l);
+  return true;
 }
+setInterval(() => { const now = Date.now(); for (const [ip, l] of light) if (!l.some((t) => now - t < 60000)) light.delete(ip); }, 60000).unref();
 
 function buildMessages(body) {
   const message = cleanText(body.message, MAX_MESSAGE);
-  if (!message) throw new LlmError('Thiếu câu hỏi', 400);
-  const criteria = typeof body.criteria === 'object' && body.criteria ? body.criteria : {};
+  if (!message) throw new HttpError(400, 'Thiếu câu hỏi');
+  const criteria = cleanCriteria(body.criteria);
   const history = Array.isArray(body.history) ? body.history.slice(-MAX_HISTORY) : [];
   let turns = history
     .filter((m) => m && (m.role === 'user' || m.role === 'assistant'))
@@ -50,17 +81,11 @@ function buildMessages(body) {
   // Giữ các lượt gần nhất trong giới hạn tổng ký tự, để lịch sử dài không đốt token.
   let total = 0;
   turns = turns.reverse().filter((m) => (total += m.content.length) <= MAX_HISTORY_CHARS).reverse();
-  return { message, messages: [{ role: 'system', content: systemPrompt(criteria) }, ...turns, { role: 'user', content: message }] };
+  return { message, messages: [{ role: 'system', content: systemPrompt(criteria, cleanCodes(body.codes)) }, ...turns, { role: 'user', content: message }] };
 }
 
-async function handleChat(req, res) {
-  const ip = clientIp(req);
-  if (!String(req.headers['content-type'] || '').includes('application/json')) return sendJson(res, 415, { error: 'Chỉ nhận JSON' });
-
-  let built;
-  try { built = buildMessages(await readJson(req)); } catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
-  const { message, messages } = built;
-
+async function handleChat(req, res, ip) {
+  const { message, messages } = buildMessages(await readJson(req));
   if (!llmConfig.apiKey) return sendJson(res, 503, { error: 'Trợ lý AI chưa được bật trên máy chủ.' });
 
   const slot = acquire(ip, message);
@@ -68,12 +93,7 @@ async function handleChat(req, res) {
 
   const abort = new AbortController();
   res.on('close', () => { if (!res.writableEnded) abort.abort(); });
-
-  res.writeHead(200, {
-    'content-type': 'text/event-stream; charset=utf-8',
-    'cache-control': 'no-store',
-    'x-accel-buffering': 'no'
-  });
+  res.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' });
   const send = (obj) => res.write('data: ' + JSON.stringify(obj) + '\n\n');
 
   const started = Date.now();
@@ -101,18 +121,43 @@ async function handleChat(req, res) {
   }
 }
 
+async function route(req, res, url, ip) {
+  const p = url.pathname;
+  const m = req.method;
+
+  if (m === 'GET' && p === '/api/health') {
+    return sendJson(res, 200, { ok: true, llm: !!llmConfig.apiKey, admin: adminEnabled(), listings: listActive().length });
+  }
+
+  if (p.startsWith('/api/admin/')) {
+    const r = await handleAdmin({ req, res, ip, method: m, path: p, body: () => readJson(req, MAX_ADMIN_BODY) });
+    if (r) sendJson(res, r[0], r[1]);
+    return;
+  }
+
+  if (m !== 'POST') return sendJson(res, p.match(/^\/api\/(chat|recommend|profiles)$/) ? 405 : 404, { error: 'Không tìm thấy' });
+
+  if (p === '/api/chat') return handleChat(req, res, ip);
+
+  if (p === '/api/recommend' || p === '/api/profiles') {
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    const body = await readJson(req);
+    const criteria = cleanCriteria(body.criteria);
+    if (p === '/api/recommend') return sendJson(res, 200, recommend(criteria));
+    const codes = cleanCodes(body.codes);
+    if (!codes.length) throw new HttpError(400, 'Thiếu mã mặt bằng');
+    return sendJson(res, 200, { profiles: codes.map((c) => profile(c, criteria)).filter(Boolean) });
+  }
+
+  sendJson(res, 404, { error: 'Không tìm thấy' });
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
-    if (req.method === 'GET' && url.pathname === '/api/health') {
-      return sendJson(res, 200, { ok: true, llm: !!llmConfig.apiKey, model: llmConfig.model });
-    }
-    if (url.pathname === '/api/chat') {
-      if (req.method !== 'POST') return sendJson(res, 405, { error: 'Chỉ nhận POST' });
-      return await handleChat(req, res);
-    }
-    sendJson(res, 404, { error: 'Không tìm thấy' });
+    await route(req, res, url, clientIp(req));
   } catch (e) {
+    if (e instanceof HttpError) { if (!res.headersSent) sendJson(res, e.status, { error: e.message }); else res.end(); return; }
     console.error(e);
     if (!res.headersSent) sendJson(res, 500, { error: 'Lỗi máy chủ' });
     else res.end();
@@ -120,7 +165,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`estateSmartAI API chạy ở cổng ${PORT}, mô hình ${llmConfig.model} tại ${llmConfig.baseUrl}, khoá API: ${llmConfig.apiKey ? 'có' : 'chưa có'}`);
+  console.log(`estateSmartAI API chạy ở cổng ${PORT}; ${listActive().length} mặt bằng; mô hình ${llmConfig.model} (${llmConfig.apiKey ? 'có khoá' : 'chưa có khoá'}); quản trị: ${adminEnabled() ? 'bật' : 'tắt'}`);
 });
 
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => server.close(() => process.exit(0)));

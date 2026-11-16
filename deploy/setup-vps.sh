@@ -59,6 +59,10 @@ fi
 if [ ! -f $BASE/api.env ]; then
   install -m 600 -o deploy -g deploy /dev/null $BASE/api.env
 fi
+# Mật khẩu trang quản trị /quan-tri/ (xem bằng: sudo grep ADMIN_PASSWORD /opt/estatesmart/api.env)
+if ! grep -q '^ADMIN_PASSWORD=' $BASE/api.env; then
+  echo "ADMIN_PASSWORD=$(openssl rand -base64 18)" >> $BASE/api.env
+fi
 echo "DOMAIN=$DOMAIN" > $APP/.env
 chown deploy:deploy $APP/.env
 
@@ -95,3 +99,4 @@ echo
 echo "Hoàn tất. Secret cho GitHub Webhook (chỉ hiện ở đây, lưu vào GitHub rồi đóng cửa sổ):"
 cut -d= -f2 $BASE/webhook.env
 echo "Payload URL: https://$DOMAIN/hooks/deploy"
+echo "Trang quản trị: https://$DOMAIN/quan-tri/ (mật khẩu: sudo grep ADMIN_PASSWORD $BASE/api.env)"

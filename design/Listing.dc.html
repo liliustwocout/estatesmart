@@ -70,6 +70,7 @@ img{max-width:100%}
 .seg-ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 3);border-radius:999px;background:var(--ink);transition:transform var(--dur-3) var(--ease-in-out)}
 .seg button{position:relative;min-height:40px;padding:0 16px;border:0;border-radius:999px;background:none;color:var(--ink-2);font-size:14px;font-weight:500;white-space:nowrap;transition:color var(--dur-2) var(--ease-out)}
 .seg button[aria-pressed="true"]{color:var(--bg)}
+.swap.is-loading{opacity:.35;transition:opacity var(--dur-2) var(--ease-out)}
 .seg button span{opacity:.6;margin-right:6px;font-variant-numeric:tabular-nums}
 @media (hover:hover){.seg button[aria-pressed="false"]:hover{color:var(--ink)}}
 
@@ -215,8 +216,8 @@ img{max-width:100%}
 <header class="topbar {{topbarCls}}">
 <div class="topbar-in">
 <a class="brand" href="Main.dc.html"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg>estateSmart/AI</a>
-<nav class="seg" aria-label="Chọn hồ sơ">
-<span class="seg-ind" aria-hidden="true" style="transform: translateX({{segX}})"></span>
+<nav class="seg" aria-label="Chọn hồ sơ" style="grid-template-columns: repeat({{tabCount}}, minmax(0, 1fr))">
+<span class="seg-ind" aria-hidden="true" style="width: calc((100% - 8px) / {{tabCount}}); transform: translateX({{segX}})"></span>
 <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
 <button type="button" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}"><span>{{t.code}}</span>{{t.label}}</button>
 </sc-for>
@@ -231,7 +232,7 @@ img{max-width:100%}
 <span>Hồ sơ {{l.code}}</span>
 </div>
 
-<main class="swap" key="{{l.code}}">
+<main class="swap {{loadCls}}" key="{{l.code}}" aria-busy="{{busy}}">
 
 <!-- HERO -->
 <section class="hero">
@@ -305,7 +306,7 @@ img{max-width:100%}
 </sc-for>
 </div>
 <div class="rows">
-<h3 class="h3">Tiện ích trong bán kính 1 km</h3>
+<h3 class="h3">Tiện ích xung quanh</h3>
 <sc-for list="{{l.amenities}}" as="a" hint-placeholder-count="4">
 <div><span>{{a.label}}</span><span>{{a.value}}<a class="ref" href="#nguon-{{a.ref}}" aria-label="Nguồn {{a.ref}}">{{a.ref}}</a></span></div>
 </sc-for>
@@ -328,7 +329,7 @@ img{max-width:100%}
 </div>
 </div>
 <div class="panel line">
-<h3 class="h3">Phân bổ theo phân khúc giá</h3>
+<h3 class="h3">{{segTitle}}</h3>
 <sc-for list="{{segments}}" as="s" hint-placeholder-count="3">
 <div class="seg-row">
 <div class="seg-head"><span>{{s.label}}</span><span>{{s.count}} cơ sở</span></div>
@@ -363,10 +364,9 @@ img{max-width:100%}
 </div>
 </div>
 <ol class="sources" aria-label="Nguồn dữ liệu">
-<li id="nguon-1">Tin cho thuê gốc: Batdongsan.com.vn, truy cập 12/11/2026</li>
-<li id="nguon-2">Tuyến đường, dải phân cách, bãi đỗ: Google Maps và OpenFreeMap</li>
-<li id="nguon-3">Cơ sở cùng ngành: GrabFood, ShopeeFood, GrabMart</li>
-<li id="nguon-4">Đơn giá/m² khu vực: tổng hợp từ tin đăng cùng phường trong 90 ngày</li>
+<sc-for list="{{sources}}" as="src" hint-placeholder-count="4">
+<li id="{{src.id}}">{{src.text}}</li>
+</sc-for>
 </ol>
 </section>
 
@@ -431,7 +431,7 @@ img{max-width:100%}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { idx: 0, room: 0, saved: {}, sent: false, sending: false, scrolled: false, form: { name: '', phone: '', role: 'Chủ doanh nghiệp', date: '' }, errors: {} };
+    this.state = { idx: 0, room: 0, saved: {}, sent: false, sending: false, scrolled: false, form: { name: '', phone: '', role: 'Chủ doanh nghiệp', date: '' }, errors: {}, remote: null, loading: false };
     this.timer = null;
     this.onScroll = () => {
       const s = window.scrollY > 8;
@@ -441,12 +441,38 @@ class Component extends DCLogic {
   componentDidMount() {
     window.addEventListener('scroll', this.onScroll, { passive: true });
     this.onScroll();
+    this.loadRemote();
+  }
+  // Đọc hồ sơ từ máy chủ theo ?ma=MB-xx. Ba mã của lần tư vấn gần nhất (lưu ở trang Trợ lý) thành các tab.
+  async loadRemote() {
+    let ma = '';
+    try { ma = (new URLSearchParams(window.location.search).get('ma') || '').toUpperCase(); } catch (e) { ma = ''; }
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem('es-recs') || 'null'); } catch (e) { saved = null; }
+    let codes = saved && Array.isArray(saved.codes) ? saved.codes.slice(0, 3) : [];
+    if (ma && !codes.includes(ma)) codes = [ma];
+    if (!codes.length) return;
+    const criteria = saved && saved.criteria && (!ma || saved.codes.includes(ma)) ? saved.criteria : {};
+    this.setState({ loading: true });
+    try {
+      const res = await fetch('/api/profiles', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ codes, criteria }) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+      const list = (d.profiles || []).filter(Boolean);
+      if (!list.length) { this.setState({ loading: false }); return; }
+      const idx = Math.max(0, list.findIndex((x) => x.code === ma));
+      this.setState({ remote: list, idx, room: 0, loading: false });
+      document.title = 'Hồ sơ ' + list[idx].code + ' — estateSmartAI';
+    } catch (e) {
+      this.setState({ loading: false });
+    }
   }
   componentWillUnmount() {
     window.removeEventListener('scroll', this.onScroll);
     if (this.timer) clearTimeout(this.timer);
   }
   data() {
+    if (this.state.remote) return this.state.remote;
     const B = {
       hero3: '/_blob/88da756d7bdf21acce5e115ce122899b', night: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', side: '/_blob/276d08c50962e6b144b0f758c6e01add',
       top: '/_blob/8cc9ac945960bf00282a323c6238a51c', tour: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', garden: '/_blob/c1d785e9fac6c74b8e90d82cae82af92',
@@ -611,7 +637,7 @@ class Component extends DCLogic {
     const ri = Math.min(room, l.rooms.length - 1);
     const pad = (i) => String(i + 1).padStart(2, '0');
     const isSaved = !!saved[l.code];
-    const total = l.segments.reduce((a, s) => a + s.count, 0);
+    const total = l.segments.reduce((a, s) => a + s.count, 0) || 1;
     const pickRoom = (i, focus) => {
       const n = l.rooms.length;
       const k = (i + n) % n;
@@ -621,12 +647,27 @@ class Component extends DCLogic {
     return {
       l,
       topbarCls: this.state.scrolled ? 'is-solid' : '',
+      loadCls: this.state.loading ? 'is-loading' : '',
+      busy: this.state.loading ? 'true' : 'false',
+      tabCount: String(all.length),
+      segTitle: l.segTitle || 'Phân bổ theo phân khúc giá',
+      sources: this.state.remote ? [
+        { id: 'nguon-1', text: 'Thông tin mặt bằng (giá, diện tích, lối tiếp cận): dữ liệu mô phỏng của bản thử nghiệm, quản lý tại trang quản trị' },
+        { id: 'nguon-2', text: 'Chung cư, trường học, Vincom, điểm xe buýt: © OpenStreetMap contributors (ODbL)' },
+        { id: 'nguon-3', text: 'Cơ sở cùng ngành: OpenStreetMap, có thể thiếu các quán chưa được cập nhật' },
+        { id: 'nguon-4', text: 'Đơn giá/m² khu vực: trung vị các mặt bằng cùng loại trong hệ thống' }
+      ] : [
+        { id: 'nguon-1', text: 'Tin cho thuê gốc: Batdongsan.com.vn, truy cập 12/11/2026' },
+        { id: 'nguon-2', text: 'Tuyến đường, dải phân cách, bãi đỗ: Google Maps và OpenFreeMap' },
+        { id: 'nguon-3', text: 'Cơ sở cùng ngành: GrabFood, ShopeeFood, GrabMart' },
+        { id: 'nguon-4', text: 'Đơn giá/m² khu vực: tổng hợp từ tin đăng cùng phường trong 90 ngày' }
+      ],
       segX: (idx * 100) + '%',
       tabs: all.map((x, i) => ({
         code: x.code,
         label: x.tab,
         pressed: i === idx ? 'true' : 'false',
-        pick: () => { if (i !== idx) this.setState({ idx: i, room: 0, sent: false, sending: false, errors: {} }); }
+        pick: () => { if (i !== idx) { this.setState({ idx: i, room: 0, sent: false, sending: false, errors: {} }); try { history.replaceState(null, '', '?ma=' + encodeURIComponent(x.code)); } catch (e) { /* bỏ qua */ } } }
       })),
       scoreFrac: (l.score / 100).toFixed(2),
       roomCount: String(l.rooms.length),
