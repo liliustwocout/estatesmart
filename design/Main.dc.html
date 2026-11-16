@@ -111,10 +111,16 @@ img{max-width:100%}
 .about.is-live .about-stage .wrap{width:100%}
 .about.is-live .slot img{visibility:hidden}
 .about.is-live .statement .w{opacity:clamp(.16,calc(var(--wp,0) * (var(--n) + 6) - var(--i)),1)}
-.about.is-live .about-box{display:block;position:absolute;inset:0;z-index:3;pointer-events:none;clip-path:inset(24px round 24px);will-change:clip-path}
+/* Từ khoá: chữ màu đất nung, vệt bút nhấn vẽ từ trái sang phải ngay sau khi từ sáng lên */
+.statement .k{position:relative;color:#9E3B22;white-space:nowrap}
+.statement .k::after{content:"";position:absolute;left:-.04em;right:-.04em;bottom:.04em;height:.36em;z-index:-1;border-radius:.12em;background:rgba(211,154,106,.42);transform-origin:left center;transform:scaleX(1)}
+.statement .w{position:relative;z-index:0}
+.about.is-live .statement .k::after{transform:scaleX(clamp(0,calc(var(--wp,0) * (var(--n) + 6) - var(--i) - .6),1))}
+.about.is-live .about-box{display:block;position:absolute;inset:0;z-index:3;pointer-events:none;clip-path:inset(84px 24px 24px round 24px)}
 .about-box-in{position:absolute;inset:0;transform-origin:50% 50%;will-change:transform}
-.about-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 600ms var(--ease-in-out)}
-.about-slide.is-active{opacity:1}
+/* Ảnh lướt theo cuộn: ảnh sau trượt từ dưới lên phủ ảnh trước, ảnh trước lùi nhẹ lên (chỉ dùng transform) */
+.about-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;will-change:transform;backface-visibility:hidden}
+.about-slide + .about-slide{transform:translate3d(0,100%,0);box-shadow:0 -24px 48px -24px rgba(18,16,14,.45)}
 .about-count{position:absolute;right:calc(var(--gutter) + 16px);bottom:40px;z-index:4;margin:0;padding:6px 12px;border-radius:999px;background:rgba(18,16,14,.6);color:#F7F3EC;font-size:14px;font-variant-numeric:tabular-nums}
 .about-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 64px;max-width:860px;margin-top:40px;padding-top:32px;border-top:1px solid var(--line-2)}
 .about-cols p{margin:0;max-width:44ch}
@@ -181,6 +187,16 @@ img{max-width:100%}
 
 /* Hồ sơ mẫu */
 .study{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-top:0}
+.study-track{position:relative;padding-bottom:clamp(88px,11vw,180px)}
+.study-card,.study-media{transition:transform 950ms cubic-bezier(.76,0,.24,1)}
+@media (min-width:821px){
+.study-track.is-live{height:230svh}
+.study-track.is-live .study-pin{position:sticky;top:0;height:100svh;display:flex;align-items:center;padding-top:64px;box-sizing:border-box}
+.study-track.is-live .study{width:100%}
+.study-track.is-live .study-card,.study-track.is-live .study-media{min-height:min(600px,calc(100svh - 112px))}
+.study.is-flip .study-card{transform:translateX(calc(100% + 12px))}
+.study.is-flip .study-media{transform:translateX(calc(-100% - 12px))}
+}
 .study-card{min-height:600px;background:var(--surface);border-radius:var(--radius);padding:clamp(28px,3.4vw,44px);display:flex;flex-direction:column;justify-content:space-between;gap:48px}
 .study-title{white-space:pre-line;animation:es-enter var(--dur-3) var(--ease-out) both}
 .study-foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:24px}
@@ -266,7 +282,7 @@ img{max-width:100%}
 <a href="Listing.dc.html" style="--i: 3">Hồ sơ mặt bằng</a>
 <a href="#lien-he" onClick="{{closeMenu}}" style="--i: 4">Liên hệ</a>
 </nav>
-<p class="label">Nhóm 20, chương trình AI In Action 2026</p>
+<p class="label">Thẩm định mặt bằng F&amp;B và bán lẻ bằng dữ liệu</p>
 </div>
 
 <main id="noi-dung">
@@ -295,7 +311,7 @@ img{max-width:100%}
 <div class="about-stage" ref="{{stageRef}}">
 <div class="wrap">
 <h2 class="sr-only">Giới thiệu</h2>
-<p class="statement" ref="{{stmtRef}}" style="--n: {{wordCount}}"><span class="slot" ref="{{slotRef}}"><img src="/_blob/3517a4dd3d9a82c4b088e7f9bcd011df" alt="" loading="lazy"></span> <sc-for list="{{words}}" as="w" hint-placeholder-count="20"><span class="w" style="--i: {{w.i}}">{{w.t}} </span></sc-for></p>
+<p class="statement" ref="{{stmtRef}}" style="--n: {{wordCount}}"><span class="slot" ref="{{slotRef}}"><img src="/_blob/3517a4dd3d9a82c4b088e7f9bcd011df" alt="" loading="lazy"></span> <sc-for list="{{words}}" as="w" hint-placeholder-count="20"><span class="w" style="--i: {{w.i}}"><sc-if value="{{w.k}}" hint-placeholder-val="{{ false }}"><span class="k">{{w.t}}</span>{{w.after}}</sc-if><sc-if value="{{w.plain}}" hint-placeholder-val="{{ true }}">{{w.t}} </sc-if></span></sc-for></p>
 </div>
 <div class="about-box" ref="{{boxRef}}" aria-hidden="true">
 <div class="about-box-in" ref="{{boxInRef}}">
@@ -389,7 +405,9 @@ img{max-width:100%}
 </section>
 
 <!-- HỒ SƠ MẪU -->
-<section id="ho-so-mau" class="sec wrap study">
+<section id="ho-so-mau" class="study-track {{studyTrackCls}}" ref="{{studyRef}}">
+<div class="study-pin">
+<div class="wrap study {{studyFlipCls}}">
 <div class="study-card">
 <h2 class="h2 study-title" key="{{study.num}}">{{study.title}}</h2>
 <div class="study-foot">
@@ -409,6 +427,8 @@ img{max-width:100%}
 <img class="ch-img {{s.cls}}" src="{{s.src}}" alt="{{s.alt}}" loading="lazy" style="object-position: {{s.pos}}">
 </sc-for>
 </div>
+</div>
+</div>
 </section>
 </main>
 
@@ -423,9 +443,8 @@ img{max-width:100%}
 </div>
 </div>
 <div class="foot-grid">
-<div><p class="label">Dự án</p><p>T020, AI In Action<br>Mentor: Lương Sơn Tịnh</p></div>
-<div><p class="label">Nhóm 20</p><p>Cao Trung Hiếu, Project Owner<br>Lê Phạm Thành Đạt, Project Manager</p></div>
-<div><p class="label">Phát triển</p><p>Cao Phạm Thành Đạt, Developer<br>Trần Đức Duy, Developer</p></div>
+<div><p class="label">Khu vực thí điểm</p><p>Vinhomes Ocean Park 1<br>Gia Lâm, Hà Nội</p></div>
+<div><p class="label">Dữ liệu</p><p>Bản đồ và tiện ích<br>© OpenStreetMap</p></div>
 <div><p class="label">Sản phẩm</p><p><a class="link" href="Chat.dc.html">Trợ lý AI</a><br><a class="link" href="Listing.dc.html">Hồ sơ mặt bằng</a><br><a class="link" href="#quy-trinh">Quy trình</a></p></div>
 </div>
 <p class="wordmark" aria-label="estateSmart/AI"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg><span aria-hidden="true">estateSmart/AI</span></p>
@@ -449,20 +468,44 @@ class Component extends DCLogic {
     this.cur = 0;
     this.raf = 0;
     this.slideIdx = -1;
-    this.tick = () => {
+    this.last = {};
+    this.lastT = 0;
+    this.visible = false;
+    // Vòng vẽ: đọc vị trí trước, ghi style sau (tránh bắt trình duyệt dàn trang lại giữa chừng);
+    // làm mượt theo thời gian thực nên tốc độ như nhau trên màn 60 Hz hay 144 Hz.
+    this.tick = (t) => {
       this.raf = 0;
-      const target = this.aboutTarget();
-      const d = target - this.cur;
-      this.cur = Math.abs(d) < 0.0005 ? target : this.cur + d * 0.14;
-      this.paintAbout(this.cur);
-      if (this.cur !== target) this.raf = requestAnimationFrame(this.tick);
+      const m = this.measure();
+      if (!m) return;
+      const dt = this.lastT ? Math.min(64, t - this.lastT) : 16;
+      this.lastT = t;
+      const d = m.p - this.cur;
+      this.cur = Math.abs(d) < 0.0004 ? m.p : this.cur + d * (1 - Math.exp(-dt / 60));
+      this.paintAbout(this.cur, m);
+      if (this.cur !== m.p) this.raf = requestAnimationFrame(this.tick);
+      else this.lastT = 0;
     };
-    this.kick = () => { if (!this.raf) this.raf = requestAnimationFrame(this.tick); };
+    this.kick = () => { if (!this.raf && this.visible) this.raf = requestAnimationFrame(this.tick); };
     this.downX = null;
+    // Hồ sơ mẫu: cuộn qua nửa đầu là ví dụ 01, nửa sau là ví dụ 02.
+    this.studyVisible = false;
+    this.studyRaf = 0;
+    this.checkStudy = () => {
+      this.studyRaf = 0;
+      const el = this.el.study;
+      if (!el || !this.state.aboutLive || window.innerWidth <= 820) return;
+      const r = el.getBoundingClientRect();
+      const len = r.height - window.innerHeight;
+      if (len <= 0) return;
+      const p = Math.min(1, Math.max(0, -r.top / len));
+      const i = p >= 0.5 ? 1 : 0;
+      if (i !== this.state.study) this.setState({ study: i });
+    };
     this.onScroll = () => {
       const s = window.scrollY > 24;
       if (s !== this.state.scrolled) this.setState({ scrolled: s });
-      if (this.state.aboutLive) this.kick();
+      if (this.studyVisible && !this.studyRaf) this.studyRaf = requestAnimationFrame(this.checkStudy);
+      if (this.state.aboutLive && this.visible) this.kick();
     };
     this.onKey = (e) => {
       if (e.key === 'Escape' && this.state.menuOpen) this.setState({ menuOpen: false });
@@ -474,69 +517,100 @@ class Component extends DCLogic {
     window.addEventListener('resize', this.kick);
     this.onScroll();
     const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!still) this.setState({ aboutLive: true }, () => { this.cur = this.aboutTarget(); this.paintAbout(this.cur); });
+    if (!still) this.setState({ aboutLive: true }, () => {
+      const m = this.measure();
+      if (m) { this.cur = m.p; this.paintAbout(this.cur, m); }
+      // Chỉ chạy vòng vẽ khi phần giới thiệu ở gần màn hình.
+      if ('IntersectionObserver' in window && this.el.about) {
+        this.io = new IntersectionObserver((es) => { this.visible = es.some((e) => e.isIntersecting); if (this.visible) this.kick(); }, { rootMargin: '50% 0px' });
+        this.io.observe(this.el.about);
+      } else this.visible = true;
+      if ('IntersectionObserver' in window && this.el.study) {
+        this.io2 = new IntersectionObserver((es) => { this.studyVisible = es.some((e) => e.isIntersecting); }, { rootMargin: '20% 0px' });
+        this.io2.observe(this.el.study);
+      } else this.studyVisible = true;
+    });
   }
   componentWillUnmount() {
     window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('keydown', this.onKey);
     window.removeEventListener('resize', this.kick);
+    if (this.io) this.io.disconnect();
+    if (this.io2) this.io2.disconnect();
+    if (this.studyRaf) cancelAnimationFrame(this.studyRaf);
     if (this.raf) cancelAnimationFrame(this.raf);
     document.body.style.overflow = '';
   }
   componentDidUpdate(prevProps, prevState) {
     if (prevState.menuOpen !== this.state.menuOpen) document.body.style.overflow = this.state.menuOpen ? 'hidden' : '';
   }
-  // Tiến độ cuộn qua phần giới thiệu, 0 → 1
-  aboutTarget() {
-    const sec = this.el.about;
-    if (!sec) return 0;
-    const track = sec.querySelector('.about-track');
+  // Đọc mọi vị trí cần dùng trong một lượt: tiến độ cuộn qua phần giới thiệu (0 → 1) và khung ảnh.
+  measure() {
+    const { about, stage, slot } = this.el;
+    if (!about || !stage || !slot) return null;
+    const track = this.track || (this.track = about.querySelector('.about-track'));
     const r = track.getBoundingClientRect();
-    const len = r.height - window.innerHeight;
-    return len > 0 ? Math.min(1, Math.max(0, -r.top / len)) : 0;
+    const vh = window.innerHeight;
+    const len = r.height - vh;
+    const bar = this.bar || (this.bar = document.querySelector('.topbar'));
+    return {
+      p: len > 0 ? Math.min(1, Math.max(0, -r.top / len)) : 0,
+      vh,
+      top: about.getBoundingClientRect().top,
+      st: stage.getBoundingClientRect(),
+      sl: slot.getBoundingClientRect(),
+      head: bar ? bar.offsetHeight : 0
+    };
   }
-  paintAbout(p) {
-    const { about, stage, slot, box, boxIn, stmt, cloud1, cloud2, count } = this.el;
-    if (!about || !stage || !slot || !box || !boxIn) return;
+  // Chỉ ghi khi giá trị đổi, để trình duyệt không phải tính lại style mỗi khung hình.
+  put(el, key, prop, val) {
+    if (!el || this.last[key] === val) return;
+    this.last[key] = val;
+    if (prop === 'textContent') el.textContent = val;
+    else if (prop.startsWith('--')) el.style.setProperty(prop, val);
+    else el.style[prop] = val;
+  }
+  paintAbout(p, m) {
+    const { box, boxIn, stmt, cloud1, cloud2, count } = this.el;
+    if (!box || !boxIn) return;
     const clamp = (v) => Math.min(1, Math.max(0, v));
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const lerp = (a, b, t) => a + (b - a) * t;
-    // Mây trồi lên khi phần be trượt qua hero
-    const top = about.getBoundingClientRect().top;
-    const enter = clamp(1 - top / window.innerHeight);
-    // Mây gắn ở cuối vùng sương; lúc mới vào trang trong suốt, đậm dần khi phần be cuộn lên.
-    // Lớp sau trôi chậm hơn một chút để có chiều sâu.
+    // Mây trồi lên khi phần be trượt qua hero; lớp sau trôi chậm hơn để có chiều sâu.
+    const enter = clamp(1 - m.top / m.vh);
     const fog = clamp(enter / 0.4);
-    if (cloud1) cloud1.style.opacity = fog.toFixed(3);
-    if (cloud2) {
-      cloud2.style.opacity = (fog * 0.85).toFixed(3);
-      cloud2.style.transform = 'translate3d(0,' + ((1 - enter) * 12).toFixed(2) + 'vh,0)';
-    }
-    // Khung ảnh: giữ lớn, đổi ảnh, rồi thu nhỏ vào ô trong câu
-    const st = stage.getBoundingClientRect();
-    const sl = slot.getBoundingClientRect();
+    this.put(cloud1, 'c1o', 'opacity', fog.toFixed(3));
+    this.put(cloud2, 'c2o', 'opacity', (fog * 0.85).toFixed(3));
+    this.put(cloud2, 'c2t', 'transform', 'translate3d(0,' + ((1 - enter) * 12).toFixed(2) + 'vh,0)');
+    // Khung ảnh: giữ lớn (chừa chỗ cho thanh menu phía trên), lướt qua các ảnh, rồi thu nhỏ vào ô trong câu.
+    const { st, sl } = m;
     const W = st.width, H = st.height;
     const g = W < 640 ? 12 : 24;
+    const top0 = Math.max(g, m.head + 12);
     const s = ease(clamp((p - 0.5) / 0.3));
     const R = {
-      x: lerp(g, sl.left - st.left, s), y: lerp(g, sl.top - st.top, s),
-      w: lerp(W - 2 * g, sl.width, s), h: lerp(H - 2 * g, sl.height, s)
+      x: lerp(g, sl.left - st.left, s), y: lerp(top0, sl.top - st.top, s),
+      w: lerp(W - 2 * g, sl.width, s), h: lerp(H - top0 - g, sl.height, s)
     };
     const rad = lerp(24, 12, s);
-    box.style.clipPath = 'inset(' + R.y.toFixed(1) + 'px ' + (W - R.x - R.w).toFixed(1) + 'px ' + (H - R.y - R.h).toFixed(1) + 'px ' + R.x.toFixed(1) + 'px round ' + rad.toFixed(1) + 'px)';
+    this.put(box, 'clip', 'clipPath', 'inset(' + R.y.toFixed(1) + 'px ' + (W - R.x - R.w).toFixed(1) + 'px ' + (H - R.y - R.h).toFixed(1) + 'px ' + R.x.toFixed(1) + 'px round ' + rad.toFixed(1) + 'px)');
     const k = Math.max(R.w / W, R.h / H);
-    boxIn.style.transform = 'translate3d(' + (R.x + R.w / 2 - W / 2).toFixed(1) + 'px,' + (R.y + R.h / 2 - H / 2).toFixed(1) + 'px,0) scale(' + k.toFixed(4) + ')';
+    this.put(boxIn, 'bin', 'transform', 'translate3d(' + (R.x + R.w / 2 - W / 2).toFixed(1) + 'px,' + (R.y + R.h / 2 - H / 2).toFixed(1) + 'px,0) scale(' + k.toFixed(4) + ')');
+    // Lướt ảnh: ảnh sau trượt lên phủ ảnh trước theo đúng nhịp cuộn.
     const slides = boxIn.children;
     const n = slides.length;
-    const idx = Math.min(n - 1, Math.floor(clamp((p - 0.04) / 0.42) * n));
-    if (idx !== this.slideIdx) {
-      for (let i = 0; i < n; i++) slides[i].classList.toggle('is-active', i === idx);
-      this.slideIdx = idx;
-      if (count) count.textContent = String(idx + 1).padStart(2, '0') + ' / ' + String(n).padStart(2, '0');
+    const q = clamp((p - 0.04) / 0.42) * (n - 1);
+    const local = (i) => (i === 0 ? 1 : ease(clamp(q - (i - 1))));
+    for (let i = 0; i < n; i++) {
+      const inY = (1 - local(i)) * 100;
+      const outY = i < n - 1 ? -local(i + 1) * 18 : 0;
+      this.put(slides[i], 'sl' + i, 'transform', 'translate3d(0,' + (inY + outY).toFixed(2) + '%,0)');
     }
-    if (count) count.style.opacity = String(1 - clamp((p - 0.48) / 0.06));
-    // Chữ sáng dần theo cuộn
-    if (stmt) stmt.style.setProperty('--wp', clamp((p - 0.6) / 0.34).toFixed(3));
+    const idx = Math.min(n - 1, Math.round(q));
+    this.put(count, 'cnt', 'textContent', String(idx + 1).padStart(2, '0') + ' / ' + String(n).padStart(2, '0'));
+    this.put(count, 'cnto', 'opacity', String(1 - clamp((p - 0.48) / 0.06)));
+    // Chữ sáng dần theo cuộn, từ khoá được vẽ vệt nhấn ngay sau đó.
+    this.put(stmt, 'wp', '--wp', clamp((p - 0.6) / 0.34).toFixed(3));
   }
   go(i, dir) {
     this.setState({ chapter: i, dir });
@@ -564,10 +638,29 @@ class Component extends DCLogic {
     const open = this.state.menuOpen;
     const pad = (i) => String(i + 1).padStart(2, '0');
     const statement = 'estateSmartAI thẩm định mặt bằng như một chuyên viên phát triển mạng lưới: vị trí, khả năng tiếp cận, cạnh tranh và giá thuê, trước khi bạn ký hợp đồng.';
-    const words = statement.split(' ').map((t, i) => ({ t, i }));
+    // Từ khoá được làm nổi bật (tính theo vị trí từ trong câu).
+    const KEY = ['chuyên viên phát triển mạng lưới', 'vị trí', 'khả năng tiếp cận', 'cạnh tranh', 'giá thuê'];
+    const raw = statement.split(' ');
+    const keyIdx = new Set();
+    KEY.forEach((phrase) => {
+      const parts = phrase.split(' ');
+      for (let i = 0; i + parts.length <= raw.length; i++) {
+        if (parts.every((w, j) => raw[i + j].replace(/[.,:;]$/, '') === w)) parts.forEach((_, j) => keyIdx.add(i + j));
+      }
+    });
+    const words = raw.map((t, i) => {
+      const k = keyIdx.has(i);
+      const m = t.match(/^(.*?)([.,:;]?)$/);
+      // Từ khoá nối tiếp trong cùng cụm: đưa khoảng trắng vào trong để vệt nhấn liền mạch.
+      const join = k && !m[2] && keyIdx.has(i + 1);
+      return { i, k, plain: !k, t: k ? m[1] + (join ? ' ' : '') : t, after: k ? m[2] + (join ? '' : ' ') : '' };
+    });
     return {
       aboutCls: this.state.aboutLive ? 'is-live' : '',
       aboutRef: this.ref('about'), stageRef: this.ref('stage'), slotRef: this.ref('slot'), boxRef: this.ref('box'),
+      studyRef: this.ref('study'),
+      studyTrackCls: this.state.aboutLive ? 'is-live' : '',
+      studyFlipCls: si === 1 ? 'is-flip' : '',
       boxInRef: this.ref('boxIn'), stmtRef: this.ref('stmt'), cloud1Ref: this.ref('cloud1'), cloud2Ref: this.ref('cloud2'), countRef: this.ref('count'),
       words,
       wordCount: words.length,
@@ -576,7 +669,7 @@ class Component extends DCLogic {
         '/_blob/526999b39fdb3b7b29959da9e7531ab5',
         '/_blob/16bfb5cd9c78a2ff917437809efcd6ff',
         '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df'
-      ].map((src, i) => ({ src, cls: i === 0 ? 'is-active' : '' })),
+      ].map((src) => ({ src, cls: '' })),
       overlay: this.props.overlay ?? 0.2,
       topbarCls: (this.state.scrolled && !open) ? 'is-solid' : '',
       menuCls: open ? 'is-open' : '',
@@ -615,7 +708,15 @@ class Component extends DCLogic {
         num: pad(i),
         cls: i === si ? 'is-active' : '',
         pressed: i === si ? 'true' : 'false',
-        pick: () => this.setState({ study: i })
+        pick: () => {
+          const el = this.el.study;
+          if (el && this.state.aboutLive && window.innerWidth > 820) {
+            const r = el.getBoundingClientRect();
+            const len = r.height - window.innerHeight;
+            if (len > 0) { window.scrollTo({ top: window.scrollY + r.top + len * (i === 0 ? 0.2 : 0.75), behavior: 'smooth' }); return; }
+          }
+          this.setState({ study: i });
+        }
       }))
     };
   }

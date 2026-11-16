@@ -11,7 +11,8 @@ body { margin: 0; background: var(--page); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .as-page { min-height: 100vh; min-height: 100dvh; padding: 0 16px 16px; box-sizing: border-box; font-family: var(--font); color: var(--ink); background: var(--page); }
 .as-page * { box-sizing: border-box; }
-.as-page button, .as-page input, .as-page textarea { font: inherit; color: inherit; }
+/* :where() đưa độ ưu tiên về 0, để màu và font khai báo bằng class của từng nút (.d-report, .btn-light, .send…) không bị reset này đè. */
+:where(.as-page) :where(button, input, textarea) { font: inherit; color: inherit; }
 .lbl { margin: 0; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; color: var(--ink-2); }
 
 .as-top { height: 56px; display: flex; align-items: center; }
