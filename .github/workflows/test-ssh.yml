@@ -1,0 +1,32 @@
+name: Test SSH deploy
+
+# Chỉ chạy trên nhánh test, không đụng main nên webhook deploy thật không bị kích hoạt.
+on:
+  push:
+    branches: [test/actions-ssh]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Giả lập lint + test
+        run: echo "Đang test..." && ls
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    concurrency: deploy-test
+    steps:
+      - name: SSH vào VPS
+        env:
+          SSH_KEY: ${{ secrets.TEST_VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.TEST_VPS_KNOWN_HOSTS }}
+          HOST: ${{ secrets.TEST_VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh deploy@"$HOST" "${GITHUB_SHA::7}"
