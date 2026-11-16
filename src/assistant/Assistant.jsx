@@ -6,7 +6,15 @@ import Robot from './Robot.jsx';
 
 const REDUCE = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const T = (ms) => (REDUCE ? 20 : ms);
-const STEPS = ['Đang tiếp nhận nhu cầu…', 'Đang sàng lọc mặt bằng trong hệ thống…', 'Đang đánh giá vị trí và nguồn khách…', 'Đang phân tích đối thủ cùng ngành…', 'Đang chấm điểm mức độ phù hợp…'];
+// 5 AI Agent, hiện thành checklist khi đang thẩm định để người dùng đọc kịp từng bước.
+const AGENTS = [
+  { name: 'Phân tích nhu cầu', detail: 'Đọc mô hình, khu vực, ngân sách và diện tích' },
+  { name: 'Sàng lọc mặt bằng', detail: 'Loại mặt bằng vượt ngân sách hoặc lệch diện tích' },
+  { name: 'Đánh giá vị trí', detail: 'Chung cư, trường học, xe buýt trong 500 m' },
+  { name: 'Phân tích cạnh tranh', detail: 'Cơ sở cùng ngành quanh từng mặt bằng' },
+  { name: 'Chấm điểm và khuyến nghị', detail: 'Xếp hạng, chọn ba mặt bằng đáng xem nhất' }
+];
+const STEP_MS = 750;
 const SUGGESTIONS = [
   'Mở quán cà phê ở Ocean Park, ngân sách khoảng 50 triệu/tháng, diện tích 150–250 m², cần chỗ đỗ ô tô',
   'Tìm mặt bằng trà sữa gần trường học, dưới 30 triệu/tháng',
@@ -32,6 +40,30 @@ const relRect = (el, base) => {
 
 function Bubble({ m, onPick, active, onAsk }) {
   if (m.k === 'user') return <div className="b-user es-up">{m.text}</div>;
+  if (m.k === 'agents') {
+    return (
+      <div className={'b-agents es-up' + (m.done ? ' is-done' : '')} role="status">
+        <p className="ag-title">{m.done ? 'Đội ngũ đã thẩm định xong' : m.reading ? 'Đang đọc nhu cầu của anh/chị…' : 'Đội ngũ đang thẩm định'}</p>
+        <ol>
+          {AGENTS.map((a, i) => {
+            const st = m.done || i < m.step ? 'done' : i === m.step && !m.reading ? 'run' : 'wait';
+            return (
+              <li key={a.name} className={st}>
+                <span className="ag-ico" aria-hidden="true">
+                  {st === 'done' ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m2.5 6.2 2.3 2.3 4.7-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
+                </span>
+                <span className="ag-text">
+                  <b>{a.name}</b>
+                  <small>{(m.facts && m.facts[i]) || a.detail}</small>
+                </span>
+                <span className="sr-only">{st === 'done' ? 'Xong' : st === 'run' ? 'Đang xử lý' : 'Chờ'}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    );
+  }
   if (m.k === 'thinking') return <div className="b-bot thinking es-up" role="status"><span className="dots" aria-hidden="true"><i /><i /><i /></span>{m.text}</div>;
   if (m.k === 'ask') {
     return (
@@ -179,7 +211,6 @@ export default function Assistant() {
   useEffect(() => () => { if (askCtrl.current) askCtrl.current.abort(); if (mapRef.current) mapRef.current.destroy(); }, []);
 
   const push = (m) => setMsgs((s) => [...s, { id: id(), ...m }]);
-  const patchLast = (pred, patch) => setMsgs((s) => { const i = s.map(pred).lastIndexOf(true); if (i < 0) return s; const n = [...s]; n[i] = { ...n[i], ...patch }; return n; });
   const showToast = (text, action) => { setToast({ text, action }); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(null), 5000); };
 
   // ---- Bản đồ 3D: nạp khi lần đầu cần, cập nhật theo mặt bằng đang xem ----
@@ -212,29 +243,41 @@ export default function Assistant() {
     const my = ++session.current;
     setBusy(true);
     push({ k: 'user', text });
-    push({ k: 'thinking', text: STEPS[0] });
-    setMsgs((s) => s.map((m) => (m.k === 'ask' ? { ...m, open: false } : m)));
+    const agId = id();
+    setMsgs((s) => [...s.map((m) => (m.k === 'ask' ? { ...m, open: false } : m)), { id: agId, k: 'agents', step: 0, reading: true }]);
+    const setAg = (patch) => setMsgs((s) => s.map((m) => (m.id === agId ? { ...m, ...patch } : m)));
+    const dropAg = () => setMsgs((s) => s.filter((m) => m.id !== agId));
     try {
       const parsed = await postJson('/api/parse', { text, prev: criteria || {} });
       if (my !== session.current) return;
       if (parsed.ask) {
         setCriteria(parsed.criteria);
-        setMsgs((s) => s.filter((m) => m.k !== 'thinking'));
+        dropAg();
         push({ k: 'ask', text: parsed.ask.q, options: parsed.ask.options, open: true });
         setBusy(false);
         return;
       }
       const crit = parsed.criteria;
-      const stepping = (async () => { for (let i = 1; i < STEPS.length; i++) { await later(T(560)); if (my !== session.current) return; patchLast((m) => m.k === 'thinking', { text: STEPS[i] }); } await later(T(400)); })();
+      const need = [crit.model, crit.area, crit.budget && 'ngân sách ' + crit.budget.charAt(0).toLowerCase() + crit.budget.slice(1), crit.size].filter(Boolean).join(', ');
+      setAg({ reading: false, step: 0, facts: [need || null] });
+      // Mỗi bước giữ ít nhất STEP_MS để người dùng kịp đọc; bước cuối chờ máy chủ trả kết quả.
+      const stepping = (async () => { for (let i = 1; i < AGENTS.length; i++) { await later(T(STEP_MS)); if (my !== session.current) return; setAg({ step: i }); } await later(T(STEP_MS)); })();
       const [data] = await Promise.all([postJson('/api/recommend', { criteria: crit }), stepping]);
       if (my !== session.current) return;
+      const top = data.results[0];
+      setAg({ done: true, step: AGENTS.length, facts: [
+        need || null,
+        `Còn ${data.stats.fit} trên ${data.stats.total} mặt bằng phù hợp`,
+        null,
+        `${data.competitors.length} cơ sở cùng ngành quanh ba mặt bằng (OpenStreetMap)`,
+        top ? `Cao nhất ${top.score}/100: ${top.name.split(',')[0]}` : null
+      ] });
       const rows = data.results.map((r) => ({ ...r, rentM: parseFloat(String(r.price).replace(/\./g, '').replace(',', '.')) }));
       setCriteria(null);
       setFinal(crit);
       setRecs(rows);
       setReports({});
       try { sessionStorage.setItem('es-recs', JSON.stringify({ codes: rows.map((r) => r.code), criteria: crit })); } catch (e) { /* bỏ qua */ }
-      setMsgs((s) => s.filter((m) => m.k !== 'thinking'));
       data.notes.forEach((n) => push({ k: 'bot', text: n }));
       push({ k: 'results', text: `Đội ngũ đã rà soát ${data.stats.total} mặt bằng trong hệ thống, ${data.stats.fit} vừa ngân sách và diện tích. Đây là ba lựa chọn đáng đi xem nhất:`, rows });
       setSel(0);
@@ -244,7 +287,7 @@ export default function Assistant() {
       ensureMap();
     } catch (e) {
       if (my !== session.current) return;
-      setMsgs((s) => s.filter((m) => m.k !== 'thinking'));
+      dropAg();
       push({ k: 'bot', text: e.status === 429 ? e.message : 'Chưa kết nối được máy chủ thẩm định. Anh/chị thử lại sau ít phút.' });
     } finally {
       if (my === session.current) setBusy(false);
