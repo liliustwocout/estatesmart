@@ -171,6 +171,26 @@ img{max-width:100%}
 .field input::placeholder{color:rgba(27,25,22,.5)}
 .field [aria-invalid="true"]{border-bottom-color:var(--danger)}
 .err{margin:0;font-size:14px;color:var(--danger);animation:es-enter var(--dur-2) var(--ease-out) both}
+.field.wide{grid-column:1/-1}
+.field textarea{width:100%;min-height:96px;padding:12px 14px;border-radius:14px;border:0;box-shadow:inset 0 0 0 1px rgba(27,25,22,.3);background:#FBF8F2;font:inherit;font-size:15px;color:#1B1916;resize:vertical}
+.consent{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;cursor:pointer}
+.consent input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:#1B1916}
+.trap{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.form-err{grid-column:1/-1;margin:0;padding:10px 14px;border-radius:12px;background:rgba(158,59,34,.08);color:var(--danger);font-size:14px}
+/* Bản in / PDF: chỉ giữ nội dung hồ sơ */
+@media print{
+@page{size:A4;margin:12mm}
+/* In trên nền giấy trắng: đổi bảng màu tối sang sáng, giữ màu nền các khối nhỏ */
+:root{--bg:#fff;--bg-deep:#fff;--surface:#F4EFE6;--ink:#1B1916;--ink-2:rgba(27,25,22,.74);--line:rgba(27,25,22,.16);--line-2:rgba(27,25,22,.4)}
+html,body,.page{background:#fff !important;color:#1B1916;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.hero{height:105mm !important;margin:0 0 6mm !important;color:#F7F3EC}
+.hero h1,.hero .hero-attr,.hero .score,.hero .tag{color:#F7F3EC}
+.swap{animation:none}
+.topbar,.crumbs,.contact,.hero-actions,.foot-note,.room-list button,.skip{display:none !important}
+*{animation:none !important;transition:none !important;box-shadow:none !important}
+.sec,.card,section{break-inside:avoid}
+a{color:inherit;text-decoration:none}
+}
 .hint{margin:0;font-size:13px;color:rgba(27,25,22,.62)}
 .form .btn{background:#1B1916;color:var(--paper)}
 .form .btn-ghost{background:none;color:#1B1916;box-shadow:inset 0 0 0 1px rgba(27,25,22,.4)}
@@ -249,6 +269,7 @@ img{max-width:100%}
 <div class="hero-actions">
 <a class="btn" href="#dat-lich">Đặt lịch khảo sát<svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 <button type="button" class="btn btn-ghost save" onClick="{{toggleSave}}" aria-pressed="{{savedPressed}}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h8a.5.5 0 0 1 .5.5v10.6L8 10.9l-4.5 2.7V3a.5.5 0 0 1 .5-.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path></svg>{{saveLabel}}</button>
+<button type="button" class="btn btn-ghost save" onClick="{{printPdf}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.5v7.5m0 0L5 7m3 3 3-3M3 12.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>Tải PDF</button>
 </div>
 </div>
 <div class="score">
@@ -375,15 +396,15 @@ img{max-width:100%}
 <div class="contact-media"><img src="{{l.contactImg}}" alt="" loading="lazy"></div>
 <div class="form">
 <div>
-<p class="label">Kết nối chủ nhà, hồ sơ {{l.code}}</p>
+<p class="label">Gửi yêu cầu khảo sát, hồ sơ {{l.code}}</p>
 <h2 class="h2" style="margin-top: 10px">Đặt lịch khảo sát thực địa</h2>
 </div>
 
 <sc-if value="{{sent}}" hint-placeholder-val="{{ false }}">
 <div class="done" role="status">
 <span class="done-mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
-<p class="lead">Đã ghi nhận yêu cầu khảo sát {{l.code}}.</p>
-<p class="sub">{{sentDetail}} Đây là bản mô phỏng nên yêu cầu chưa được gửi tới chủ nhà. Hồ sơ đã được lưu vào danh sách khảo sát.</p>
+<p class="lead">Đã gửi yêu cầu khảo sát {{l.code}}.</p>
+<p class="sub">{{sentDetail}} Đội ngũ estateSmartAI sẽ gọi lại cho anh/chị để xác nhận lịch. Lưu ý: thông tin mặt bằng trong bản thử nghiệm là dữ liệu mô phỏng, lịch xem thực tế sẽ được xác nhận khi gọi lại.</p>
 <button type="button" class="btn btn-ghost" onClick="{{resetForm}}" style="margin-top: 24px">Tạo yêu cầu khác</button>
 </div>
 </sc-if>
@@ -407,6 +428,7 @@ img{max-width:100%}
 <option>Chủ doanh nghiệp</option>
 <option>Quản lý vận hành</option>
 <option>Môi giới</option>
+<option>Khác</option>
 </select>
 </div>
 <div class="field">
@@ -414,6 +436,16 @@ img{max-width:100%}
 <input id="f-date" type="date" min="{{today}}" value="{{form.date}}" onChange="{{setDate}}" aria-invalid="{{dateInvalid}}" aria-describedby="f-date-err">
 <sc-if value="{{errors.date}}" hint-placeholder-val="{{ false }}"><p class="err" id="f-date-err">{{errors.date}}</p></sc-if>
 </div>
+<div class="field wide">
+<label for="f-msg">Lời nhắn (không bắt buộc)</label>
+<textarea id="f-msg" maxLength="1000" placeholder="Ví dụ: muốn xem vào cuối tuần, cần hỏi thêm về điều khoản cải tạo" value="{{form.message}}" onChange="{{setMsg}}"></textarea>
+</div>
+<div class="field wide">
+<label class="consent" for="f-consent"><input id="f-consent" type="checkbox" checked="{{form.consent}}" onChange="{{setConsent}}" aria-invalid="{{consentInvalid}}" aria-describedby="f-consent-err">Tôi đồng ý để estateSmartAI lưu họ tên, số điện thoại và liên hệ lại về yêu cầu khảo sát này.</label>
+<sc-if value="{{errors.consent}}" hint-placeholder-val="{{ false }}"><p class="err" id="f-consent-err">{{errors.consent}}</p></sc-if>
+</div>
+<div class="trap" aria-hidden="true"><label for="f-web">Website</label><input id="f-web" type="text" tabIndex="-1" autoComplete="off" value="{{form.website}}" onChange="{{setWeb}}"></div>
+<sc-if value="{{errors._}}" hint-placeholder-val="{{ false }}"><p class="form-err" role="alert">{{errors._}}</p></sc-if>
 <div class="form-actions">
 <button type="submit" class="btn" aria-busy="{{sendingAttr}}">{{submitLabel}}<sc-if value="{{sending}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{notSending}}" hint-placeholder-val="{{ true }}"><svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if></button>
 <button type="button" class="btn btn-ghost save" onClick="{{toggleSave}}" aria-pressed="{{savedPressed}}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h8a.5.5 0 0 1 .5.5v10.6L8 10.9l-4.5 2.7V3a.5.5 0 0 1 .5-.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path></svg>{{saveLabel}}</button>
@@ -431,7 +463,7 @@ img{max-width:100%}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { idx: 0, room: 0, saved: {}, sent: false, sending: false, scrolled: false, form: { name: '', phone: '', role: 'Chủ doanh nghiệp', date: '' }, errors: {}, remote: null, loading: false };
+    this.state = { idx: 0, room: 0, saved: {}, sent: false, sending: false, scrolled: false, form: { name: '', phone: '', role: 'Chủ doanh nghiệp', date: '', message: '', consent: false, website: '' }, errors: {}, remote: null, loading: false };
     this.timer = null;
     this.onScroll = () => {
       const s = window.scrollY > 8;
@@ -614,11 +646,12 @@ class Component extends DCLogic {
   }
   validate(f) {
     const e = {};
-    if (!f.name.trim()) e.name = 'Nhập họ và tên để chủ nhà biết ai sẽ đến khảo sát.';
+    if (!f.name.trim()) e.name = 'Nhập họ và tên để đội ngũ biết ai sẽ đến khảo sát.';
     const p = this.normPhone(f.phone);
-    if (!p) e.phone = 'Nhập số điện thoại để chủ nhà xác nhận lịch.';
+    if (!p) e.phone = 'Nhập số điện thoại để đội ngũ gọi lại xác nhận lịch.';
     else if (!/^0\d{9}$/.test(p)) e.phone = 'Số điện thoại cần đủ 10 chữ số, ví dụ 0901 234 567.';
     if (f.date && f.date < this.today()) e.date = 'Chọn một ngày từ hôm nay trở đi.';
+    if (!f.consent) e.consent = 'Cần đồng ý để đội ngũ liên hệ lại.';
     return e;
   }
   setField(k, v) {
@@ -700,21 +733,35 @@ class Component extends DCLogic {
       setPhone: (e) => this.setField('phone', e.target.value),
       setRole: (e) => this.setField('role', e.target.value),
       setDate: (e) => this.setField('date', e.target.value),
+      setMsg: (e) => this.setField('message', e.target.value),
+      setConsent: (e) => this.setField('consent', e.target.checked),
+      setWeb: (e) => this.setField('website', e.target.value),
+      consentInvalid: errors.consent ? 'true' : 'false',
+      printPdf: () => { try { window.print(); } catch (err) { /* trình duyệt không hỗ trợ in */ } },
       submit: (e) => {
         e.preventDefault();
         if (sending) return;
         const errs = this.validate(form);
         if (Object.keys(errs).length) {
           this.setState({ errors: errs }, () => {
-            const first = document.getElementById(errs.name ? 'f-name' : errs.phone ? 'f-phone' : 'f-date');
+            const first = document.getElementById(errs.name ? 'f-name' : errs.phone ? 'f-phone' : errs.date ? 'f-date' : 'f-consent');
             if (first) first.focus();
           });
           return;
         }
         this.setState({ sending: true, errors: {}, form: { ...form, phone: this.normPhone(form.phone) } });
-        this.timer = setTimeout(() => this.setState({ sending: false, sent: true, saved: { ...this.state.saved, [l.code]: true } }), 650);
+        // Gửi thật tới máy chủ: lưu yêu cầu và báo cho đội ngũ.
+        fetch('/api/leads', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ code: l.code, name: form.name, phone: form.phone, role: form.role, date: form.date, message: form.message, consent: form.consent, website: form.website, source: 'visit_form' })
+        }).then((r) => r.json().then((d) => ({ ok: r.ok, d }))).then(({ ok, d }) => {
+          if (ok) { this.setState({ sending: false, sent: true, saved: { ...this.state.saved, [l.code]: true } }); return; }
+          const errs2 = d.errors || { _: d.error || 'Chưa gửi được, anh/chị thử lại sau.' };
+          if (errs2._ && Object.keys(errs2).length > 1) delete errs2._;
+          this.setState({ sending: false, errors: errs2 });
+        }).catch(() => this.setState({ sending: false, errors: { _: 'Chưa kết nối được máy chủ. Anh/chị thử lại sau ít phút.' } }));
       },
-      resetForm: () => this.setState({ sent: false }),
+      resetForm: () => this.setState({ sent: false, form: { ...this.state.form, message: '', date: '' } }),
       savedPressed: isSaved ? 'true' : 'false',
       saveLabel: isSaved ? 'Đã lưu hồ sơ' : 'Lưu hồ sơ',
       toggleSave: () => this.setState({ saved: { ...saved, [l.code]: !isSaved } })

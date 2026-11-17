@@ -38,7 +38,7 @@ const relRect = (el, base) => {
 
 /* ---------------- Cột chat ---------------- */
 
-function Bubble({ m, onPick, active, onAsk }) {
+function Bubble({ m, onPick, active, onAsk, onShare }) {
   if (m.k === 'user') return <div className="b-user es-up">{m.text}</div>;
   if (m.k === 'agents') {
     return (
@@ -85,6 +85,7 @@ function Bubble({ m, onPick, active, onAsk }) {
             <span className="mi-score">{r.score}</span>
           </button>
         ))}
+        {onShare && <button type="button" className="share-b" onClick={onShare}><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M7 4.5l1-1a2.8 2.8 0 0 1 4 4l-1 1M9 11.5l-1 1a2.8 2.8 0 0 1-4-4l1-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>Chia sẻ kết quả</button>}
       </div>
     );
   }
@@ -103,7 +104,74 @@ function Bubble({ m, onPick, active, onAsk }) {
 
 /* ---------------- Khung phải: báo cáo ---------------- */
 
-function ReportGrid({ r, onCopy, sent, onSend, msg, setMsg }) {
+// Gửi lời nhắn cho chủ nhà: cần họ tên, số điện thoại và đồng ý; đội ngũ nhận qua trang quản trị và Telegram.
+function ContactCard({ r, msg, setMsg, onCopy }) {
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState({ name: '', phone: '', consent: false, website: '' });
+  const [err, setErr] = useState({});
+  const [state, setState] = useState('idle'); // idle | sending | sent
+  useEffect(() => { setOpen(false); setState('idle'); setErr({}); }, [r.code]);
+  const set = (k, v) => { setF((s) => ({ ...s, [k]: v })); if (err[k]) setErr((e) => { const n = { ...e }; delete n[k]; return n; }); };
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!open) { setOpen(true); return; }
+    const e2 = {};
+    if (f.name.trim().length < 2) e2.name = 'Nhập họ và tên.';
+    if (!/^0\d{9}$/.test(f.phone.replace(/[\s.\-()]/g, '').replace(/^\+84/, '0'))) e2.phone = 'Số điện thoại cần đủ 10 chữ số.';
+    if (!f.consent) e2.consent = 'Cần đồng ý để đội ngũ liên hệ lại.';
+    if (Object.keys(e2).length) { setErr(e2); return; }
+    setState('sending');
+    try {
+      await postJson('/api/leads', { code: r.code, name: f.name, phone: f.phone, consent: f.consent, website: f.website, message: msg, source: 'owner_msg', role: 'Chủ doanh nghiệp' });
+      setState('sent');
+    } catch (ex) {
+      setState('idle');
+      setErr({ _: ex.message || 'Chưa gửi được, anh/chị thử lại sau.' });
+    }
+  };
+  if (state === 'sent') {
+    return (
+      <section className="card c-contact">
+        <h3>Liên hệ chủ nhà</h3>
+        <p className="sent-ok" role="status"><span aria-hidden="true">✓</span> Đã gửi lời nhắn về {r.code}. Đội ngũ estateSmartAI sẽ liên hệ chủ nhà và gọi lại cho anh/chị để hẹn lịch xem.</p>
+        <p className="sent">Bản thử nghiệm: thông tin mặt bằng là dữ liệu mô phỏng, đội ngũ sẽ xác nhận lại khi gọi.</p>
+        <a className="full-link" href={'/mat-bang/?ma=' + encodeURIComponent(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
+      </section>
+    );
+  }
+  return (
+    <form className="card c-contact" onSubmit={submit} noValidate>
+      <h3>Liên hệ chủ nhà</h3>
+      <label className="sr-only" htmlFor="owner-msg">Tin nhắn gửi chủ nhà</label>
+      <textarea id="owner-msg" value={msg} onChange={(e) => setMsg(e.target.value)} rows={open ? 3 : 5} maxLength={1000} />
+      {open && (
+        <div className="c-fields es-up">
+          <div>
+            <label htmlFor="oc-name">Họ và tên</label>
+            <input id="oc-name" value={f.name} onChange={(e) => set('name', e.target.value)} autoComplete="name" aria-invalid={err.name ? 'true' : 'false'} />
+            {err.name && <p className="c-err">{err.name}</p>}
+          </div>
+          <div>
+            <label htmlFor="oc-phone">Số điện thoại</label>
+            <input id="oc-phone" type="tel" inputMode="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="tel" placeholder="0901 234 567" aria-invalid={err.phone ? 'true' : 'false'} />
+            {err.phone && <p className="c-err">{err.phone}</p>}
+          </div>
+          <label className="c-consent"><input type="checkbox" checked={f.consent} onChange={(e) => set('consent', e.target.checked)} />Tôi đồng ý để estateSmartAI lưu họ tên, số điện thoại và liên hệ lại về mặt bằng này.</label>
+          {err.consent && <p className="c-err">{err.consent}</p>}
+          <input className="trap" tabIndex={-1} autoComplete="off" aria-hidden="true" value={f.website} onChange={(e) => set('website', e.target.value)} />
+        </div>
+      )}
+      {err._ && <p className="c-err" role="alert">{err._}</p>}
+      <div className="c-actions">
+        <button type="submit" className="btn-light" disabled={state === 'sending'}>{state === 'sending' ? 'Đang gửi…' : open ? 'Gửi lời nhắn' : 'Gửi cho chủ nhà'}</button>
+        <button type="button" className="btn-ghost-d" onClick={onCopy}>Sao chép</button>
+      </div>
+      <a className="full-link" href={'/mat-bang/?ma=' + encodeURIComponent(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
+    </form>
+  );
+}
+
+function ReportGrid({ r, onCopy, msg, setMsg }) {
   if (!r) return <div className="grid-wait">Đang tải báo cáo…</div>;
   const t = r.traffic;
   const max = Math.max(r.rentCompare.mine, r.rentCompare.median) * 1.08;
@@ -153,19 +221,7 @@ function ReportGrid({ r, onCopy, sent, onSend, msg, setMsg }) {
         <dl>{r.access.map((a) => <div key={a.label} className={a.warn ? 'warn' : ''}><dt>{a.label}</dt><dd>{a.value}</dd></div>)}</dl>
       </section>
 
-      <section className="card c-contact">
-        <h3>Liên hệ chủ nhà</h3>
-        <label className="sr-only" htmlFor="owner-msg">Tin nhắn gửi chủ nhà</label>
-        <textarea id="owner-msg" value={msg} onChange={(e) => setMsg(e.target.value)} rows={5} />
-        {sent ? (
-          <p className="sent" role="status">Bản thử nghiệm: tin nhắn chưa được gửi tới chủ nhà. Anh/chị có thể sao chép để gửi qua Zalo hoặc tin nhắn.</p>
-        ) : null}
-        <div className="c-actions">
-          <button type="button" className="btn-light" onClick={onSend}>Gửi cho chủ nhà</button>
-          <button type="button" className="btn-ghost-d" onClick={onCopy}>Sao chép</button>
-        </div>
-        <a className="full-link" href={'/mat-bang/?ma=' + encodeURIComponent(r.code)}>Mở hồ sơ để in hoặc chia sẻ</a>
-      </section>
+      <ContactCard r={r} msg={msg} setMsg={setMsg} onCopy={onCopy} />
     </div>
   );
 }
@@ -186,7 +242,7 @@ export default function Assistant() {
   const [reports, setReports] = useState({});
   const [toggles, setToggles] = useState({ mine: true, comp: true, cust: true, links: true });
   const [ownerMsg, setOwnerMsg] = useState('');
-  const [sent, setSent] = useState(false);
+  const [shareId, setShareId] = useState(null);
   const [toast, setToast] = useState(null);
   const [entered, setEntered] = useState(REDUCE);
 
@@ -227,7 +283,7 @@ export default function Assistant() {
   }, [detail, rep]);
   useEffect(() => { if (mapRef.current) Object.entries(toggles).forEach(([k, v]) => mapRef.current.toggle(k, v)); }, [toggles]);
   useEffect(() => { if (detail && mapRef.current) mapRef.current.resize(); }, [detail]);
-  useEffect(() => { if (rep) { setOwnerMsg(rep.message); setSent(false); } }, [rep]);
+  useEffect(() => { if (rep) setOwnerMsg(rep.message); }, [rep]);
 
   const loadReport = useCallback(async (code, crit) => {
     if (reports[code]) return reports[code];
@@ -277,6 +333,7 @@ export default function Assistant() {
       setFinal(crit);
       setRecs(rows);
       setReports({});
+      setShareId(null);
       try { sessionStorage.setItem('es-recs', JSON.stringify({ codes: rows.map((r) => r.code), criteria: crit })); } catch (e) { /* bỏ qua */ }
       data.notes.forEach((n) => push({ k: 'bot', text: n }));
       push({ k: 'results', text: `Đội ngũ đã rà soát ${data.stats.total} mặt bằng trong hệ thống, ${data.stats.fit} vừa ngân sách và diện tích. Đây là ba lựa chọn đáng đi xem nhất:`, rows });
@@ -293,6 +350,49 @@ export default function Assistant() {
       if (my === session.current) setBusy(false);
     }
   };
+
+  // ---- Chia sẻ: lưu phiên trên máy chủ, sao chép link /tro-ly/?phien=… ----
+  const share = async () => {
+    if (!recs) return;
+    try {
+      const sid = shareId || (await postJson('/api/share', { criteria: final || {}, codes: recs.map((r) => r.code) })).id;
+      setShareId(sid);
+      const link = location.origin + '/tro-ly/?phien=' + sid;
+      if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
+        await navigator.share({ title: 'Ba mặt bằng phù hợp — estateSmartAI', url: link }).catch(() => {});
+      } else {
+        await navigator.clipboard.writeText(link);
+        showToast('Đã sao chép link chia sẻ. Link mở lại đúng ba mặt bằng này trong 90 ngày.');
+      }
+    } catch (e) { showToast('Chưa tạo được link chia sẻ, anh/chị thử lại sau.'); }
+  };
+
+  // Mở link chia sẻ: dựng lại kết quả đã lưu.
+  useEffect(() => {
+    let sid = '';
+    try { sid = new URLSearchParams(location.search).get('phien') || ''; } catch (e) { sid = ''; }
+    if (!/^[A-Za-z0-9]{6,20}$/.test(sid)) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/share/' + sid);
+        const d = await res.json();
+        if (!res.ok || !d.results || !d.results.length) throw new Error(d.error || 'Không mở được link');
+        const rows = d.results.map((r) => ({ ...r, rentM: parseFloat(String(r.price).replace(/\./g, '').replace(',', '.')) }));
+        const c = d.criteria || {};
+        const need = [c.model, c.area, c.budget && 'ngân sách ' + c.budget, c.size].filter(Boolean).join(', ');
+        setFinal(c); setRecs(rows); setShareId(sid); setReports({});
+        setMsgs((s) => [...s,
+          { id: id(), k: 'bot', text: 'Đây là kết quả tư vấn được chia sẻ' + (need ? ' cho nhu cầu: ' + need : '') + '. Số liệu được tính lại theo dữ liệu hiện tại.' },
+          { id: id(), k: 'results', text: 'Ba mặt bằng trong kết quả này:', rows }
+        ]);
+        setPhase('list');
+        rows.forEach((r) => postJson('/api/report', { code: r.code, criteria: c }).then((rp) => setReports((x) => ({ ...x, [r.code]: rp }))).catch(() => {}));
+        ensureMap();
+      } catch (e) {
+        setMsgs((s) => [...s, { id: id(), k: 'bot', text: 'Link chia sẻ đã hết hạn hoặc không còn. Anh/chị mô tả nhu cầu để tư vấn lại nhé.' }]);
+      }
+    })();
+  }, []);
 
   // ---- Hỏi tự do sau khi có kết quả: trợ lý AI trả lời dần từng đoạn ----
   const askAI = async (question) => {
@@ -439,7 +539,7 @@ export default function Assistant() {
             </button>
           </header>
           <div className="ch-thread" ref={threadRef} role="log" aria-live="polite" aria-label="Hội thoại">
-            {msgs.map((m) => <Bubble key={m.id} m={m} onPick={open} active={activeIdx} onAsk={(o) => send(o)} />)}
+            {msgs.map((m) => <Bubble key={m.id} m={m} onPick={open} active={activeIdx} onAsk={(o) => send(o)} onShare={recs ? share : null} />)}
             {!recs && !criteria && msgs.length <= 2 && !busy && (
               <div className="sugg">
                 {SUGGESTIONS.map((s, i) => <button key={s} type="button" className="sugg-b es-up" style={{ animationDelay: 0.75 + i * 0.09 + 's' }} onClick={() => send(s)}>{s}</button>)}
@@ -546,8 +646,7 @@ export default function Assistant() {
                   </div>
                 </div>
                 <div className="d-pane d-report-pane" style={reveal(detail && reportOpen, 0.2, 'translateY(24px)')}>
-                  <ReportGrid r={rep} msg={ownerMsg} setMsg={setOwnerMsg} sent={sent}
-                    onSend={() => setSent(true)}
+                  <ReportGrid r={rep} msg={ownerMsg} setMsg={setOwnerMsg}
                     onCopy={() => { navigator.clipboard?.writeText(ownerMsg).then(() => showToast('Đã sao chép tin nhắn.')).catch(() => showToast('Trình duyệt chặn sao chép, hãy chọn và sao chép thủ công.')); }} />
                 </div>
               </div>

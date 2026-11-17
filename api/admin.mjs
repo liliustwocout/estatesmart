@@ -1,6 +1,7 @@
 // Trang quản trị: đăng nhập bằng mật khẩu (ADMIN_PASSWORD), phiên lưu trong bộ nhớ, cookie HttpOnly.
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { listAll, upsert, remove, getByCode, parseCsv, toCsv, importRows, FIELDS, TYPES, MODELS, ValidationError } from './db.mjs';
+import { listLeads, countNewLeads, updateLead, deleteLead, leadsCsv, LEAD_STATUS } from './leads.mjs';
 
 const PASSWORD = process.env.ADMIN_PASSWORD || '';
 const SESSION_MS = 8 * 3600 * 1000;
@@ -77,7 +78,7 @@ export async function handleAdmin(ctx) {
 
   if (method === 'GET' && path === '/listings') {
     const fields = Object.entries(FIELDS).map(([k, f]) => ({ key: k, label: f.label, type: f.type, required: !!f.required, values: f.values || null, min: f.min, max: f.max }));
-    return [200, { listings: listAll(), fields, types: TYPES, models: MODELS }];
+    return [200, { listings: listAll(), fields, types: TYPES, models: MODELS, newLeads: countNewLeads() }];
   }
 
   const m = path.match(/^\/listings\/([A-Za-z0-9-]{2,20})$/);
@@ -112,6 +113,17 @@ export async function handleAdmin(ctx) {
     if (r.ok) console.log(new Date().toISOString(), `nhập CSV: thêm ${r.inserted}, sửa ${r.updated}${replace ? ' (thay toàn bộ)' : ''}`);
     return [r.ok ? 200 : 400, r.ok ? r : { error: 'File có lỗi, chưa ghi dòng nào.', rows: r.errors.slice(0, 50) }];
   }
+
+  // ---- Yêu cầu khảo sát ----
+  if (method === 'GET' && path === '/leads') return [200, { leads: listLeads(), statuses: LEAD_STATUS }];
+  if (method === 'GET' && path === '/leads/export') {
+    res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="yeu-cau-${new Date().toISOString().slice(0, 10)}.csv"`, 'cache-control': 'no-store' });
+    res.end(leadsCsv());
+    return null;
+  }
+  const lm = path.match(/^\/leads\/(\d{1,9})$/);
+  if (lm && method === 'PUT') { const r = updateLead(Number(lm[1]), await ctx.body()); return r ? [200, { lead: r }] : [404, { error: 'Không tìm thấy' }]; }
+  if (lm && method === 'DELETE') return deleteLead(Number(lm[1])) ? [200, { ok: true }] : [404, { error: 'Không tìm thấy' }];
 
   if (method === 'GET' && path === '/export') {
     const csv = toCsv(listAll());

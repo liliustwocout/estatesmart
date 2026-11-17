@@ -186,6 +186,12 @@ export function recommend(raw) {
   };
 }
 
+// Dựng lại thẻ kết quả cho một danh sách mã cố định (mở link chia sẻ), giữ đúng thứ tự đã lưu.
+export function cardsFor(codes, raw = {}) {
+  const crit = parseCriteria(raw);
+  return codes.map(getByCode).filter((l) => l && l.status === 'active').map((l, i) => card(assess(l, crit), i + 1));
+}
+
 const MASSING = { villa: 0, townhouse: 1, shophouse: 2, podium: 2, kiosk: 1 };
 function card(r, rank) {
   const l = r.listing;

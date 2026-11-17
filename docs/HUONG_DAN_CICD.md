@@ -33,6 +33,7 @@ Thông tin hiện tại của dự án:
 13. [Checklist](#13-checklist)
 14. [Bật trợ lý AI (DeepSeek)](#14-bật-trợ-lý-ai-deepseek)
 15. [Dữ liệu mặt bằng và trang quản trị](#15-dữ-liệu-mặt-bằng-và-trang-quản-trị)
+16. [Yêu cầu khảo sát, báo Telegram, link chia sẻ, PDF](#16-yêu-cầu-khảo-sát-báo-telegram-link-chia-sẻ-pdf)
 
 ---
 
@@ -86,8 +87,8 @@ Các file **chỉ có trên VPS**, không nằm trong repo:
 |---|---|
 | `/opt/estatesmart/webhook.env` | `WEBHOOK_SECRET=...` (quyền 600, chủ sở hữu `deploy`) |
 | `/opt/estatesmart/app/.env` | `DOMAIN=estatesmart.site` cho docker compose (đã có trong `.gitignore`) |
-| `/opt/estatesmart/api.env` | `DEEPSEEK_API_KEY=...`, `ADMIN_PASSWORD=...` cho container `api` (quyền 600, chủ sở hữu `deploy`) |
-| Volume Docker `api_data` | Cơ sở dữ liệu mặt bằng `estatesmart.db` (giữ qua các lần deploy) |
+| `/opt/estatesmart/api.env` | `DEEPSEEK_API_KEY`, `ADMIN_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` cho container `api` (quyền 600, chủ sở hữu `deploy`) |
+| Volume Docker `api_data` | Cơ sở dữ liệu `estatesmart.db`: mặt bằng, yêu cầu của khách (có thông tin cá nhân), link chia sẻ; giữ qua các lần deploy |
 | `/opt/estatesmart/deploy.log` | Nhật ký mỗi lần deploy |
 | `/opt/estatesmart/deploy.lock` | Khoá để không chạy 2 lần deploy cùng lúc |
 | `/etc/systemd/system/estatesmart-webhook.service` | Dịch vụ webhook |
@@ -667,3 +668,53 @@ Tính bằng code trong `api/engine.mjs` (không dùng mô hình ngôn ngữ, n�
 | Chấm điểm và khuyến nghị | Lối tiếp cận, dải phân cách, bãi đỗ, bếp, sân, mô hình phù hợp; tổng hợp Top 3, ưu điểm và rủi ro | Tiếp cận 20% |
 
 Trợ lý chat nhận đúng dữ liệu và điểm thành phần của ba mặt bằng đang hiển thị, nên giải thích được vì sao mặt bằng này xếp trên mặt bằng kia.
+
+---
+
+## 16. Yêu cầu khảo sát, báo Telegram, link chia sẻ, PDF
+
+### 16.1 Yêu cầu từ khách
+
+Hai nơi gửi yêu cầu, đều lưu vào bảng `leads` trong cơ sở dữ liệu và hiện ở `/quan-tri/` → tab **Yêu cầu**:
+
+| Nơi gửi | Nội dung |
+|---|---|
+| Trang hồ sơ `/mat-bang/` → form "Đặt lịch khảo sát thực địa" | Họ tên, số điện thoại, vai trò, ngày muốn xem, lời nhắn |
+| Trang Trợ lý → Báo cáo đầy đủ → "Gửi cho chủ nhà" | Họ tên, số điện thoại, tin nhắn soạn sẵn từ tiêu chí |
+
+- Khách phải tích ô đồng ý mới gửi được. Số điện thoại được chuẩn hoá về dạng `0xxxxxxxxx`.
+- Chống spam: ô bẫy ẩn cho bot, mỗi IP tối đa 5 yêu cầu/giờ, toàn hệ thống 200/ngày; gửi trùng (cùng số, cùng mặt bằng trong 10 phút) không tạo bản ghi mới.
+- Log máy chủ chỉ ghi mã yêu cầu và mã mặt bằng, **không ghi** họ tên hay số điện thoại.
+- Trong tab Yêu cầu: đổi trạng thái (Mới, Đã gọi, Đã hẹn khảo sát, Đã đóng), ghi chú nội bộ, xoá, xuất CSV. Xoá yêu cầu khi không còn cần để không giữ thông tin cá nhân lâu.
+
+### 16.2 Bật báo tin qua Telegram
+
+1. Trên Telegram, nhắn cho **@BotFather** lệnh `/newbot`, đặt tên, nhận **token** dạng `123456789:AA...`.
+2. Tạo nhóm Telegram của đội (hoặc dùng chat riêng), thêm bot vào nhóm, gửi một tin bất kỳ trong nhóm.
+3. Lấy **chat id**: mở `https://api.telegram.org/bot<TOKEN>/getUpdates` trên trình duyệt, tìm `"chat":{"id": ...}` (nhóm thường là số âm, ví dụ `-1001234567890`).
+4. Trên VPS, thêm vào `/opt/estatesmart/api.env`:
+
+```bash
+sudo -u deploy nano /opt/estatesmart/api.env
+```
+
+```
+TELEGRAM_BOT_TOKEN=123456789:AA...
+TELEGRAM_CHAT_ID=-1001234567890
+```
+
+5. Khởi động lại và kiểm tra `"telegram":true`:
+
+```bash
+cd /opt/estatesmart/app && sudo -u deploy docker compose up -d api && curl -s https://estatesmart.site/api/health
+```
+
+Mỗi yêu cầu mới sẽ được nhắn vào nhóm: loại yêu cầu, mã mặt bằng, tên, số điện thoại, ngày muốn xem, lời nhắn và link quản trị. Lưu ý: số điện thoại của khách sẽ nằm trong lịch sử chat Telegram, nên chỉ thêm người cần thiết vào nhóm. Token lộ thì vào @BotFather → `/revoke` để tạo token mới.
+
+### 16.3 Link chia sẻ kết quả
+
+Nút **Chia sẻ kết quả** dưới danh sách trong trang Trợ lý lưu tiêu chí và ba mã mặt bằng (bảng `shares`, không có thông tin cá nhân), tạo link `https://estatesmart.site/tro-ly/?phien=<mã>`. Link hết hạn sau 90 ngày; khi mở, điểm số được tính lại theo dữ liệu hiện tại; mặt bằng đã ẩn hoặc xoá sẽ không hiện.
+
+### 16.4 Tải PDF hồ sơ
+
+Nút **Tải PDF** ở đầu trang hồ sơ mở hộp thoại in của trình duyệt; chọn "Lưu dưới dạng PDF". Bản in dùng nền trắng, bỏ thanh menu và form, giữ ảnh, thông số, tiện ích, cạnh tranh, nhận định và nguồn dữ liệu.

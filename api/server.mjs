@@ -11,7 +11,8 @@ import { streamChat, llmConfig } from './llm.mjs';
 import { systemPrompt } from './prompt.mjs';
 import { acquire, usage } from './limits.mjs';
 import { parseSmart } from './intake.mjs';
-import { recommend, profile } from './engine.mjs';
+import { recommend, profile, cardsFor } from './engine.mjs';
+import { createLead, LeadError, createShare, getShare, telegramEnabled } from './leads.mjs';
 import { report } from './report.mjs';
 import { handleAdmin, adminEnabled } from './admin.mjs';
 import { listActive } from './db.mjs';
@@ -130,7 +131,16 @@ async function route(req, res, url, ip) {
   const m = req.method;
 
   if (m === 'GET' && p === '/api/health') {
-    return sendJson(res, 200, { ok: true, llm: !!llmConfig.apiKey, admin: adminEnabled(), listings: listActive().length });
+    return sendJson(res, 200, { ok: true, llm: !!llmConfig.apiKey, admin: adminEnabled(), telegram: telegramEnabled(), listings: listActive().length });
+  }
+
+  // Mở link chia sẻ: dựng lại đúng ba mặt bằng và tiêu chí đã lưu.
+  const sm = p.match(/^\/api\/share\/([A-Za-z0-9]{6,20})$/);
+  if (m === 'GET' && sm) {
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    const sh = getShare(sm[1]);
+    if (!sh) return sendJson(res, 404, { error: 'Link đã hết hạn hoặc không tồn tại.' });
+    return sendJson(res, 200, { ...sh, results: cardsFor(sh.codes, sh.criteria) });
   }
 
   if (p.startsWith('/api/admin/')) {
@@ -139,9 +149,24 @@ async function route(req, res, url, ip) {
     return;
   }
 
-  if (m !== 'POST') return sendJson(res, p.match(/^\/api\/(chat|recommend|profiles|parse|report)$/) ? 405 : 404, { error: 'Không tìm thấy' });
+  if (m !== 'POST') return sendJson(res, p.match(/^\/api\/(chat|recommend|profiles|parse|report|leads|share)$/) ? 405 : 404, { error: 'Không tìm thấy' });
 
   if (p === '/api/chat') return handleChat(req, res, ip);
+
+  // Yêu cầu khảo sát / tin nhắn gửi chủ nhà (có thông tin cá nhân, không ghi vào log).
+  if (p === '/api/leads') {
+    const body = await readJson(req);
+    try { return sendJson(res, 200, await createLead(body, ip)); }
+    catch (e) { if (e instanceof LeadError) return sendJson(res, e.status, { error: e.errors._ || e.message, errors: e.errors }); throw e; }
+  }
+
+  if (p === '/api/share') {
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    const body = await readJson(req);
+    const codes = cleanCodes(body.codes);
+    if (!codes.length) throw new HttpError(400, 'Thiếu mã mặt bằng');
+    return sendJson(res, 200, { id: createShare(cleanCriteria(body.criteria), codes) });
+  }
 
   if (p === '/api/parse' || p === '/api/report') {
     if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });

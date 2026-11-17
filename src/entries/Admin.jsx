@@ -179,6 +179,71 @@ function Importer({ onDone, toast }) {
   );
 }
 
+// Tab "Yêu cầu": yêu cầu khảo sát và tin nhắn gửi chủ nhà từ người dùng.
+function Leads({ toast, onCount }) {
+  const [data, setData] = useState(null);
+  const [filter, setFilter] = useState('open');
+  const [notes, setNotes] = useState({});
+  const load = async () => {
+    try { const d = await api('/leads'); setData(d); onCount(d.leads.filter((l) => l.status === 'new').length); }
+    catch (e) { if (e.status === 401) location.reload(); else toast(e.message); }
+  };
+  useEffect(() => { load(); }, []);
+  if (!data) return <p className="center">Đang tải yêu cầu…</p>;
+  const rows = data.leads.filter((l) => filter === 'all' || (filter === 'open' ? l.status !== 'closed' : l.status === filter));
+  const save = async (l, patch) => {
+    try { await api('/leads/' + l.id, { method: 'PUT', body: patch }); toast('Đã cập nhật yêu cầu #' + l.id); load(); } catch (e) { toast(e.message); }
+  };
+  const del = async (l) => {
+    if (!window.confirm(`Xoá vĩnh viễn yêu cầu #${l.id} của ${l.name}? Không thể hoàn tác.`)) return;
+    try { await api('/leads/' + l.id, { method: 'DELETE' }); toast('Đã xoá yêu cầu #' + l.id); load(); } catch (e) { toast(e.message); }
+  };
+  const fmt = (iso) => new Date(iso).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+  return (
+    <>
+      <div className="filters">
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Lọc yêu cầu">
+          <option value="open">Chưa đóng</option><option value="all">Tất cả</option>
+          {Object.entries(data.statuses).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <span style={{ flex: 1 }} />
+        <a className="ghost" href="/api/admin/leads/export">Xuất CSV</a>
+      </div>
+      <p className="hint">Có thông tin cá nhân của khách: chỉ dùng để liên hệ về mặt bằng họ hỏi, xoá khi không còn cần.</p>
+      <div className="leads">
+        {rows.map((l) => (
+          <article key={l.id} className={'lead ' + l.status}>
+            <header>
+              <span className="lead-id">#{l.id}</span>
+              <span className={'tag ' + (l.status === 'new' ? 'active' : 'hidden')}>{data.statuses[l.status]}</span>
+              <span className="lead-src">{l.source === 'owner_msg' ? 'Tin nhắn chủ nhà (Trợ lý)' : 'Đặt lịch khảo sát (Hồ sơ)'}</span>
+              <span className="lead-time">{fmt(l.created)}</span>
+            </header>
+            <div className="lead-main">
+              <div>
+                <p className="lead-name">{l.name} <small>· {l.role}</small></p>
+                <p><a href={'tel:' + l.phone}>{l.phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')}</a></p>
+                {l.code && <p>Mặt bằng <b>{l.code}</b>{l.listing ? ' · ' + l.listing : ''}</p>}
+                {l.visit_date && <p>Ngày muốn xem: {l.visit_date.split('-').reverse().join('/')}</p>}
+              </div>
+              {l.message && <p className="lead-msg">{l.message}</p>}
+            </div>
+            <footer>
+              <select value={l.status} onChange={(e) => save(l, { status: e.target.value })} aria-label={'Trạng thái yêu cầu #' + l.id}>
+                {Object.entries(data.statuses).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <input type="text" placeholder="Ghi chú nội bộ (đã gọi lúc…, hẹn…)" value={notes[l.id] ?? l.note ?? ''} onChange={(e) => setNotes((n) => ({ ...n, [l.id]: e.target.value }))}
+                onBlur={() => { if ((notes[l.id] ?? l.note) !== l.note) save(l, { note: notes[l.id] }); }} aria-label={'Ghi chú yêu cầu #' + l.id} />
+              <button className="danger" onClick={() => del(l)}>Xoá</button>
+            </footer>
+          </article>
+        ))}
+        {!rows.length && <p className="center">Chưa có yêu cầu nào{filter === 'open' ? ' đang mở' : ''}.</p>}
+      </div>
+    </>
+  );
+}
+
 function App() {
   const [state, setState] = useState('loading'); // loading | login | ready
   const [meta, setMeta] = useState(null);
@@ -186,12 +251,14 @@ function App() {
   const [status, setStatus] = useState('all');
   const [edit, setEdit] = useState(null); // { listing, isNew }
   const [showImport, setShowImport] = useState(false);
+  const [tab, setTab] = useState(() => (location.hash === '#yeu-cau' ? 'leads' : 'listings'));
+  const [newLeads, setNewLeads] = useState(0);
   const [msg, setMsg] = useState('');
   const msgTimer = useRef(null);
   const toast = (t) => { setMsg(t); clearTimeout(msgTimer.current); msgTimer.current = setTimeout(() => setMsg(''), 3000); };
 
   const load = async () => {
-    try { setMeta(await api('/listings')); setState('ready'); } catch (e) { if (e.status === 401) setState('login'); else { setState('error'); setMsg(e.message); } }
+    try { const d = await api('/listings'); setMeta(d); setNewLeads(d.newLeads || 0); setState('ready'); } catch (e) { if (e.status === 401) setState('login'); else { setState('error'); setMsg(e.message); } }
   };
   useEffect(() => { load(); }, []);
 
@@ -214,17 +281,24 @@ function App() {
       <header className="top">
         <div>
           <p className="brand"><a href="/">estateSmart/AI</a> / Quản trị</p>
-          <h1>Mặt bằng</h1>
-          <p className="hint">{meta.listings.length} mặt bằng, {active} đang hiển thị. Dữ liệu mẫu là mô phỏng; thay bằng dữ liệu thật qua Nhập CSV hoặc sửa từng mặt bằng.</p>
+          <nav className="tabs" aria-label="Mục quản trị">
+            <button className={tab === 'listings' ? 'on' : ''} aria-pressed={tab === 'listings'} onClick={() => { setTab('listings'); history.replaceState(null, '', '#mat-bang'); }}>Mặt bằng</button>
+            <button className={tab === 'leads' ? 'on' : ''} aria-pressed={tab === 'leads'} onClick={() => { setTab('leads'); history.replaceState(null, '', '#yeu-cau'); }}>Yêu cầu{newLeads > 0 && <span className="badge">{newLeads} mới</span>}</button>
+          </nav>
+          {tab === 'listings' && <p className="hint">{meta.listings.length} mặt bằng, {active} đang hiển thị. Dữ liệu mẫu là mô phỏng; thay bằng dữ liệu thật qua Nhập CSV hoặc sửa từng mặt bằng.</p>}
         </div>
         <div className="actions">
+          {tab === 'listings' && <>
           <button className="btn" onClick={() => setEdit({ listing: { code: nextCode(), updated: new Date().toISOString().slice(0, 10) }, isNew: true })}>Thêm mặt bằng</button>
           <button className="ghost" onClick={() => setShowImport((v) => !v)} aria-expanded={showImport}>Nhập CSV</button>
           <a className="ghost" href="/api/admin/export">Xuất CSV</a>
+          </>}
           <button className="ghost" onClick={logout}>Đăng xuất</button>
         </div>
       </header>
 
+      {tab === 'leads' && <Leads toast={toast} onCount={setNewLeads} />}
+      {tab === 'listings' && <>
       {showImport && <Importer onDone={load} toast={toast} />}
 
       <div className="filters">
@@ -251,6 +325,7 @@ function App() {
           </tbody>
         </table>
       </div>
+      </>}
 
       {edit && (
         <Editor meta={{ ...meta, fields: meta.fields.map((f) => (f.key === 'type' ? { ...f, values: TYPE_ORDER } : f)) }} listing={edit.listing} isNew={edit.isNew} toast={toast}
