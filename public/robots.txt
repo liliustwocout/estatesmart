@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /quan-tri/
+Disallow: /api/
+Disallow: /thu-mascot/
+
+Sitemap: https://estatesmart.site/sitemap.xml

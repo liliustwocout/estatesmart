@@ -139,6 +139,10 @@ img{max-width:100%}
 .ch-mascot img.is-active{opacity:1}
 .study-mascot{position:absolute;left:20px;bottom:12px;z-index:2;width:148px;height:auto;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45))}
 .foot-cta .foot-act{flex-direction:row;align-items:flex-end;gap:16px;max-width:none}
+.foot-cta .guide{gap:14px;max-width:none}
+.foot-cta .say{color:#1B1916;margin:0}
+.foot-cta .foot-act{flex-wrap:wrap}
+.foot-cta .foot-act .btn{flex:none}
 .foot-mascot{width:112px;height:auto;flex:none;margin-bottom:-6px}
 
 /* So sánh */
@@ -237,6 +241,78 @@ img{max-width:100%}
 .wordmark svg{width:.78em;height:.78em;flex:none}
 .legal{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:24px;font-size:14px;color:var(--ink-2)}
 
+
+/* Hiện dần khi cuộn tới: src/entries/Main.jsx gắn data-in cho [data-reveal]. Chỉ ẩn khi JS đang chạy (lớp .js trên <html>) */
+.rv{transition:opacity 700ms var(--ease-out),transform 900ms var(--ease-out);transition-delay:calc(var(--d,0) * 90ms)}
+.js [data-reveal]:not([data-in]) .rv,.js [data-reveal].rv:not([data-in]){opacity:0;transform:translate3d(0,32px,0)}
+
+/* Bong bóng thoại của Mascot: bật ra, ba chấm “đang gõ”, rồi câu hướng dẫn hiện lên */
+.guide{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.guide-row{flex-direction:row;align-items:flex-end;gap:10px;max-width:100%}
+.guide-row .say{width:auto;flex:0 1 auto;min-width:0}
+.guide-end{align-items:flex-end}
+.say{position:relative;margin:0;width:max-content;max-width:min(300px,68vw);padding:12px 16px;border-radius:18px;background:#F7F3EC;color:#1B1916;font-size:15px;font-weight:500;line-height:1.45;letter-spacing:-.005em;text-wrap:pretty;box-shadow:0 18px 36px -16px rgba(0,0,0,.6);transform-origin:26px 100%}
+.say::after{content:'';position:absolute;left:22px;top:100%;width:14px;height:14px;margin-top:-8px;background:inherit;rotate:45deg;border-radius:0 0 3px 0}
+.say-r{transform-origin:calc(100% - 26px) 100%}
+.say-r::after{left:auto;right:22px}
+.say-side{margin-bottom:56px;transform-origin:0 80%}
+.say-side::after{left:-6px;top:auto;bottom:16px;margin:0;border-radius:0 0 0 3px}
+.about .say{background:#1B1916;color:#F7F3EC;box-shadow:0 18px 36px -18px rgba(27,25,22,.55)}
+.say-t{display:block}
+.say-dots{position:absolute;left:16px;top:50%;display:flex;gap:4px;translate:0 -50%;opacity:0;pointer-events:none}
+.say-dots i{width:6px;height:6px;border-radius:50%;background:currentColor;animation:say-dot 900ms ease-in-out infinite}
+.say-dots i:nth-child(2){animation-delay:120ms}
+.say-dots i:nth-child(3){animation-delay:240ms}
+@keyframes say-dot{0%,60%,100%{transform:none;opacity:.35}30%{transform:translateY(-4px);opacity:1}}
+.js [data-reveal]:not([data-in]) .say{opacity:0}
+[data-in] .say{animation:say-pop 620ms var(--ease-spring) 120ms both}
+[data-in] .say-dots{animation:say-dots 820ms linear 120ms both}
+[data-in] .say-t{animation:say-t 460ms var(--ease-out) 760ms both}
+@keyframes say-pop{0%{opacity:0;transform:scale(.55) translateY(12px)}45%{opacity:1}100%{opacity:1;transform:none}}
+@keyframes say-dots{0%,15%{opacity:0}30%,80%{opacity:1}100%{opacity:0}}
+@keyframes say-t{from{opacity:0;transform:translateY(5px)}}
+.g-mascot{display:block;width:92px;height:auto;flex:none}
+.cmp-intro{display:flex;flex-direction:column;gap:40px}
+.agents-side{display:flex;flex-direction:column;align-items:flex-start;gap:28px;max-width:40ch}
+.agents-side p{margin:0;color:var(--ink-2)}
+.agents-side .say{color:#1B1916}
+.study-guide{position:absolute;left:20px;bottom:12px;z-index:2}
+.study-guide .study-mascot{position:static}
+.ch-guide{margin-bottom:8px}
+.ch-guide .ch-mascot{margin:0}
+.ch-guide .say-side{margin-bottom:64px}
+
+/* Đường kẻ danh sách Agent tự vẽ từ trái sang khi cuộn tới (line animation) */
+.agents{position:relative;border-top:0}
+.agents::before,.agent::after{content:'';position:absolute;left:0;right:0;height:1px;transform-origin:left;transition:transform 1200ms var(--ease-out)}
+.agents::before{top:0;background:var(--line-2)}
+.agent{position:relative;border-bottom:0}
+.agent::after{bottom:0;background:var(--line);transition-delay:calc(var(--d,0) * 90ms + 160ms)}
+.js .agents:not([data-in])::before,.js .agents:not([data-in]) .agent::after{transform:scaleX(0)}
+.agent-n{transition:color var(--dur-2) var(--ease-out)}
+.agent-t{transition:transform var(--dur-3) var(--ease-out)}
+@media (hover:hover){.agent:hover .agent-n{color:var(--accent)}.agent:hover .agent-t{transform:translateX(6px)}}
+
+/* Ảnh dải dưới phần giới thiệu: phóng nhẹ khi rê */
+.strip img{transition:opacity 700ms var(--ease-out),transform 900ms var(--ease-out),scale 700ms var(--ease-out);transition-delay:calc(var(--d,0) * 90ms)}
+@media (hover:hover){.strip img:hover{scale:1.02;transition-delay:0s}}
+
+/* Nút chính: vệt sáng lướt qua định kỳ để mời bấm */
+.btn-shine{position:relative;overflow:hidden;isolation:isolate}
+.btn-shine::before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,transparent 35%,rgba(211,154,106,.55) 50%,transparent 65%);transform:translateX(-120%);animation:shine 4.2s var(--ease-in-out) 1.6s infinite}
+@keyframes shine{0%{transform:translateX(-120%)}35%,100%{transform:translateX(120%)}}
+
+/* Nút nổi mở trợ lý: hiện khi đã cuộn qua hero, ẩn ở chân trang (đã có nút lớn) */
+.fab{position:fixed;right:max(16px,var(--gutter));bottom:20px;z-index:45;display:inline-flex;align-items:center;gap:10px;min-height:60px;padding:6px 22px 6px 6px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:600;font-size:15px;text-decoration:none;box-shadow:0 20px 40px -14px rgba(0,0,0,.7);opacity:0;visibility:hidden;transform:translate3d(0,24px,0) scale(.92);transform-origin:100% 100%;transition:opacity 260ms var(--ease-out),transform 520ms var(--ease-spring),visibility 0s linear 520ms,background-color var(--dur-1) var(--ease-out)}
+.fab.is-on{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.fab-face{position:relative;display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#1B1916;flex:none}
+.fab-face img{width:34px;height:auto;display:block}
+.fab-face::after{content:'';position:absolute;inset:0;border-radius:50%;animation:fab-pulse 2.4s var(--ease-out) infinite}
+@keyframes fab-pulse{0%{box-shadow:0 0 0 0 rgba(211,154,106,.55)}70%,100%{box-shadow:0 0 0 14px rgba(211,154,106,0)}}
+.fab .arr{transition:transform var(--dur-2) var(--ease-out)}
+.fab:active{scale:.96}
+@media (hover:hover){.fab:hover{background:var(--accent)}.fab:hover .arr{transform:translateX(4px)}}
+
 @media (max-width:1024px){
 .compare{grid-template-columns:minmax(0,1fr)}
 .foot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -259,6 +335,12 @@ img{max-width:100%}
 .ch-mascot{width:88px;height:104px}
 .study-mascot{width:104px;left:12px}
 .foot-mascot{width:84px}
+.g-mascot{width:72px}
+.say{font-size:14px;padding:10px 14px}
+.say-side,.ch-guide .say-side{margin-bottom:36px;max-width:min(240px,58vw)}
+.fab{right:12px;bottom:12px;min-height:54px;padding-right:18px;font-size:14px}
+.fab-face{width:42px;height:42px}
+.fab-face img{width:30px}
 .hero-actions .btn{width:100%}
 .about-cols,.cmp{grid-template-columns:minmax(0,1fr)}
 .strip{grid-template-columns:repeat(2,minmax(0,1fr));height:auto}
@@ -310,13 +392,13 @@ img{max-width:100%}
 <div class="intro">
 <!-- HERO -->
 <section class="hero">
-<img class="hero-img" src="/_blob/88da756d7bdf21acce5e115ce122899b" alt="Công trình hai tầng tường trắng, hàng cột thẳng đứng và sân lát đá lúc hoàng hôn">
+<img class="hero-img" fetchpriority="high" src="/_blob/88da756d7bdf21acce5e115ce122899b" alt="Công trình hai tầng tường trắng, hàng cột thẳng đứng và sân lát đá lúc hoàng hôn">
 <div class="hero-shade" style="background: linear-gradient(to top, rgba(18,16,14,0.88), rgba(18,16,14,{{overlay}}) 55%, rgba(18,16,14,0.45))"></div>
 <div class="hero-body">
 <h1><span class="line"><span style="--i: 0">Mặt bằng,</span></span><span class="line"><span style="--i: 1">thẩm định bằng dữ liệu.</span></span></h1>
 <p class="hero-lede">Ba mặt bằng đáng khảo sát nhất, mỗi chỉ số kèm nguồn kiểm chứng.</p>
 <div class="hero-actions">
-<a class="btn" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a class="btn btn-shine" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 <a class="link" href="Listing.dc.html">Xem hồ sơ mẫu</a>
 </div>
 </div>
@@ -347,35 +429,44 @@ img{max-width:100%}
 </div>
 </div>
 <div class="wrap about-rest">
-<div class="about-row">
-<div class="about-cols">
+<div class="about-row" data-reveal>
+<div class="about-cols rv">
 <p>Dành cho chủ quán F&amp;B và cửa hàng bán lẻ nhỏ. Hệ thống tổng hợp tin cho thuê, dữ liệu giao thông, đối thủ trên GrabFood và ShopeeFood, rồi đề xuất ba mặt bằng đáng khảo sát nhất.</p>
 <p class="muted">Chuỗi lớn có bộ phận phát triển mặt bằng riêng. Doanh nghiệp nhỏ thường chỉ dựa vào tin rao và kinh nghiệm cá nhân. estateSmartAI thu hẹp khoảng cách đó.</p>
 </div>
+<div class="guide guide-end">
+<p class="say say-r"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Mình gom tin cho thuê, giao thông và đối thủ trên GrabFood, ShopeeFood về một chỗ cho bạn.</span></p>
 <span class="m-plate" aria-hidden="true"><img class="m-img" src="/mascot/05-soi-tin-dang.svg" alt="" width="160" height="190" loading="lazy"></span>
 </div>
-<div class="strip">
-<img src="/_blob/75748c213ca7441c1ce9472de5d61042" alt="Mặt tiền một tầng ốp gỗ, sân cỏ và cây ô liu" loading="lazy">
-<img src="/_blob/16bfb5cd9c78a2ff917437809efcd6ff" alt="Khu bếp và bàn dài bên cửa kính" loading="lazy">
-<img src="/_blob/c1d785e9fac6c74b8e90d82cae82af92" alt="Hiên nhà rộng mở ra khu vườn" loading="lazy">
+</div>
+<div class="strip" data-reveal>
+<img class="rv" src="/_blob/75748c213ca7441c1ce9472de5d61042" alt="Mặt tiền một tầng ốp gỗ, sân cỏ và cây ô liu" loading="lazy">
+<img class="rv" style="--d: 1" src="/_blob/16bfb5cd9c78a2ff917437809efcd6ff" alt="Khu bếp và bàn dài bên cửa kính" loading="lazy">
+<img class="rv" style="--d: 2" src="/_blob/c1d785e9fac6c74b8e90d82cae82af92" alt="Hiên nhà rộng mở ra khu vườn" loading="lazy">
 </div>
 </div>
 </section>
 </div>
 
 <!-- SO SÁNH -->
-<section class="sec wrap compare">
-<h2 class="h2">Từ vài tuần dò tin đến ba lựa chọn có nguồn.</h2>
+<section class="sec wrap compare" data-reveal>
+<div class="cmp-intro">
+<h2 class="h2 rv">Từ vài tuần dò tin đến ba lựa chọn có nguồn.</h2>
+<div class="guide guide-row" data-reveal>
+<img class="g-mascot" src="/mascot/08-bieu-do.svg" alt="" aria-hidden="true" width="160" height="190" loading="lazy">
+<p class="say say-side"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Thay vì 1–2 tuần dò tin, bạn nhận ngay 3 mặt bằng đáng đi xem, số nào cũng có nguồn.</span></p>
+</div>
+</div>
 <div class="cmp">
-<div class="cmp-col">
+<div class="cmp-col rv" style="--d: 1">
 <p class="label">Cách làm hiện nay</p>
 <div class="fig"><span class="num">1–2</span><p>tuần sàng lọc tin trên các sàn và hội nhóm, thông tin chưa được kiểm chứng.</p></div>
 <div class="fig"><span class="num">4–7</span><p>ngày liên hệ đầu mối và sắp xếp lịch khảo sát thực địa.</p></div>
 </div>
-<div class="cmp-col ours">
+<div class="cmp-col ours rv" style="--d: 2">
 <p class="label">Với estateSmartAI</p>
 <div class="fig"><span class="num">Top 3</span><p>mặt bằng phù hợp nhất để khảo sát, mỗi chỉ số kèm nguồn tham chiếu.</p></div>
-<a class="btn" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a class="btn btn-shine" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
 </section>
@@ -397,10 +488,13 @@ img{max-width:100%}
 <p class="ch-hint"><span class="long">Dùng phím mũi tên trái, phải để chuyển bước</span><span class="short">Vuốt để chuyển bước</span></p>
 </div>
 <div>
+<div class="guide guide-row ch-guide" data-reveal>
 <div class="ch-mascot" aria-hidden="true">
 <sc-for list="{{chapterMascots}}" as="c" hint-placeholder-count="7">
 <img class="{{c.cls}}" src="{{c.src}}" alt="" width="160" height="190" loading="lazy">
 </sc-for>
+</div>
+<p class="say say-side" key="{{chapter.num}}"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">{{chapter.say}}</span></p>
 </div>
 <div class="ch-foot">
 <div class="ch-text" key="{{chapter.num}}" data-dir="{{dirName}}" aria-live="polite">
@@ -421,17 +515,23 @@ img{max-width:100%}
 </section>
 
 <!-- 5 AI AGENT -->
-<section class="sec wrap">
+<section class="sec wrap" data-reveal>
 <div class="agents-head">
-<h2 class="h2">Bộ phận phát triển mặt bằng cho doanh nghiệp nhỏ.</h2>
+<h2 class="h2 rv">Bộ phận phát triển mặt bằng cho doanh nghiệp nhỏ.</h2>
+<div class="agents-side rv" style="--d: 1">
 <p>Một Supervisor điều phối năm AI Agent. Mỗi Agent đảm nhận một nghiệp vụ; báo cáo cuối trích nguồn cho từng chỉ số.</p>
+<div class="guide guide-row" data-reveal>
+<img class="g-mascot" src="/mascot/07-do-dac.svg" alt="" aria-hidden="true" width="160" height="190" loading="lazy">
+<p class="say say-side"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Năm chuyên viên AI chia nhau từng việc, rồi mình gộp lại thành một báo cáo có nguồn.</span></p>
 </div>
-<ol class="agents">
-<li class="agent"><span class="agent-n">01</span><span class="agent-t">Phân tích nhu cầu</span><p>Chuẩn hoá mô hình kinh doanh, ngân sách, diện tích và yêu cầu vận hành như chỗ đỗ xe cho khách mang đi.</p></li>
-<li class="agent"><span class="agent-n">02</span><span class="agent-t">Sàng lọc mặt bằng</span><p>Lọc theo ngân sách, khu vực và diện tích trên nguồn tin cho thuê đang hoạt động.</p></li>
-<li class="agent"><span class="agent-n">03</span><span class="agent-t">Đánh giá vị trí</span><p>Kiểm tra khả năng tiếp cận, bãi đỗ xe, dải phân cách cứng và mật độ dân cư, văn phòng trong bán kính phục vụ.</p></li>
-<li class="agent"><span class="agent-n">04</span><span class="agent-t">Phân tích cạnh tranh</span><p>Xác định cơ sở cùng ngành trên GrabFood, ShopeeFood, GrabMart, ước tính phân khúc giá và khoảng trống thị trường.</p></li>
-<li class="agent last"><span class="agent-n">05</span><span class="agent-t">Chấm điểm và khuyến nghị</span><p>Tính điểm phù hợp 0–100, đối chiếu đơn giá/m² với khu vực và nêu rõ ưu điểm, rủi ro.</p></li>
+</div>
+</div>
+<ol class="agents" data-reveal>
+<li class="agent rv" style="--d: 0"><span class="agent-n">01</span><span class="agent-t">Phân tích nhu cầu</span><p>Chuẩn hoá mô hình kinh doanh, ngân sách, diện tích và yêu cầu vận hành như chỗ đỗ xe cho khách mang đi.</p></li>
+<li class="agent rv" style="--d: 1"><span class="agent-n">02</span><span class="agent-t">Sàng lọc mặt bằng</span><p>Lọc theo ngân sách, khu vực và diện tích trên nguồn tin cho thuê đang hoạt động.</p></li>
+<li class="agent rv" style="--d: 2"><span class="agent-n">03</span><span class="agent-t">Đánh giá vị trí</span><p>Kiểm tra khả năng tiếp cận, bãi đỗ xe, dải phân cách cứng và mật độ dân cư, văn phòng trong bán kính phục vụ.</p></li>
+<li class="agent rv" style="--d: 3"><span class="agent-n">04</span><span class="agent-t">Phân tích cạnh tranh</span><p>Xác định cơ sở cùng ngành trên GrabFood, ShopeeFood, GrabMart, ước tính phân khúc giá và khoảng trống thị trường.</p></li>
+<li class="agent last rv" style="--d: 4"><span class="agent-n">05</span><span class="agent-t">Chấm điểm và khuyến nghị</span><p>Tính điểm phù hợp 0–100, đối chiếu đơn giá/m² với khu vực và nêu rõ ưu điểm, rủi ro.</p></li>
 </ol>
 </section>
 
@@ -457,7 +557,10 @@ img{max-width:100%}
 <sc-for list="{{studyImgs}}" as="s" hint-placeholder-count="2">
 <img class="ch-img {{s.cls}}" src="{{s.src}}" alt="{{s.alt}}" loading="lazy" style="object-position: {{s.pos}}">
 </sc-for>
+<div class="guide study-guide" data-reveal>
+<p class="say" key="{{study.num}}"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">{{study.say}}</span></p>
 <img aria-hidden="true" class="study-mascot" src="/mascot/09-ban-do.svg" alt="" width="160" height="190" loading="lazy">
+</div>
 </div>
 </div>
 </div>
@@ -467,13 +570,16 @@ img{max-width:100%}
 <!-- CHÂN TRANG -->
 <footer id="lien-he" class="foot">
 <div class="wrap">
-<div class="foot-cta">
-<h2 class="h2">Bắt đầu với<br>một yêu cầu.</h2>
+<div class="foot-cta" data-reveal>
+<h2 class="h2 rv">Bắt đầu với<br>một yêu cầu.</h2>
 <div>
 <p>Chọn mô hình kinh doanh và khu vực mục tiêu. Trợ lý AI sẽ thực hiện phần thẩm định.</p>
 <div class="foot-act">
-<a class="btn" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a class="btn btn-shine" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<div class="guide guide-end" data-reveal>
+<p class="say say-r"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Sẵn sàng chưa? Bấm nút, mình đi tìm ngay.</span></p>
 <img aria-hidden="true" class="foot-mascot" src="/mascot/10-ngon-cai.svg" alt="" width="160" height="190" loading="lazy">
+</div>
 </div>
 </div>
 </div>
@@ -490,13 +596,14 @@ img{max-width:100%}
 </div>
 </footer>
 
+<a class="fab {{fabCls}}" href="Chat.dc.html" aria-label="Mở trợ lý AI tư vấn mặt bằng" tabIndex="{{fabTab}}" aria-hidden="{{fabHidden}}"><span class="fab-face" aria-hidden="true"><img src="/mascot/avatar.svg" alt="" width="34" height="36"></span><span>Hỏi trợ lý AI</span><svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"overlay":{"editor":"range","default":0.2,"min":0,"max":0.7,"step":0.01,"section":"Hero"},"$preview":{"width":1440,"height":6500}}'>
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { chapter: 0, dir: 0, study: 0, menuOpen: false, scrolled: false, aboutLive: false };
+    this.state = { chapter: 0, dir: 0, study: 0, menuOpen: false, scrolled: false, aboutLive: false, fab: false };
     this.el = {};
     this.refs_ = {};
     this.ref = (k) => this.refs_[k] || (this.refs_[k] = (node) => { this.el[k] = node; });
@@ -540,6 +647,14 @@ class Component extends DCLogic {
     this.onScroll = () => {
       const s = window.scrollY > 24;
       if (s !== this.state.scrolled) this.setState({ scrolled: s });
+      // Nút nổi: hiện sau hero, ẩn khi chân trang (đã có nút lớn) vào màn hình
+      const foot = this.foot || (this.foot = document.getElementById('lien-he'));
+      // Ẩn cả khi đang ở phần Quy trình 7 bước, để không che nút chuyển bước ở góc phải dưới
+      const ch = this.chEl || (this.chEl = document.getElementById('quy-trinh'));
+      const cr = ch ? ch.getBoundingClientRect() : null;
+      const overCh = cr && cr.top < window.innerHeight - 120 && cr.bottom > window.innerHeight - 40;
+      const f = window.scrollY > window.innerHeight * 0.75 && !overCh && !(foot && foot.getBoundingClientRect().top < window.innerHeight * 0.85);
+      if (f !== this.state.fab) this.setState({ fab: f });
       if (this.studyVisible && !this.studyRaf) this.studyRaf = requestAnimationFrame(this.checkStudy);
       if (this.state.aboutLive && this.visible) this.kick();
     };
@@ -658,17 +773,17 @@ class Component extends DCLogic {
   }
   renderVals() {
     const chapterData = [
-      { title: 'Xác định nhu cầu', m: '03-suy-nghi', sub: 'Mô hình kinh doanh, khu vực và ngân sách', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
-      { title: 'Sàng lọc', m: '05-soi-tin-dang', sub: 'Danh sách ứng viên trên bản đồ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
-      { title: 'Hồ sơ mặt bằng', m: '07-do-dac', sub: 'Hình ảnh, thông số và nguồn dữ liệu', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
-      { title: 'Đánh giá vị trí', m: '09-ban-do', sub: 'Khả năng tiếp cận, dải phân cách, bãi đỗ xe', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
-      { title: 'Nhận định AI', m: '08-bieu-do', sub: 'Điểm phù hợp 0–100, ưu điểm và rủi ro', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
-      { title: 'So sánh', m: '06-ong-nhom', sub: 'Đối chiếu ba hồ sơ theo cùng tiêu chí', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
-      { title: 'Kết nối chủ nhà', m: '04-tim-thay', sub: 'Lưu danh sách khảo sát và đặt lịch xem', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
+      { title: 'Xác định nhu cầu', m: '03-suy-nghi', say: 'Bạn kể mô hình, khu vực và ngân sách; mình ghi lại thành tiêu chí.', sub: 'Mô hình kinh doanh, khu vực và ngân sách', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
+      { title: 'Sàng lọc', m: '05-soi-tin-dang', say: 'Mình loại tin vượt ngân sách hoặc lệch diện tích, phần còn lại ghim lên bản đồ.', sub: 'Danh sách ứng viên trên bản đồ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
+      { title: 'Hồ sơ mặt bằng', m: '07-do-dac', say: 'Mỗi ứng viên có ảnh, thông số và nguồn để bạn tự kiểm tra.', sub: 'Hình ảnh, thông số và nguồn dữ liệu', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
+      { title: 'Đánh giá vị trí', m: '09-ban-do', say: 'Mình xem lối vào, dải phân cách và chỗ đỗ xe ngay trước cửa.', sub: 'Khả năng tiếp cận, dải phân cách, bãi đỗ xe', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
+      { title: 'Nhận định AI', m: '08-bieu-do', say: 'Chấm điểm 0–100, nói rõ điểm mạnh và rủi ro của từng nơi.', sub: 'Điểm phù hợp 0–100, ưu điểm và rủi ro', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
+      { title: 'So sánh', m: '06-ong-nhom', say: 'Ba hồ sơ đặt cạnh nhau theo cùng tiêu chí, chọn dễ hơn hẳn.', sub: 'Đối chiếu ba hồ sơ theo cùng tiêu chí', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
+      { title: 'Kết nối chủ nhà', m: '04-tim-thay', say: 'Ưng căn nào, mình gửi lời nhắn và hẹn lịch xem giúp bạn.', sub: 'Lưu danh sách khảo sát và đặt lịch xem', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
     ];
     const studyData = [
-      { title: 'Thẩm định vị trí,\nkhả năng tiếp cận\nvà giá thuê.', body: 'Mỗi mặt bằng được chấm điểm phù hợp từ 0 đến 100, kèm ưu điểm, rủi ro và nguồn tham chiếu cho từng chỉ số.', cta: 'Xem hồ sơ mẫu', href: 'Listing.dc.html', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 45%', alt: 'Hàng cột đá và cửa kính dưới nắng chiều' },
-      { title: 'Năm AI Agent,\nmột báo cáo\nthống nhất.', body: 'Ba mặt bằng phù hợp nhất được trình bày song song trên bản đồ để bạn lưu vào danh sách khảo sát hoặc liên hệ chủ nhà.', cta: 'Trải nghiệm trợ lý AI', href: 'Chat.dc.html', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%', alt: 'Không gian chính với bàn gỗ và sofa' }
+      { title: 'Thẩm định vị trí,\nkhả năng tiếp cận\nvà giá thuê.', say: 'Hồ sơ mẫu đây: điểm phù hợp, ưu điểm, rủi ro và nguồn cho từng con số.', body: 'Mỗi mặt bằng được chấm điểm phù hợp từ 0 đến 100, kèm ưu điểm, rủi ro và nguồn tham chiếu cho từng chỉ số.', cta: 'Xem hồ sơ mẫu', href: 'Listing.dc.html', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 45%', alt: 'Hàng cột đá và cửa kính dưới nắng chiều' },
+      { title: 'Năm AI Agent,\nmột báo cáo\nthống nhất.', say: 'Ba lựa chọn nằm cạnh nhau trên bản đồ, bấm vào là xem chi tiết.', body: 'Ba mặt bằng phù hợp nhất được trình bày song song trên bản đồ để bạn lưu vào danh sách khảo sát hoặc liên hệ chủ nhà.', cta: 'Trải nghiệm trợ lý AI', href: 'Chat.dc.html', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%', alt: 'Không gian chính với bàn gỗ và sofa' }
     ];
     const ci = this.state.chapter;
     const si = this.state.study;
@@ -709,6 +824,9 @@ class Component extends DCLogic {
       ].map((src) => ({ src, cls: '' })),
       overlay: this.props.overlay ?? 0.2,
       topbarCls: (this.state.scrolled && !open) ? 'is-solid' : '',
+      fabCls: this.state.fab && !open ? 'is-on' : '',
+      fabTab: this.state.fab && !open ? '0' : '-1',
+      fabHidden: this.state.fab && !open ? 'false' : 'true',
       menuCls: open ? 'is-open' : '',
       menuExpanded: open ? 'true' : 'false',
       menuHidden: open ? 'false' : 'true',

@@ -6,7 +6,7 @@
   "scripts": {
     "sync": "node scripts/dc2jsx.mjs",
     "dev": "npm run sync && vite",
-    "build": "npm run sync && vite build",
+    "build": "npm run sync && vite build && vite build --ssr src/entries/main-ssr.jsx --outDir dist-ssr && node scripts/prerender.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

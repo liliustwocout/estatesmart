@@ -5,3 +5,4 @@ src/generated/
 .claude/
 api/.env
 api/data/*.db*
+dist-ssr/

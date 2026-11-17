@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client';
 import Listing from '../generated/Listing.jsx';
 import SectionGuide from '../mascot/SectionGuide.jsx';
 import { watchReveal } from '../styles/reveal.js';
+import { smoothScroll } from '../styles/smoothScroll.js';
 
 // Các câu giới thiệu được đặt cạnh nội dung tương ứng trong design/Listing.dc.html.
 const LINES = {
@@ -28,3 +29,4 @@ function ListingPage() {
 
 createRoot(document.getElementById('root')).render(<ListingPage />);
 watchReveal();
+smoothScroll();

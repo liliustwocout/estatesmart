@@ -268,8 +268,7 @@ body { margin: 0; background: var(--page); }
 @media (hover: hover) { .bar-col:hover .bar { background: rgba(163, 86, 43, .55); } .bar-col:hover .bar.peak { filter: brightness(1.1); } }
 .d-sheet.open .bar { animation: bar-grow .75s cubic-bezier(.34, 1.36, .64, 1) both; animation-delay: calc(260ms + var(--i, 0) * 45ms); }
 @keyframes bar-grow { from { transform: scaleY(0); } }
-.bar-v { position: absolute; bottom: calc(100% - 14px); left: 50%; translate: -50% 0; padding: 2px 7px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 10px; font-weight: 600; white-space: nowrap; }
-.d-sheet.open .bar-v { animation: es-up .4s var(--ease-reveal) both; animation-delay: .9s; }
+.bar-col.is-peak .bar-l { color: var(--accent); font-weight: 600; }
 .bar.peak { background: var(--accent); }
 .bar-l { font-size: 10.5px; color: var(--ink-2); white-space: nowrap; }
 .cmp { display: flex; flex-direction: column; gap: 8px; }

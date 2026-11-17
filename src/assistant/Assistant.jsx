@@ -272,8 +272,7 @@ function ReportGrid({ r, open, onCopy, msg, setMsg }) {
         <header><h3>Lưu lượng theo giờ</h3><span className="tag">Ước lượng</span></header>
         <div className="bars" role="img" aria-label={'Lưu lượng ước lượng: ' + t.bars.map((b) => b.label + ' ' + b.v + '%').join(', ')}>
           {t.bars.map((b, i) => (
-            <div key={b.label} className="bar-col" style={{ '--i': i }}>
-              {i === t.peak && <span className="bar-v">Cao điểm</span>}
+            <div key={b.label} className={'bar-col' + (i === t.peak ? ' is-peak' : '')} style={{ '--i': i }} title={i === t.peak ? 'Giờ cao điểm' : undefined}>
               <span className={'bar' + (i === t.peak ? ' peak' : '')} style={{ height: Math.max(6, b.v) + '%' }} />
               <span className="bar-l">{b.label}</span>
             </div>
