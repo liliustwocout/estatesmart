@@ -20,3 +20,7 @@ jobs:
       - run: npm run build
       - run: docker build --build-arg GIT_SHA=${GITHUB_SHA::7} -t estatesmart-web:ci .
       - run: node --check api/server.mjs && docker build -t estatesmart-api:ci api
+      - name: Kiểm tra dữ liệu khởi động của image API
+        run: >-
+          docker run --rm -e DB_PATH=:memory: estatesmart-api:ci
+          node --disable-warning=ExperimentalWarning --input-type=module -e "await import('./report.mjs')"
