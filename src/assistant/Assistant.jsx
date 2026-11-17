@@ -2,7 +2,8 @@
 // Khung phải có 4 trạng thái: chờ → danh sách 3 mặt bằng → chi tiết (bản đồ 3D, ảnh) → báo cáo đầy đủ.
 // Chuyển động theo hai đường cong: ease-layout (khung đẩy nhau, ảnh phóng to) và ease-reveal (nội dung hiện ra).
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import Robot from './Robot.jsx';
+import Mascot from '../mascot/Mascot.jsx';
+import Hunt from './Hunt.jsx';
 
 const REDUCE = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const T = (ms) => (REDUCE ? 20 : ms);
@@ -15,6 +16,8 @@ const AGENTS = [
   { name: 'Chấm điểm và khuyến nghị', detail: 'Xếp hạng, chọn ba mặt bằng đáng xem nhất' }
 ];
 const STEP_MS = 750;
+const FOUND_MS = 1500; // Mascot giơ ghim “tìm thấy” trước khi hiện danh sách
+const OOPS_MS = 2200;
 const SUGGESTIONS = [
   'Mở quán cà phê ở Ocean Park, ngân sách khoảng 50 triệu/tháng, diện tích 150–250 m², cần chỗ đỗ ô tô',
   'Tìm mặt bằng trà sữa gần trường học, dưới 30 triệu/tháng',
@@ -64,7 +67,7 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
       </div>
     );
   }
-  if (m.k === 'thinking') return <div className="b-bot thinking es-up" role="status"><span className="dots" aria-hidden="true"><i /><i /><i /></span>{m.text}</div>;
+  if (m.k === 'thinking') return <div className="b-bot thinking es-up" role="status"><span className="m-tile" aria-hidden="true"><Mascot pose="02-chay-tim" size={30} /></span>{m.text}</div>;
   if (m.k === 'ask') {
     return (
       <div className="b-group es-up">
@@ -99,6 +102,7 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
       </div>
     );
   }
+  if (m.mood === 'oops') return <div className="b-bot oops es-up"><span className="m-tile" aria-hidden="true"><Mascot pose="12-boi-roi" size={30} /></span><span>{m.text}</span></div>;
   return <div className={'b-bot es-up' + (m.streaming ? ' streaming' : '')}>{m.text}</div>;
 }
 
@@ -245,6 +249,7 @@ export default function Assistant() {
   const [shareId, setShareId] = useState(null);
   const [toast, setToast] = useState(null);
   const [entered, setEntered] = useState(REDUCE);
+  const [hunt, setHunt] = useState(null); // Mascot chạy tìm ở khung phải, xem Hunt.jsx
 
   const stageRef = useRef(null);
   const rowImgRefs = useRef([]);
@@ -303,12 +308,21 @@ export default function Assistant() {
     setMsgs((s) => [...s.map((m) => (m.k === 'ask' ? { ...m, open: false } : m)), { id: agId, k: 'agents', step: 0, reading: true }]);
     const setAg = (patch) => setMsgs((s) => s.map((m) => (m.id === agId ? { ...m, ...patch } : m)));
     const dropAg = () => setMsgs((s) => s.filter((m) => m.id !== agId));
+    // Mascot rời khung phải: thu nhỏ về góc rồi biến mất
+    const leave = (wait = 0) => later(T(wait)).then(() => {
+      if (my !== session.current) return;
+      setHunt((h) => (h ? { ...h, mode: 'leave' } : h));
+      later(T(600)).then(() => { if (my === session.current) setHunt((h) => (h && h.mode === 'leave' ? null : h)); });
+    });
+    setHunt({ mode: 'read', step: 0 });
+    let stopped = false; // máy chủ lỗi: dừng đếm bước, không để bước sau đè lên trạng thái lỗi
     try {
       const parsed = await postJson('/api/parse', { text, prev: criteria || {} });
       if (my !== session.current) return;
       if (parsed.ask) {
         setCriteria(parsed.criteria);
         dropAg();
+        leave();
         push({ k: 'ask', text: parsed.ask.q, options: parsed.ask.options, open: true });
         setBusy(false);
         return;
@@ -316,8 +330,9 @@ export default function Assistant() {
       const crit = parsed.criteria;
       const need = [crit.model, crit.area, crit.budget && 'ngân sách ' + crit.budget.charAt(0).toLowerCase() + crit.budget.slice(1), crit.size].filter(Boolean).join(', ');
       setAg({ reading: false, step: 0, facts: [need || null] });
+      setHunt({ mode: 'run', step: 0 });
       // Mỗi bước giữ ít nhất STEP_MS để người dùng kịp đọc; bước cuối chờ máy chủ trả kết quả.
-      const stepping = (async () => { for (let i = 1; i < AGENTS.length; i++) { await later(T(STEP_MS)); if (my !== session.current) return; setAg({ step: i }); } await later(T(STEP_MS)); })();
+      const stepping = (async () => { for (let i = 1; i < AGENTS.length; i++) { await later(T(STEP_MS)); if (stopped || my !== session.current) return; setAg({ step: i }); setHunt({ mode: 'run', step: i }); } await later(T(STEP_MS)); })();
       const [data] = await Promise.all([postJson('/api/recommend', { criteria: crit }), stepping]);
       if (my !== session.current) return;
       const top = data.results[0];
@@ -339,13 +354,20 @@ export default function Assistant() {
       push({ k: 'results', text: `Đội ngũ đã rà soát ${data.stats.total} mặt bằng trong hệ thống, ${data.stats.fit} vừa ngân sách và diện tích. Đây là ba lựa chọn đáng đi xem nhất:`, rows });
       setSel(0);
       setView(-1);
-      setPhase('list');
       rows.forEach((r) => postJson('/api/report', { code: r.code, criteria: crit }).then((rp) => setReports((s) => ({ ...s, [r.code]: rp }))).catch(() => {}));
       ensureMap();
+      setHunt({ mode: 'found', step: AGENTS.length - 1 });
+      await later(T(FOUND_MS));
+      if (my !== session.current) return;
+      setPhase('list');
+      leave();
     } catch (e) {
+      stopped = true;
       if (my !== session.current) return;
       dropAg();
-      push({ k: 'bot', text: e.status === 429 ? e.message : 'Chưa kết nối được máy chủ thẩm định. Anh/chị thử lại sau ít phút.' });
+      push({ k: 'bot', mood: 'oops', text: e.status === 429 ? e.message : 'Chưa kết nối được máy chủ thẩm định. Anh/chị thử lại sau ít phút.' });
+      setHunt({ mode: 'oops', step: 0 });
+      leave(OOPS_MS);
     } finally {
       if (my === session.current) setBusy(false);
     }
@@ -489,7 +511,7 @@ export default function Assistant() {
     if (askCtrl.current) askCtrl.current.abort();
     setBusy(false);
     setMsgs([{ id: id(), k: 'bot', text: 'Mình bắt đầu phiên mới. Anh/chị mô tả nhu cầu trong một câu nhé.' }]);
-    setRecs(null); setFinal(null); setCriteria(null); setPhase('idle'); setReportOpen(false); setView(-1);
+    setRecs(null); setFinal(null); setCriteria(null); setPhase('idle'); setReportOpen(false); setView(-1); setHunt(null);
     if (mapRef.current) mapRef.current.update(null);
     showToast('Đã bắt đầu phiên mới.', { label: 'Hoàn tác', run: () => { setMsgs(snap.msgs); setRecs(snap.recs); setFinal(snap.final); setReports(snap.reports); setCriteria(snap.criteria); setSel(snap.sel); setPhase(snap.phase === 'detail' ? 'list' : snap.phase); setToast(null); } });
   };
@@ -513,6 +535,7 @@ export default function Assistant() {
   } : { display: 'none' };
   const activeIdx = detail || phase === 'z1' || phase === 'z0' ? sel : -1;
   const thinking = busy;
+  const talking = msgs.some((m) => m.streaming);
   const thumbs = useMemo(() => [{ label: 'Bản đồ 3D', v: -1 }, ...((rep && rep.photos) || []).map((p, j) => ({ ...p, v: j }))], [rep]);
   const reveal = (on, delay = 0, off = 'translateY(12px)') => (on ? { opacity: 1, transform: 'none', transitionDelay: delay + 's' } : { opacity: 0, transform: off, pointerEvents: 'none', transitionDelay: '0s' });
 
@@ -529,7 +552,9 @@ export default function Assistant() {
         {/* ---------- CHAT ---------- */}
         <aside className="as-chat" aria-label="Trợ lý mặt bằng">
           <header className="ch-head">
-            <Robot thinking={thinking} />
+            <span className={'robot' + (thinking && !talking ? ' is-thinking' : '')} aria-hidden="true">
+              <Mascot pose={talking ? 'avatar-noi' : 'avatar'} size={30} follow />
+            </span>
             <div className="ch-title">
               <h1>Trợ lý mặt bằng</h1>
               <p><i className="live" aria-hidden="true" />Đội ngũ 5 chuyên viên AI đang trực tuyến</p>
@@ -562,7 +587,7 @@ export default function Assistant() {
           {/* Chờ */}
           <div className={'st-idle' + (phase === 'idle' ? '' : ' gone')} aria-hidden={phase !== 'idle'}>
             <img src="/images/hero3.webp" alt="" />
-            <div className="idle-card" style={reveal(phase === 'idle', 0.5)}>
+            <div className="idle-card" style={reveal(phase === 'idle' && !hunt, hunt ? 0 : 0.5)}>
               <p className="lbl">Khu vực thí điểm</p>
               <p className="idle-t">Vinhomes Ocean Park 1, Gia Lâm</p>
               <p className="idle-s">{busy ? 'Đội ngũ đang thẩm định…' : 'Mô tả nhu cầu bên trái để xem ba mặt bằng phù hợp nhất, bản đồ 3D và báo cáo.'}</p>
@@ -652,6 +677,8 @@ export default function Assistant() {
               </div>
             </div>
           </div>
+
+          <Hunt hunt={hunt} />
 
           {/* Ảnh đang phóng to / thu nhỏ */}
           <div className="zoom" style={zoomStyle} aria-hidden="true">{cur && <img src={cur.src} alt="" />}</div>

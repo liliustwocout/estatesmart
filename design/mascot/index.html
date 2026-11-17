@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mascot</title>
+<style>
+  :root { --bg:#1B1916; --surface:#262320; --ink:#F7F3EC; --ink-2:rgba(247,243,236,.72); --line:rgba(247,243,236,.16); --accent:#D39A6A; --stage:#211E1B; }
+  :root[data-pal="goc"] { --bg:#e9eff5; --surface:#ffffff; --ink:#111a24; --ink-2:#4a5664; --line:#d6dfe8; --accent:#2c6ab0; --stage:#eef3f8; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui, sans-serif; }
+  main { max-width:1180px; margin:0 auto; padding:28px 16px 64px; display:flex; flex-direction:column; gap:28px; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:end; justify-content:space-between; }
+  h1 { margin:0; font-size:28px; font-weight:600; letter-spacing:-.01em } h2 { margin:0 0 12px; font-size:18px; font-weight:600 }
+  p { margin:0; color:var(--ink-2) }
+  button { font:inherit; font-size:14px; color:var(--ink); background:transparent; border:1px solid var(--line); border-radius:999px; padding:8px 14px; cursor:pointer; }
+  button:hover { border-color:var(--accent) } button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#1B1916 }
+  .play { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:16px; }
+  @media (max-width:820px){ .play { grid-template-columns:1fr } }
+  .stage { position:relative; height:440px; background:var(--stage); border:1px solid var(--line); border-radius:24px; overflow:hidden; touch-action:none; user-select:none; }
+  #rig { position:absolute; left:50%; top:50%; width:240px; height:285px; margin:-150px 0 0 -120px; cursor:grab; transition:transform .55s cubic-bezier(.34,1.56,.64,1); }
+  #rig.dragging { cursor:grabbing; transition:none }
+  #rig svg { width:100%; height:100%; display:block; overflow:visible }
+  .bubble { position:absolute; left:50%; top:22px; transform:translateX(-50%); background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:16px; padding:8px 14px; font-size:14px; white-space:nowrap; opacity:0; transition:opacity .2s }
+  .bubble.on { opacity:1 }
+  .state { position:absolute; left:16px; bottom:14px; font-size:13px; color:var(--ink-2) }
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:20px; display:flex; flex-direction:column; gap:14px }
+  .row { display:flex; flex-wrap:wrap; gap:8px }
+  table { width:100%; border-collapse:collapse; font-size:13px } td { padding:6px 0; border-top:1px solid var(--line); vertical-align:top } td:first-child { color:var(--ink-2); width:46% }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:10px; display:flex; flex-direction:column; gap:6px; cursor:pointer }
+  .card:hover { border-color:var(--accent) }
+  .card .img { background:var(--stage); border-radius:12px; height:150px; display:flex; align-items:center; justify-content:center }
+  .card img { height:132px }
+  .card b { font-size:14px; font-weight:600 } .card span { font-size:12px; color:var(--ink-2) } .card code { font-size:11px; color:var(--ink-2) }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Mascot</h1>
+      <p>Trợ lý đi khảo sát mặt bằng: đầu là căn nhà, ăng-ten là ghim bản đồ. Kế hoạch: <code>docs/KE_HOACH_MASCOT.md</code></p>
+    </div>
+    <div class="row" role="group" aria-label="Bảng màu">
+      <button data-pal="thuong-hieu" aria-pressed="true">Màu thương hiệu</button>
+      <button data-pal="goc" aria-pressed="false">Màu gốc đã duyệt</button>
+    </div>
+  </header>
+
+  <section class="play">
+    <div class="stage" id="stage">
+      <div class="bubble" id="bubble"></div>
+      <div id="rig"></div>
+      <div class="state" id="state"></div>
+    </div>
+    <div class="panel">
+      <h2>Thử tương tác</h2>
+      <table>
+        <tr><td>Di chuột trên trang</td><td>Mắt nhìn theo</td></tr>
+        <tr><td>Rê qua lại trên đầu</td><td>Được vuốt: cười, tim bay</td></tr>
+        <tr><td>Bấm một lần</td><td>Lần lượt chào, ăn mừng, ngón cái, tìm thấy</td></tr>
+        <tr><td>Bấm 5 lần liên tục</td><td>Chóng mặt</td></tr>
+        <tr><td>Kéo thả</td><td>Bị nhấc lên, thả ra thì nảy về chỗ</td></tr>
+        <tr><td>Để yên 10 giây</td><td>Cầm ống nhòm nhìn quanh</td></tr>
+        <tr><td>Để yên 30 giây</td><td>Ngủ gật, di chuột là tỉnh dậy chào</td></tr>
+      </table>
+      <div class="row">
+        <button id="ask">Giả lập gửi câu hỏi</button>
+        <button id="fail">Giả lập lỗi</button>
+        <button id="save">Giả lập lưu hồ sơ</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Toàn bộ tư thế</h2>
+    <p style="margin-bottom:12px">Bấm một thẻ để mascot ở trên diễn tư thế đó. File nằm ở <code>design/mascot/thuong-hieu/</code> và <code>design/mascot/goc/</code>.</p>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section>
+    <h2>Ba phương án ban đầu</h2>
+    <div class="grid">
+      <div class="card"><div class="img" style="background:#eef3f8"><img src="y-tuong/y-tuong-a-dau-ngoi-nha.svg" alt=""></div><b>A · Đầu ngôi nhà</b><span>Đã chọn</span></div>
+      <div class="card"><div class="img" style="background:#eef3f8"><img src="y-tuong/y-tuong-b-ghim-ban-do.svg" alt=""></div><b>B · Ghim bản đồ</b><span>Không chọn</span></div>
+      <div class="card"><div class="img" style="background:#eef3f8"><img src="y-tuong/y-tuong-c-o-vuong.svg" alt=""></div><b>C · Ô vuông cũ</b><span>Không chọn</span></div>
+    </div>
+  </section>
+</main>
+
+<script src="poses.js"></script>
+<script>
+(() => {
+  const POSES = window.MASCOT_POSES, META = window.MASCOT_META, STYLE = window.MASCOT_STYLE;
+  const stage = document.getElementById('stage'), rig = document.getElementById('rig');
+  const bubble = document.getElementById('bubble'), stateEl = document.getElementById('state');
+  const NAME = Object.fromEntries(META.map((m) => [m.slug, m.name]));
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let pal = 'thuong-hieu', pose = '', timers = [], idleT = [], busy = false;
+
+  function render(slug) {
+    pose = slug;
+    rig.innerHTML = `<svg viewBox="0 0 160 190" aria-label="Mascot — ${NAME[slug]}" role="img"><style>${STYLE}</style>${POSES[pal][slug]}</svg>`;
+    stateEl.textContent = 'Tư thế: ' + NAME[slug];
+  }
+  const clear = () => { timers.forEach(clearTimeout); timers = []; };
+  const later = (ms, fn) => timers.push(setTimeout(fn, ms));
+  function say(text, ms = 1600) {
+    bubble.textContent = text; bubble.classList.add('on');
+    later(ms, () => bubble.classList.remove('on'));
+  }
+  // Chuỗi tư thế: [[slug, ms, câu nói?], ...] rồi quay về đứng yên.
+  function play(seq, lock = false) {
+    clear(); busy = lock; let t = 0;
+    seq.forEach(([slug, ms, text]) => { later(t, () => { render(slug); if (text) say(text, ms); }); t += ms; });
+    later(t, () => { busy = false; render('00-dung-yen'); armIdle(); });
+  }
+
+  // ---- Để yên: 10 giây nhìn quanh, 30 giây ngủ ----
+  function armIdle() {
+    idleT.forEach(clearTimeout);
+    idleT = [
+      setTimeout(() => { if (!busy && pose === '00-dung-yen') { render('06-ong-nhom'); setTimeout(() => pose === '06-ong-nhom' && render('00-dung-yen'), 3000); } }, 10000),
+      setTimeout(() => { if (!busy) render('17-ngu-gat'); }, 30000),
+    ];
+  }
+
+  // ---- Mắt nhìn theo con trỏ (cả trang) + vuốt đầu + đánh thức ----
+  let pet = { dir: 0, flips: 0, last: 0, x: 0 };
+  addEventListener('pointermove', (e) => {
+    if (pose === '17-ngu-gat') { play([['01-chao', 1300, 'Ơ, mình tỉnh rồi!']]); return; }
+    if (!busy) armIdle();
+    const r = rig.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height * 0.48);
+    const d = Math.hypot(dx, dy) || 1, k = Math.min(d / 220, 1);
+    rig.querySelectorAll('.eyes').forEach((g) => g.setAttribute('transform', `translate(${(dx / d * k * 5).toFixed(1)} ${(dy / d * k * 4).toFixed(1)})`));
+    // Rê qua lại trong vùng đầu: đổi hướng ≥ 4 lần trong 1,2 giây → được vuốt
+    const inHead = e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.top + r.height * 0.66;
+    if (!inHead || drag || busy) return;
+    const dir = Math.sign(e.clientX - pet.x); pet.x = e.clientX;
+    if (dir && dir !== pet.dir) {
+      const now = performance.now();
+      pet.flips = now - pet.last < 1200 ? pet.flips + 1 : 1; pet.last = now; pet.dir = dir;
+      if (pet.flips >= 4) { pet.flips = 0; play([['14-duoc-vuot', 2200, 'Hihi, nhột quá!']]); }
+    }
+  }, { passive: true });
+
+  // ---- Bấm: xoay vòng phản ứng; 5 lần nhanh → chóng mặt ----
+  const REACT = [['01-chao', 'Chào bạn!'], ['13-an-mung', 'Yeah!'], ['10-ngon-cai', 'Tìm mặt bằng không?'], ['04-tim-thay', 'Mình tìm giúp nhé!']];
+  let clicks = [], ri = 0;
+  function onTap() {
+    const now = performance.now();
+    clicks = clicks.filter((t) => now - t < 2000).concat(now);
+    if (clicks.length >= 5) { clicks = []; play([['15-chong-mat', 2600, 'Chóng mặt quá…']], true); return; }
+    if (busy) return;
+    const [slug, text] = REACT[ri++ % REACT.length];
+    play([[slug, 1400, text]]);
+  }
+
+  // ---- Kéo thả ----
+  let drag = null;
+  rig.addEventListener('pointerdown', (e) => {
+    drag = { x: e.clientX, y: e.clientY, moved: false };
+    rig.setPointerCapture(e.pointerId);
+  });
+  rig.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) > 6) { drag.moved = true; clear(); busy = true; rig.classList.add('dragging'); render('16-bi-nhac-len'); }
+    if (drag.moved) {
+      const s = stage.getBoundingClientRect();
+      const mx = s.width / 2 - 60, my = s.height / 2 - 60;
+      rig.style.transform = `translate(${Math.max(-mx, Math.min(mx, dx))}px, ${Math.max(-my, Math.min(my * .4, dy))}px)`;
+    }
+  });
+  const drop = () => {
+    if (!drag) return;
+    const moved = drag.moved; drag = null;
+    if (!moved) { onTap(); return; }
+    rig.classList.remove('dragging'); rig.style.transform = '';
+    play([['16-bi-nhac-len', 550], ['13-an-mung', 900, 'Hạ cánh!']]);
+  };
+  rig.addEventListener('pointerup', drop);
+  rig.addEventListener('pointercancel', drop);
+
+  // ---- Giả lập trạng thái chat ----
+  document.getElementById('ask').onclick = () => play([
+    ['02-chay-tim', 2600, 'Đang đi tìm mặt bằng…'], ['06-ong-nhom', 1600, 'Soi đối thủ quanh đây…'], ['07-do-dac', 1600, 'Đo diện tích…'],
+    ['03-suy-nghi', 1600, 'Chấm điểm…'], ['04-tim-thay', 1500, 'Có 3 căn hợp!'], ['11-dang-tra-loi', 2200],
+  ], true);
+  document.getElementById('fail').onclick = () => play([['02-chay-tim', 1600, 'Đang đi tìm…'], ['12-boi-roi', 2400, 'Mạng chập chờn, thử lại nhé']], true);
+  document.getElementById('save').onclick = () => play([['13-an-mung', 2000, 'Đã lưu hồ sơ!']], true);
+
+  // ---- Lưới tư thế + đổi bảng màu ----
+  const grid = document.getElementById('grid');
+  function drawGrid() {
+    grid.innerHTML = META.map((m) => `<div class="card" data-slug="${m.slug}" tabindex="0" role="button" aria-label="Diễn tư thế ${m.name}">
+      <div class="img"><img src="${pal}/${m.slug}.svg" alt="" loading="lazy"></div><b>${m.name}</b><span>${m.use}</span><code>${m.slug}.svg</code></div>`).join('');
+  }
+  grid.addEventListener('click', (e) => {
+    const c = e.target.closest('.card'); if (!c || c.dataset.slug.startsWith('avatar')) return;
+    play([[c.dataset.slug, 3200]], true);
+    stage.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  });
+  grid.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.target.closest('.card')?.click(); } });
+  document.querySelectorAll('[data-pal]').forEach((b) => b.onclick = () => {
+    pal = b.dataset.pal; document.documentElement.dataset.pal = pal;
+    document.querySelectorAll('[data-pal]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    render(pose); drawGrid();
+  });
+
+  drawGrid(); render('00-dung-yen'); armIdle();
+})();
+</script>
+</body>
+</html>

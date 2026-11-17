@@ -127,6 +127,20 @@ img{max-width:100%}
 .strip{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:clamp(56px,7vw,96px);height:clamp(240px,30vw,440px)}
 .strip img{width:100%;height:100%;object-fit:cover;display:block;border-radius:var(--radius);box-shadow:var(--shadow)}
 
+/* Mascot (docs/KE_HOACH_MASCOT.md mục 4). Hình kem: luôn đặt trên nền tối */
+.hero-mascot{position:absolute;inset:0;z-index:1;pointer-events:none}
+.hero-mascot .mascot{position:absolute;right:max(var(--gutter),calc((100% - var(--max)) / 2 + var(--gutter)));bottom:clamp(40px,9vh,96px);pointer-events:auto;animation:es-enter var(--dur-4) var(--ease-out) 700ms backwards}
+.about-row{display:flex;align-items:flex-end;justify-content:space-between;gap:32px 64px;margin-top:40px;padding-top:32px;border-top:1px solid var(--line-2)}
+.about-row .about-cols{flex:1;margin:0;padding:0;border:0}
+.m-plate{flex:none;display:grid;place-items:center;width:176px;height:176px;border-radius:50%;background:#1B1916}
+.m-plate .m-img{display:block;width:124px;height:auto}
+.ch-mascot{position:relative;width:140px;height:166px;margin-bottom:8px}
+.ch-mascot img{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity var(--dur-2) var(--ease-out)}
+.ch-mascot img.is-active{opacity:1}
+.study-mascot{position:absolute;left:20px;bottom:12px;z-index:2;width:148px;height:auto;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45))}
+.foot-cta .foot-act{flex-direction:row;align-items:flex-end;gap:16px;max-width:none}
+.foot-mascot{width:112px;height:auto;flex:none;margin-bottom:-6px}
+
 /* So sánh */
 .compare{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:48px 64px;align-items:start}
 .cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -228,6 +242,7 @@ img{max-width:100%}
 .foot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:820px){
+.hero-mascot .mascot{top:112px;bottom:auto}
 .nav .link{display:none}
 .menu-btn{display:inline-flex}
 .dots{display:none}
@@ -238,6 +253,12 @@ img{max-width:100%}
 .agent p{grid-column:2}
 }
 @media (max-width:640px){
+.about-row{flex-direction:column;align-items:flex-start}
+.m-plate{width:112px;height:112px}
+.m-plate .m-img{width:80px}
+.ch-mascot{width:88px;height:104px}
+.study-mascot{width:104px;left:12px}
+.foot-mascot{width:84px}
 .hero-actions .btn{width:100%}
 .about-cols,.cmp{grid-template-columns:minmax(0,1fr)}
 .strip{grid-template-columns:repeat(2,minmax(0,1fr));height:auto}
@@ -299,6 +320,8 @@ img{max-width:100%}
 <a class="link" href="Listing.dc.html">Xem hồ sơ mẫu</a>
 </div>
 </div>
+<!-- Mascot tương tác: src/entries/Main.jsx gắn <Mascot interactive /> vào đây -->
+<div class="hero-mascot" data-mascot="hero"></div>
 </section>
 
 <!-- GIỚI THIỆU -->
@@ -324,9 +347,12 @@ img{max-width:100%}
 </div>
 </div>
 <div class="wrap about-rest">
+<div class="about-row">
 <div class="about-cols">
 <p>Dành cho chủ quán F&amp;B và cửa hàng bán lẻ nhỏ. Hệ thống tổng hợp tin cho thuê, dữ liệu giao thông, đối thủ trên GrabFood và ShopeeFood, rồi đề xuất ba mặt bằng đáng khảo sát nhất.</p>
 <p class="muted">Chuỗi lớn có bộ phận phát triển mặt bằng riêng. Doanh nghiệp nhỏ thường chỉ dựa vào tin rao và kinh nghiệm cá nhân. estateSmartAI thu hẹp khoảng cách đó.</p>
+</div>
+<span class="m-plate" aria-hidden="true"><img class="m-img" src="/mascot/05-soi-tin-dang.svg" alt="" width="160" height="190" loading="lazy"></span>
 </div>
 <div class="strip">
 <img src="/_blob/75748c213ca7441c1ce9472de5d61042" alt="Mặt tiền một tầng ốp gỗ, sân cỏ và cây ô liu" loading="lazy">
@@ -371,6 +397,11 @@ img{max-width:100%}
 <p class="ch-hint"><span class="long">Dùng phím mũi tên trái, phải để chuyển bước</span><span class="short">Vuốt để chuyển bước</span></p>
 </div>
 <div>
+<div class="ch-mascot" aria-hidden="true">
+<sc-for list="{{chapterMascots}}" as="c" hint-placeholder-count="7">
+<img class="{{c.cls}}" src="{{c.src}}" alt="" width="160" height="190" loading="lazy">
+</sc-for>
+</div>
 <div class="ch-foot">
 <div class="ch-text" key="{{chapter.num}}" data-dir="{{dirName}}" aria-live="polite">
 <h3 class="ch-title">{{chapter.title}}</h3>
@@ -426,6 +457,7 @@ img{max-width:100%}
 <sc-for list="{{studyImgs}}" as="s" hint-placeholder-count="2">
 <img class="ch-img {{s.cls}}" src="{{s.src}}" alt="{{s.alt}}" loading="lazy" style="object-position: {{s.pos}}">
 </sc-for>
+<img aria-hidden="true" class="study-mascot" src="/mascot/09-ban-do.svg" alt="" width="160" height="190" loading="lazy">
 </div>
 </div>
 </div>
@@ -439,7 +471,10 @@ img{max-width:100%}
 <h2 class="h2">Bắt đầu với<br>một yêu cầu.</h2>
 <div>
 <p>Chọn mô hình kinh doanh và khu vực mục tiêu. Trợ lý AI sẽ thực hiện phần thẩm định.</p>
-<a class="btn" href="Chat.dc.html" style="align-self: flex-start">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<div class="foot-act">
+<a class="btn" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<img aria-hidden="true" class="foot-mascot" src="/mascot/10-ngon-cai.svg" alt="" width="160" height="190" loading="lazy">
+</div>
 </div>
 </div>
 <div class="foot-grid">
@@ -623,13 +658,13 @@ class Component extends DCLogic {
   }
   renderVals() {
     const chapterData = [
-      { title: 'Xác định nhu cầu', sub: 'Mô hình kinh doanh, khu vực và ngân sách', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
-      { title: 'Sàng lọc', sub: 'Danh sách ứng viên trên bản đồ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
-      { title: 'Hồ sơ mặt bằng', sub: 'Hình ảnh, thông số và nguồn dữ liệu', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
-      { title: 'Đánh giá vị trí', sub: 'Khả năng tiếp cận, dải phân cách, bãi đỗ xe', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
-      { title: 'Nhận định AI', sub: 'Điểm phù hợp 0–100, ưu điểm và rủi ro', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
-      { title: 'So sánh', sub: 'Đối chiếu ba hồ sơ theo cùng tiêu chí', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
-      { title: 'Kết nối chủ nhà', sub: 'Lưu danh sách khảo sát và đặt lịch xem', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
+      { title: 'Xác định nhu cầu', m: '03-suy-nghi', sub: 'Mô hình kinh doanh, khu vực và ngân sách', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
+      { title: 'Sàng lọc', m: '05-soi-tin-dang', sub: 'Danh sách ứng viên trên bản đồ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
+      { title: 'Hồ sơ mặt bằng', m: '07-do-dac', sub: 'Hình ảnh, thông số và nguồn dữ liệu', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
+      { title: 'Đánh giá vị trí', m: '09-ban-do', sub: 'Khả năng tiếp cận, dải phân cách, bãi đỗ xe', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
+      { title: 'Nhận định AI', m: '08-bieu-do', sub: 'Điểm phù hợp 0–100, ưu điểm và rủi ro', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
+      { title: 'So sánh', m: '06-ong-nhom', sub: 'Đối chiếu ba hồ sơ theo cùng tiêu chí', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
+      { title: 'Kết nối chủ nhà', m: '04-tim-thay', sub: 'Lưu danh sách khảo sát và đặt lịch xem', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
     ];
     const studyData = [
       { title: 'Thẩm định vị trí,\nkhả năng tiếp cận\nvà giá thuê.', body: 'Mỗi mặt bằng được chấm điểm phù hợp từ 0 đến 100, kèm ưu điểm, rủi ro và nguồn tham chiếu cho từng chỉ số.', cta: 'Xem hồ sơ mẫu', href: 'Listing.dc.html', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 45%', alt: 'Hàng cột đá và cửa kính dưới nắng chiều' },
@@ -684,6 +719,8 @@ class Component extends DCLogic {
       dirName: this.state.dir > 0 ? 'fwd' : this.state.dir < 0 ? 'back' : 'none',
       progress: ((ci + 1) / chapterData.length).toFixed(4),
       chapterImgs: chapterData.map((c, i) => ({ src: c.src, pos: c.pos, cls: i === ci ? 'is-active' : '' })),
+      // Mascot đổi tư thế theo bước (docs/KE_HOACH_MASCOT.md mục 4), crossfade 240 ms
+      chapterMascots: chapterData.map((c, i) => ({ src: '/mascot/' + c.m + '.svg', cls: i === ci ? 'is-active' : '' })),
       chapters: chapterData.map((c, i) => ({
         num: pad(i),
         title: c.title,
