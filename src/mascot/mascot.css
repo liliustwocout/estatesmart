@@ -23,7 +23,7 @@
 .mascot.is-paused .mascot-art * { animation-play-state: paused !important; }
 
 /* Bong bóng thoại: tự xuống dòng khi câu dài, có đuôi chỉ về Mascot, bật ra kiểu lò xo.
-   data-side="left" đặt bong bóng bên trái Mascot (dùng khi phía trên không đủ chỗ). */
+   data-side="left" / "right" đặt bong bóng bên trái / phải Mascot (dùng khi phía trên không đủ chỗ). */
 .mascot-bubble {
   position: absolute;
   left: 50%;
@@ -71,6 +71,9 @@
 .mascot[data-side="left"] .mascot-bubble { left: auto; right: calc(100% + 12px); bottom: 58%; translate: 6px 0; transform-origin: 100% 70%; }
 .mascot[data-side="left"] .mascot-bubble.is-on { translate: 0 0; }
 .mascot[data-side="left"] .mascot-bubble::after { left: 100%; top: 70%; margin: -6px 0 0 -6px; border: inherit; border-bottom: 0; border-left: 0; border-radius: 0 3px 0 0; }
+.mascot[data-side="right"] .mascot-bubble { left: calc(100% + 12px); bottom: 58%; translate: -6px 0; transform-origin: 0 70%; }
+.mascot[data-side="right"] .mascot-bubble.is-on { translate: 0 0; }
+.mascot[data-side="right"] .mascot-bubble::after { left: 0; top: 70%; margin: -6px 0 0 -6px; border: inherit; border-top: 0; border-right: 0; border-radius: 0 0 0 3px; }
 /* Câu mới: chữ trượt lên nhẹ để mắt bắt kịp */
 .mascot-line { display: block; animation: mascot-line 380ms var(--ease-out, ease-out) both; }
 @keyframes mascot-line { from { opacity: 0; transform: translateY(5px); } }

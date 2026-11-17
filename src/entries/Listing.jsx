@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import '../styles/interaction.css';
 import '../mascot/guide.css';
 import { createRoot } from 'react-dom/client';
 import Listing from '../generated/Listing.jsx';
-import SectionGuide from '../mascot/SectionGuide.jsx';
+import JumpGuide from '../mascot/JumpGuide.jsx';
 import { watchReveal } from '../styles/reveal.js';
 import { smoothScroll } from '../styles/smoothScroll.js';
 
-// Các câu giới thiệu được đặt cạnh nội dung tương ứng trong design/Listing.dc.html.
+// Một Mascot nhảy tới section đang xem và nói một câu ngắn; thứ tự khoá = thứ tự section (so le trái, phải).
+// Khoá trùng với data-guide và {{guide.khoá}} trong design/Listing.dc.html.
 const LINES = {
   hero: ['04-tim-thay', 'Đây là điểm phù hợp của mặt bằng này.'],
   specs: ['07-do-dac', 'Năm thông số chính, xem giá trước nhé.'],
@@ -17,16 +18,9 @@ const LINES = {
   verdict: ['08-bieu-do', 'Nhận định của mình: ưu điểm và rủi ro.'],
   contact: ['10-ngon-cai', 'Ưng rồi thì đặt lịch đi xem nhé!'],
 };
+// Chỗ trống đầu mỗi section để Mascot đáp xuống
+const ANCHORS = Object.fromEntries(Object.keys(LINES).map((k) => [k, <span className="g-anchor" data-anchor={k} aria-hidden="true" />]));
 
-function ListingPage() {
-  const [muted, setMuted] = useState(false);
-  const toggle = () => setMuted((value) => !value);
-  const guide = Object.fromEntries(Object.entries(LINES).map(([section, line]) => [
-    section, <SectionGuide line={line} muted={muted} onToggle={toggle} />,
-  ]));
-  return <Listing guide={guide} />;
-}
-
-createRoot(document.getElementById('root')).render(<ListingPage />);
+createRoot(document.getElementById('root')).render(<><Listing guide={ANCHORS} /><JumpGuide lines={LINES} /></>);
 watchReveal();
 smoothScroll();

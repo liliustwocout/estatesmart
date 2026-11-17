@@ -1,42 +1,35 @@
-.s-guide {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  grid-column: 1 / -1;
-  margin-bottom: 12px;
+/* Trang hồ sơ: một Mascot nhảy theo section (JumpGuide.jsx).
+   Mỗi section chừa một hàng trống (.g-anchor) làm chỗ đứng; Mascot so le trái, phải theo thứ tự section. */
+.g-anchor { display: block; grid-column: 1 / -1; height: 92px; margin-bottom: 8px; pointer-events: none; }
+.hero .g-anchor { height: 88px; margin-bottom: 4px; }
+
+.j-guide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 20; /* dưới thanh trên cùng (30) */
+  will-change: transform;
+  transform-origin: 50% 100%;
+  pointer-events: none;
 }
-.hero .s-guide { animation: es-enter var(--dur-4) var(--ease-out) 250ms both; }
-.js [data-reveal]:not([data-in]) .s-guide:focus-within { opacity: 1; transform: none; }
-.s-guide-btn {
-  flex: none;
+.j-guide-btn {
+  display: block;
   padding: 0;
   border: 0;
   border-radius: 16px;
   background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transform: scale(.3);
+  transform-origin: 50% 100%;
 }
-.s-guide-btn[aria-pressed="false"] { opacity: .75; }
-.s-guide-btn .mascot { transition: transform var(--dur-3) var(--ease-spring); }
-@media (hover: hover) { .s-guide-btn:hover .mascot { transform: translateY(-3px) rotate(-3deg); } }
-.s-guide-line {
-  position: relative;
-  max-width: 32ch;
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--paper);
-  color: var(--bg);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-.s-guide-line::before {
-  content: '';
-  position: absolute;
-  top: calc(50% - 4px);
-  left: -4px;
-  width: 8px;
-  height: 8px;
-  rotate: 45deg;
-  background: inherit;
-}
-@media print { .s-guide { display: none; } }
+.j-guide.is-on .j-guide-btn { animation: jg-pop 560ms var(--ease-spring, cubic-bezier(.34, 1.56, .64, 1)) both; }
+@keyframes jg-pop { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: none; } }
+.j-guide-btn .mascot { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, .45)); transition: transform var(--dur-3, 420ms) var(--ease-spring, cubic-bezier(.34, 1.56, .64, 1)); }
+@media (hover: hover) { .j-guide-btn:hover .mascot { transform: translateY(-3px) rotate(-4deg); } }
+.j-guide-btn[aria-pressed="false"] .mascot { opacity: .8; }
+.j-guide-btn .mascot-bubble { --bubble-max: 250px; background: #F7F3EC; color: #1B1916; border-color: transparent; }
+.j-guide-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 640px) { .j-guide-btn .mascot-bubble { --bubble-max: 62vw; font-size: 13px; } }
+@media print { .j-guide, .g-anchor { display: none !important; } }
