@@ -29,7 +29,7 @@ img{max-width:100%}
 .wrap{max-width:var(--max);margin:0 auto;padding-inline:var(--gutter)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .muted{color:var(--ink-2)}
-.h2{margin:0;font-weight:500;font-size:clamp(34px,4.2vw,64px);line-height:1.06;letter-spacing:-.03em;text-wrap:balance;min-width:0}
+.h2{margin:0;font-weight:500;font-size:clamp(34px,4.2vw,64px);line-height:1.16;letter-spacing:-.03em;text-wrap:balance;min-width:0}
 .label{margin:0;font-size:15px;color:var(--ink-2)}
 .skip{position:fixed;left:16px;top:12px;z-index:60;padding:12px 18px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:600;text-decoration:none;transform:translateY(-160%);transition:transform var(--dur-2) var(--ease-out)}
 .skip:focus-visible{transform:none}
@@ -81,8 +81,8 @@ img{max-width:100%}
 @keyframes settle{from{transform:scale(1.08)}}
 .hero-shade{position:absolute;inset:0}
 .hero-body{position:relative;width:100%;max-width:var(--max);margin:0 auto;padding:0 var(--gutter) clamp(40px,9vh,96px)}
-.hero h1{margin:0;font-weight:500;font-size:clamp(46px,6.6vw,96px);line-height:1.04;letter-spacing:-.03em}
-.line{display:block;overflow:clip;padding-top:.14em;margin-top:-.14em;padding-bottom:.04em}
+.hero h1{margin:0;font-weight:500;font-size:clamp(46px,6.6vw,96px);line-height:1.16;letter-spacing:-.03em}
+.hero .line{display:block;overflow:clip;padding:.14em .06em;margin:-.14em -.06em}
 .line>span{display:inline-block;animation:rise var(--dur-4) var(--ease-out) both;animation-delay:calc(160ms + var(--i) * 110ms)}
 .nw{white-space:nowrap}
 @keyframes rise{from{transform:translateY(108%)}}
@@ -159,7 +159,10 @@ img{max-width:100%}
 .ours .fig{margin-bottom:32px}
 
 /* Quy trình 7 bước — khoảnh khắc chủ đạo (4 pose to pose, 7 arcs, 8 secondary action, 17 Doherty, 18 Postel) */
-.ch{position:relative;height:clamp(640px,100svh,1000px);overflow:hidden;background:var(--bg-deep);outline-offset:-4px;touch-action:pan-y}
+.ch{--ch-height:clamp(560px,100svh,1000px);position:relative;background:var(--bg-deep)}
+.ch.is-live::after{content:'';display:block;height:clamp(672px,154svh,1344px)}
+.ch-stage{position:relative;height:var(--ch-height);overflow:clip;outline-offset:-4px;touch-action:pan-y}
+.ch.is-live .ch-stage{position:sticky;top:min(0px,calc(100svh - var(--ch-height)))}
 .ch-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.06);transition:opacity 640ms var(--ease-in-out),transform 1800ms var(--ease-out)}
 .ch-img.is-active{opacity:1;transform:scale(1)}
 .ch-shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(18,16,14,.86),rgba(18,16,14,.3) 55%,rgba(18,16,14,.5))}
@@ -168,7 +171,7 @@ img{max-width:100%}
 .ch-head .h2{font-size:clamp(22px,2vw,28px);letter-spacing:-.01em}
 .ch-hint{margin:0;font-size:14px;color:var(--ink-2)}
 .short{display:none}
-.dots{position:absolute;right:var(--gutter);top:50%;transform:translateY(-50%);display:flex;flex-direction:column}
+.dots{position:absolute;z-index:1;right:var(--gutter);top:50%;transform:translateY(-50%);display:flex;flex-direction:column}
 .dot-btn{width:44px;height:44px;border:0;background:none;display:grid;place-items:center;padding:0}
 .dot{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(247,243,236,.85);transition:transform var(--dur-2) var(--ease-spring),background-color var(--dur-1)}
 .dot.is-active{background:var(--ink);transform:scale(1.5);animation:squash 460ms var(--ease-out)}
@@ -180,10 +183,10 @@ img{max-width:100%}
 .ch-text[data-dir="back"]{animation:arc-back 560ms var(--ease-out) both}
 @keyframes arc-fwd{0%{opacity:0;transform:translate(48px,28px) rotate(3deg)}55%{opacity:1}}
 @keyframes arc-back{0%{opacity:0;transform:translate(-48px,28px) rotate(-3deg)}55%{opacity:1}}
-.ch-title{margin:0;font-size:clamp(40px,4.4vw,64px);font-weight:500;letter-spacing:-.03em;line-height:1.02}
+.ch-title{margin:0;font-size:clamp(40px,4.4vw,64px);font-weight:500;letter-spacing:-.03em;line-height:1.16}
 .ch-sub{margin:14px 0 0;font-size:17px;color:var(--ink-2)}
 .ch-side{text-align:right}
-.ch-num{margin:0;font-family:var(--serif);font-weight:400;font-size:clamp(88px,8vw,128px);letter-spacing:-.02em;line-height:.9;transform-origin:100% 100%;animation:num-in 620ms var(--ease-out) 60ms both;font-variant-numeric:tabular-nums}
+.ch-num{margin:0;font-family:var(--serif);font-weight:400;font-size:clamp(88px,8vw,128px);letter-spacing:-.02em;line-height:.9;transform-origin:100% 100%;animation:num-in 620ms var(--ease-out) 60ms both;font-variant-numeric:tabular-nums;pointer-events:none}
 .ch-num small{font-size:.28em;letter-spacing:0;color:var(--ink-2);margin-left:.2em}
 @keyframes num-in{0%{opacity:0;transform:translateY(36px) rotate(-6deg)}}
 .ch-ctrl{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
@@ -357,6 +360,19 @@ img{max-width:100%}
 .foot-grid{grid-template-columns:minmax(0,1fr)}
 .ch-side .ch-num{font-size:72px}
 }
+@media (max-height:600px){
+.ch{--ch-height:max(360px,100svh)}
+.ch-ui{padding-top:76px;padding-bottom:20px}
+.ch-mascot{width:64px;height:76px}
+.ch-guide .say-side{margin-bottom:12px}
+.ch-foot{gap:12px}
+.ch-title{font-size:clamp(28px,4.4vw,40px)}
+.ch-sub{margin-top:8px;font-size:15px}
+.ch-side .ch-num{font-size:56px}
+.ch-ctrl{margin-top:6px}
+.bar{margin-top:12px}
+.dots{display:none}
+}
 </style>
 </helmet>
 <div class="page">
@@ -473,7 +489,8 @@ img{max-width:100%}
 </section>
 
 <!-- QUY TRÌNH 7 BƯỚC -->
-<section id="quy-trinh" class="ch" tabIndex="0" aria-label="Quy trình 7 bước, dùng phím mũi tên trái phải để chuyển bước" onKeyDown="{{chKey}}" onPointerDown="{{chDown}}" onPointerUp="{{chUp}}">
+<section id="quy-trinh" class="ch {{chCls}}" ref="{{chRef}}" aria-labelledby="ch-heading">
+<div class="ch-stage" ref="{{chStageRef}}" tabIndex="0" role="group" aria-label="Dùng phím mũi tên trái phải để chuyển bước" onKeyDown="{{chKey}}" onPointerDown="{{chDown}}" onPointerUp="{{chUp}}">
 <sc-for list="{{chapterImgs}}" as="c" hint-placeholder-count="7">
 <img class="ch-img {{c.cls}}" src="{{c.src}}" alt="" loading="lazy" style="object-position: {{c.pos}}">
 </sc-for>
@@ -485,8 +502,8 @@ img{max-width:100%}
 </div>
 <div class="ch-ui wrap">
 <div class="ch-head">
-<h2 class="h2">Quy trình 7 bước</h2>
-<p class="ch-hint"><span class="long">Dùng phím mũi tên trái, phải để chuyển bước</span><span class="short">Vuốt để chuyển bước</span></p>
+<h2 id="ch-heading" class="h2">Quy trình 7 bước</h2>
+<p class="ch-hint"><span class="long">Cuộn hoặc dùng phím mũi tên để chuyển bước</span><span class="short">Cuộn hoặc vuốt để chuyển bước</span></p>
 </div>
 <div>
 <div class="guide guide-row ch-guide" data-reveal>
@@ -511,6 +528,7 @@ img{max-width:100%}
 </div>
 </div>
 <div class="bar"><i style="transform: scaleX({{progress}})"></i></div>
+</div>
 </div>
 </div>
 </section>
@@ -601,10 +619,12 @@ img{max-width:100%}
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"overlay":{"editor":"range","default":0.2,"min":0,"max":0.7,"step":0.01,"section":"Hero"},"$preview":{"width":1440,"height":6500}}'>
+const CHAPTER_COUNT = 7;
+
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { chapter: 0, dir: 0, study: 0, menuOpen: false, scrolled: false, aboutLive: false, fab: false };
+    this.state = { chapter: 0, dir: 0, chLive: false, study: 0, menuOpen: false, scrolled: false, aboutLive: false, fab: false };
     this.el = {};
     this.refs_ = {};
     this.ref = (k) => this.refs_[k] || (this.refs_[k] = (node) => { this.el[k] = node; });
@@ -651,11 +671,15 @@ class Component extends DCLogic {
       // Nút nổi: hiện sau hero, ẩn khi chân trang (đã có nút lớn) vào màn hình
       const foot = this.foot || (this.foot = document.getElementById('lien-he'));
       // Ẩn cả khi đang ở phần Quy trình 7 bước, để không che nút chuyển bước ở góc phải dưới
-      const ch = this.chEl || (this.chEl = document.getElementById('quy-trinh'));
-      const cr = ch ? ch.getBoundingClientRect() : null;
+      const cr = this.el.ch?.getBoundingClientRect();
       const overCh = cr && cr.top < window.innerHeight - 120 && cr.bottom > window.innerHeight - 40;
       const f = window.scrollY > window.innerHeight * 0.75 && !overCh && !(foot && foot.getBoundingClientRect().top < window.innerHeight * 0.85);
       if (f !== this.state.fab) this.setState({ fab: f });
+      if (this.state.chLive && cr) {
+        const { start, distance } = this.chapterScroll(cr);
+        const i = Math.max(0, Math.min(CHAPTER_COUNT - 1, Math.floor(-start / distance * CHAPTER_COUNT)));
+        if (i !== this.state.chapter) this.setState({ chapter: i, dir: i - this.state.chapter });
+      }
       if (this.studyVisible && !this.studyRaf) this.studyRaf = requestAnimationFrame(this.checkStudy);
       if (this.state.aboutLive && this.visible) this.kick();
     };
@@ -666,10 +690,11 @@ class Component extends DCLogic {
   componentDidMount() {
     window.addEventListener('scroll', this.onScroll, { passive: true });
     window.addEventListener('keydown', this.onKey);
-    window.addEventListener('resize', this.kick);
-    this.onScroll();
+    window.addEventListener('resize', this.onScroll);
     const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!still) this.setState({ aboutLive: true }, () => {
+    this.setState({ chLive: true, aboutLive: !still }, () => {
+      this.onScroll();
+      if (still) return;
       const m = this.measure();
       if (m) { this.cur = m.p; this.paintAbout(this.cur, m); }
       // Chỉ chạy vòng vẽ khi phần giới thiệu ở gần màn hình.
@@ -686,7 +711,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('keydown', this.onKey);
-    window.removeEventListener('resize', this.kick);
+    window.removeEventListener('resize', this.onScroll);
     if (this.io) this.io.disconnect();
     if (this.io2) this.io2.disconnect();
     if (this.studyRaf) cancelAnimationFrame(this.studyRaf);
@@ -765,12 +790,21 @@ class Component extends DCLogic {
     // Chữ sáng dần theo cuộn, từ khoá được vẽ vệt nhấn ngay sau đó.
     this.put(stmt, 'wp', '--wp', clamp((p - 0.6) / 0.34).toFixed(3));
   }
+  chapterScroll(rect) {
+    const stage = this.el.chStage;
+    const height = stage.getBoundingClientRect().height;
+    return { start: rect.top - parseFloat(getComputedStyle(stage).top), distance: rect.height - height };
+  }
   go(i, dir) {
     this.setState({ chapter: i, dir });
+    if (this.state.chLive) {
+      const { start, distance } = this.chapterScroll(this.el.ch.getBoundingClientRect());
+      // Đồng bộ vị trí cuộn để lần cuộn tiếp tục từ bước vừa chọn.
+      window.scrollTo({ top: window.scrollY + start + (i + 0.5) / CHAPTER_COUNT * distance, behavior: 'instant' });
+    }
   }
   step(d) {
-    const n = 7;
-    this.setState((s) => ({ chapter: (s.chapter + d + n) % n, dir: d }));
+    this.go((this.state.chapter + d + CHAPTER_COUNT) % CHAPTER_COUNT, d);
   }
   renderVals() {
     const chapterData = [
@@ -811,6 +845,7 @@ class Component extends DCLogic {
     return {
       aboutCls: this.state.aboutLive ? 'is-live' : '',
       aboutRef: this.ref('about'), stageRef: this.ref('stage'), slotRef: this.ref('slot'), boxRef: this.ref('box'),
+      chCls: this.state.chLive ? 'is-live' : '', chRef: this.ref('ch'), chStageRef: this.ref('chStage'),
       studyRef: this.ref('study'),
       studyTrackCls: this.state.aboutLive ? 'is-live' : '',
       studyFlipCls: si === 1 ? 'is-flip' : '',
