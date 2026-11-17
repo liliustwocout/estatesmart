@@ -114,7 +114,7 @@ async function handleChat(req, res, ip) {
   } catch (e) {
     if (!abort.signal.aborted) {
       console.error(new Date().toISOString(), 'chat lỗi:', e.message);
-      send({ error: 'Trợ lý đang bận, anh/chị thử lại sau ít phút.' });
+      send({ error: 'Mình đang bận. Bạn thử lại sau ít phút nhé.' });
     }
   } finally {
     // Nhà cung cấp không trả số token (hoặc bị ngắt giữa chừng) thì ước lượng: khoảng 3 ký tự tiếng Việt một token.
@@ -138,7 +138,7 @@ async function route(req, res, url, ip) {
   // Mở link chia sẻ: dựng lại đúng ba căn và tiêu chí đã lưu.
   const sm = p.match(/^\/api\/share\/([A-Za-z0-9]{6,20})$/);
   if (m === 'GET' && sm) {
-    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Bạn thao tác hơi nhanh. Thử lại sau vài giây nhé.' }, { 'retry-after': '10' });
     const sh = getShare(sm[1]);
     if (!sh) return sendJson(res, 404, { error: 'Link đã hết hạn hoặc không tồn tại.' });
     const results = cardsFor(sh.codes, sh.criteria);
@@ -165,7 +165,7 @@ async function route(req, res, url, ip) {
   }
 
   if (p === '/api/share') {
-    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Bạn thao tác hơi nhanh. Thử lại sau vài giây nhé.' }, { 'retry-after': '10' });
     const body = await readJson(req);
     const codes = cleanCodes(body.codes);
     if (!codes.length) throw new HttpError(400, 'Thiếu mã căn');
@@ -173,7 +173,7 @@ async function route(req, res, url, ip) {
   }
 
   if (p === '/api/parse' || p === '/api/report') {
-    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Bạn thao tác hơi nhanh. Thử lại sau vài giây nhé.' }, { 'retry-after': '10' });
     const body = await readJson(req);
     if (p === '/api/parse') return sendJson(res, 200, await parseSmart(cleanText(body.text, 500), cleanCriteria(body.prev), ip, body.step));
     const code = cleanCodes([body.code])[0];
@@ -183,7 +183,7 @@ async function route(req, res, url, ip) {
   }
 
   if (p === '/api/recommend' || p === '/api/profiles') {
-    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
+    if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Bạn thao tác hơi nhanh. Thử lại sau vài giây nhé.' }, { 'retry-after': '10' });
     const body = await readJson(req);
     const criteria = cleanCriteria(body.criteria);
     if (p === '/api/recommend') return sendJson(res, 200, recommend(criteria));

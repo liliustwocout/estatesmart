@@ -6,9 +6,9 @@ import Mascot from '../mascot/Mascot.jsx';
 
 // Tư thế và câu nói ở từng trạm, theo thứ tự AGENTS trong Assistant.jsx
 const STOPS = [
-  ['03-suy-nghi', 'Nghe nhà mình cần gì…', 'Gia đình'],
-  ['05-soi-tin-dang', 'Lọc tin rao…', 'Sàng lọc'],
-  ['07-do-dac', 'Đo đường tới trường…', 'Trường, y tế'], // tạm, chờ 18-deo-cap
+  ['03-suy-nghi', 'Xem bạn cần gì…', 'Gia đình'],
+  ['05-soi-tin-dang', 'Lọc căn hợp với bạn…', 'Sàng lọc'],
+  ['07-do-dac', 'Đo khoảng cách tới trường…', 'Trường, y tế'], // tạm, chờ 18-deo-cap
   ['06-ong-nhom', 'Tìm chợ, công viên…', 'Sinh hoạt'], // tạm, chờ 19-xach-gio
   ['08-bieu-do', 'Chấm điểm sống…', 'Chấm điểm'],
 ];
@@ -41,7 +41,7 @@ export default function Hunt({ hunt }) {
 
   if (!hunt) return null;
   let pose = STOPS[at][0];
-  let say = mode === 'read' ? 'Bạn cần gì nhỉ?' : STOPS[at][1];
+  let say = mode === 'read' ? 'Để mình xem nhé…' : STOPS[at][1];
   if (running) { pose = '02-chay-tim'; say = null; }
   if (mode === 'found') { pose = '04-tim-thay'; say = 'Tìm thấy rồi!'; }
   if (mode === 'oops') { pose = '12-boi-roi'; say = 'Ơ, chưa kết nối được…'; }

@@ -200,14 +200,14 @@ function ContactCard({ r, msg, setMsg, onCopy }) {
       setState('sent');
     } catch (ex) {
       setState('idle');
-      setErr({ _: ex.message || 'Chưa gửi được, anh/chị thử lại sau.' });
+      setErr({ _: ex.message || 'Chưa gửi được. Bạn thử lại sau nhé.' });
     }
   };
   if (state === 'sent') {
     return (
       <section className="card c-contact" style={{ '--i': 4 }}>
         <h3>Liên hệ chủ nhà</h3>
-        <p className="sent-ok" role="status"><span aria-hidden="true">✓</span> Đã gửi lời nhắn về {r.code}. Đội ngũ estateSmartAI sẽ liên hệ chủ nhà và gọi lại cho anh/chị để hẹn lịch xem nhà.</p>
+        <p className="sent-ok" role="status"><span aria-hidden="true">✓</span> Đã gửi lời nhắn về {r.code}. Đội ngũ estateSmartAI sẽ liên hệ chủ nhà và gọi lại cho bạn để hẹn lịch xem nhà.</p>
         <p className="sent">Bản thử nghiệm: thông tin căn nhà là dữ liệu mô phỏng, đội ngũ sẽ xác nhận lại khi gọi.</p>
         <a className="full-link" href={profileHref(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
       </section>
@@ -315,7 +315,7 @@ function ReportGrid({ r, open, onCopy, msg, setMsg }) {
 /* ---------------- Trang ---------------- */
 
 export default function Assistant() {
-  const [msgs, setMsgs] = useState(() => [{ id: id(), k: 'bot', text: 'Chào bạn, mình là trợ lý chọn nhà. Kể mình nghe nhà mình có mấy người, con mấy tuổi, muốn mua hay thuê và ngân sách bao nhiêu, hoặc chọn một câu gợi ý bên dưới.' }]);
+  const [msgs, setMsgs] = useState(() => [{ id: id(), k: 'bot', text: 'Chào bạn! Kể mình nghe bạn muốn mua hay thuê, nhà có mấy người, con mấy tuổi và tầm giá nhé.' }]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false); // đang thẩm định hoặc đang trả lời
   const [criteria, setCriteria] = useState(null); // tiêu chí đang gom (chưa đủ)
@@ -466,7 +466,7 @@ export default function Assistant() {
       stopped = true;
       if (my !== session.current) return;
       dropAg();
-      push({ k: 'bot', mood: 'oops', text: e.status === 429 ? e.message : 'Chưa kết nối được máy chủ tư vấn. Anh/chị thử lại sau ít phút.' });
+      push({ k: 'bot', mood: 'oops', text: e.status === 429 ? e.message : 'Mình chưa kết nối được. Bạn thử lại sau ít phút nhé.' });
       setHunt({ mode: 'oops', step: 0 });
       leave(OOPS_MS);
       glide(chatRef.current, OOPS_MS);
@@ -488,7 +488,7 @@ export default function Assistant() {
         await navigator.clipboard.writeText(link);
         showToast('Đã sao chép link chia sẻ. Link mở lại đúng ba căn này trong 90 ngày.');
       }
-    } catch (e) { showToast('Chưa tạo được link chia sẻ, anh/chị thử lại sau.'); }
+    } catch (e) { showToast('Chưa tạo được link chia sẻ. Bạn thử lại sau nhé.'); }
   };
 
   // Mở link chia sẻ: dựng lại kết quả đã lưu.
@@ -513,7 +513,7 @@ export default function Assistant() {
         rows.forEach((r) => postJson('/api/report', { code: r.code, criteria: c }).then((rp) => setReports((x) => ({ ...x, [r.code]: rp }))).catch(() => {}));
         ensureMap();
       } catch (e) {
-        setMsgs((s) => [...s, { id: id(), k: 'bot', text: (e.message && /hiệu lực|hết hạn/.test(e.message) ? e.message : 'Link chia sẻ đã hết hạn hoặc không còn.') + ' Anh/chị kể về gia đình và nhu cầu để tư vấn lại nhé.' }]);
+        setMsgs((s) => [...s, { id: id(), k: 'bot', text: (e.message && /hiệu lực|hết hạn/.test(e.message) ? e.message : 'Link chia sẻ đã hết hạn hoặc không còn.') + ' Bạn kể lại nhu cầu để mình tìm giúp nhé.' }]);
       }
     })();
   }, []);
@@ -527,7 +527,7 @@ export default function Assistant() {
     const botId = id();
     setMsgs((s) => [...s, { id: id(), k: 'user', role: 'user', text: question }, { id: botId, k: 'thinking', text: 'Đang xem lại dữ liệu…' }]);
     const set = (patch) => setMsgs((s) => s.map((m) => (m.id === botId ? { ...m, ...patch } : m)));
-    const fail = 'Hiện chưa kết nối được trợ lý AI. Anh/chị có thể mở từng căn để xem bản đồ tiện ích, hình ảnh và báo cáo.';
+    const fail = 'Mình chưa kết nối được. Bạn vẫn có thể mở từng căn để xem ảnh, bản đồ và báo cáo.';
     let text = '';
     try {
       const res = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: ctrl.signal, body: JSON.stringify({ message: question, criteria: final || {}, history: prior, codes: (recs || []).map((r) => r.code) }) });
@@ -642,7 +642,7 @@ export default function Assistant() {
     session.current++;
     if (askCtrl.current) askCtrl.current.abort();
     setBusy(false);
-    setMsgs([{ id: id(), k: 'bot', text: 'Mình bắt đầu phiên mới. Anh/chị kể về gia đình và nhu cầu trong một câu nhé.' }]);
+    setMsgs([{ id: id(), k: 'bot', text: 'Mình bắt đầu lại nhé. Bạn đang tìm nhà thế nào?' }]);
     setRecs(null); setFinal(null); setCriteria(null); setPhase('idle'); setReportOpen(false); setView(-1); setHunt(null);
     moving.current = false; hideZoom(false);
     if (mapRef.current) mapRef.current.update(null);
@@ -677,7 +677,7 @@ export default function Assistant() {
   const reveal = (on, delay = 0, off = 'translateY(12px)') => (on
     ? { opacity: 1, transform: 'none', transitionDelay: delay + 's' }
     : { opacity: 0, transform: off, pointerEvents: 'none', transitionDelay: '0s', transitionDuration: '.22s' });
-  const idleLine = !idleSay || busy || hunt ? null : draft.trim() ? 'Nghe hay đấy! Bấm gửi là mình đi tìm.' : 'Kể mình nghe nhà mình cần gì nhé!';
+  const idleLine = !idleSay || busy || hunt ? null : draft.trim() ? 'Bạn bấm gửi, mình đi tìm nhé!' : 'Bạn đang tìm nhà thế nào?';
 
   return (
     <div className={'as-page' + (entered ? ' in' : '')}>

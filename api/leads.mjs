@@ -69,7 +69,7 @@ export async function createLead(body, ip) {
   const listing = code ? getByCode(code) : null;
   if (code && !listing) e.code = 'Không tìm thấy căn nhà.';
   if (Object.keys(e).length) throw new LeadError(e);
-  if (!allow(ip)) throw new LeadError({ _: 'Anh/chị đã gửi nhiều yêu cầu, vui lòng thử lại sau.' }, 429);
+  if (!allow(ip)) throw new LeadError({ _: 'Bạn đã gửi nhiều yêu cầu. Thử lại sau nhé.' }, 429);
 
   const source = body.source === 'owner_msg' ? 'owner_msg' : 'visit_form';
   const since = new Date(Date.now() - 10 * 60000).toISOString();

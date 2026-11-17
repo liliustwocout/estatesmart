@@ -11,9 +11,9 @@ export const REST = '00-dung-yen';
 
 const REACTIONS = [
   ['01-chao', 'Chào bạn!'],
-  ['13-an-mung', 'Yeah!'],
-  ['10-ngon-cai', 'Tìm nhà cho cả nhà nhé?'],
-  ['04-tim-thay', 'Mình tìm giúp nhé!'],
+  ['13-an-mung', 'Hay quá!'],
+  ['10-ngon-cai', 'Đi tìm nhà nhé?'],
+  ['04-tim-thay', 'Để mình tìm cho!'],
 ];
 
 const T = {
@@ -80,7 +80,7 @@ export default function useMascot({ rest = REST, interactive = false, follow = i
 
   // Có người đụng tới: đánh thức nếu đang ngủ, không thì đặt lại hẹn giờ rảnh rỗi.
   const poke = useCallback(() => {
-    if (st.mode === 'sleep') { play([['01-chao', T.wake, 'Ơ, mình tỉnh rồi!']]); return true; }
+    if (st.mode === 'sleep') { play([['01-chao', T.wake, 'Ơ, mình ngủ quên à?']]); return true; }
     if (st.mode === 'idle' || st.mode === 'react') armIdle();
     return false;
   }, [st, play, armIdle]);

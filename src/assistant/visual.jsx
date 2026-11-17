@@ -120,7 +120,7 @@ export function EcoCard({ r }) {
   }
   return (
     <section className="card c-eco" style={{ '--i': 2 }}>
-      <header><div><h3>Hệ sinh thái quanh nhà</h3><p className="sub">Tiện ích quan trọng nhất với nhà mình</p></div></header>
+      <header><div><h3>Hệ sinh thái quanh nhà</h3><p className="sub">Tiện ích gia đình bạn ưu tiên</p></div></header>
       <div className="eco-top">
         {top.map((x) => {
           const g = legendGroup(x.group);

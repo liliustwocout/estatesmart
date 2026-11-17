@@ -7,7 +7,7 @@ import Mascot from '../mascot/Mascot.jsx';
 // Mascot tương tác ở hero: design/Main.dc.html chừa chỗ trống <div data-mascot="hero">,
 // gắn vào bằng portal để dùng chung một cây React với trang (docs/KE_HOACH_MASCOT.md mục 4).
 const heroSize = () => (window.innerWidth <= 820 ? 104 : window.innerWidth <= 1024 ? 150 : 184);
-const GUIDE = 'Mình là trợ lý chọn nhà. Kéo xuống, mình dẫn bạn xem cách chọn nhé!';
+const GUIDE = 'Lướt xuống, mình dẫn bạn đi xem nhé!';
 
 function HeroMascot() {
   const [slot, setSlot] = useState(null);
@@ -18,12 +18,16 @@ function HeroMascot() {
     setSize(heroSize());
     const onResize = () => setSize(heroSize());
     window.addEventListener('resize', onResize);
-    // Chào một lần khi chữ ở hero đã hiện xong, rồi nói câu hướng dẫn
-    const t1 = setTimeout(() => window.dispatchEvent(new CustomEvent('mascot', {
-      detail: { name: 'hero', lock: false, play: [['01-chao', 1600, 'Chào bạn!']] },
-    })), 1000);
-    const t2 = setTimeout(() => setSay(GUIDE), 2700);
-    return () => { window.removeEventListener('resize', onResize); clearTimeout(t1); clearTimeout(t2); };
+    const intro = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('mascot', {
+        detail: { name: 'hero', lock: false, play: [
+          ['01-chao', 1600, 'Chào bạn!'],
+          ['00-dung-yen', 2200, 'Mình là trợ lý lựa nhà!'],
+        ] },
+      }));
+      setSay(GUIDE);
+    }, 1000);
+    return () => { window.removeEventListener('resize', onResize); clearTimeout(intro); };
   }, []);
   if (!slot) return null;
   return createPortal(<Mascot interactive name="hero" size={size} say={say} side={size <= 104 ? 'left' : undefined} />, slot);

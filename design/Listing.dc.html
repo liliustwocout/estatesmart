@@ -435,7 +435,7 @@ a{color:inherit;text-decoration:none}
 <div class="done" role="status">
 <span class="done-mark" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="m5 12.5 4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
 <p class="lead">Đã gửi yêu cầu khảo sát {{l.code}}.</p>
-<p class="sub">{{sentDetail}} Đội ngũ estateSmartAI sẽ gọi lại cho anh/chị để xác nhận lịch. Lưu ý: thông tin mặt bằng trong bản thử nghiệm là dữ liệu mô phỏng, lịch xem thực tế sẽ được xác nhận khi gọi lại.</p>
+<p class="sub">{{sentDetail}} Đội ngũ estateSmartAI sẽ gọi lại cho bạn để xác nhận lịch. Lưu ý: thông tin mặt bằng trong bản thử nghiệm là dữ liệu mô phỏng, lịch xem thực tế sẽ được xác nhận khi gọi lại.</p>
 <button type="button" class="btn btn-ghost" onClick="{{resetForm}}" style="margin-top: 24px">Tạo yêu cầu khác</button>
 </div>
 </sc-if>
@@ -788,10 +788,10 @@ class Component extends DCLogic {
           body: JSON.stringify({ code: l.code, name: form.name, phone: form.phone, role: form.role, date: form.date, message: form.message, consent: form.consent, website: form.website, source: 'visit_form' })
         }).then((r) => r.json().then((d) => ({ ok: r.ok, d }))).then(({ ok, d }) => {
           if (ok) { this.setState({ sending: false, sent: true, saved: { ...this.state.saved, [l.code]: true } }); return; }
-          const errs2 = d.errors || { _: d.error || 'Chưa gửi được, anh/chị thử lại sau.' };
+          const errs2 = d.errors || { _: d.error || 'Chưa gửi được. Bạn thử lại sau nhé.' };
           if (errs2._ && Object.keys(errs2).length > 1) delete errs2._;
           this.setState({ sending: false, errors: errs2 });
-        }).catch(() => this.setState({ sending: false, errors: { _: 'Chưa kết nối được máy chủ. Anh/chị thử lại sau ít phút.' } }));
+        }).catch(() => this.setState({ sending: false, errors: { _: 'Chưa kết nối được. Bạn thử lại sau ít phút nhé.' } }));
       },
       resetForm: () => this.setState({ sent: false, form: { ...this.state.form, message: '', date: '' } }),
       savedPressed: isSaved ? 'true' : 'false',

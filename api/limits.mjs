@@ -60,14 +60,14 @@ export function acquire(ip, message, opts = {}) {
   s.hits = s.hits.filter((t) => now - t < lim.windowMs);
   for (const [h, t] of s.recent) if (now - t >= lim.duplicateMs) s.recent.delete(h);
 
-  if (s.active >= lim.perIpConcurrent) return deny(429, 'Trợ lý đang trả lời câu trước, anh/chị đợi một chút nhé.', 3);
-  if (now - s.last < lim.minIntervalMs) return deny(429, 'Anh/chị gửi hơi nhanh, đợi vài giây rồi hỏi tiếp nhé.', (lim.minIntervalMs - (now - s.last)) / 1000);
-  if (s.hits.length >= lim.windowMax) return deny(429, 'Anh/chị đã hỏi nhiều trong ít phút, vui lòng thử lại sau.', (lim.windowMs - (now - s.hits[0])) / 1000);
-  if (s.dayCount >= lim.ipDailyMax) return deny(429, 'Anh/chị đã dùng hết lượt hỏi hôm nay, vui lòng quay lại vào ngày mai.', secondsToMidnightVN());
+  if (s.active >= lim.perIpConcurrent) return deny(429, 'Mình đang trả lời câu trước. Bạn đợi một chút nhé.', 3);
+  if (now - s.last < lim.minIntervalMs) return deny(429, 'Bạn gửi hơi nhanh. Đợi vài giây rồi hỏi tiếp nhé.', (lim.minIntervalMs - (now - s.last)) / 1000);
+  if (s.hits.length >= lim.windowMax) return deny(429, 'Bạn đã gửi nhiều câu hỏi. Thử lại sau nhé.', (lim.windowMs - (now - s.hits[0])) / 1000);
+  if (s.dayCount >= lim.ipDailyMax) return deny(429, 'Bạn đã hết lượt hỏi hôm nay. Mai quay lại nhé.', secondsToMidnightVN());
   const h = hashOf(message);
-  if (!lim.allowDuplicate && s.recent.has(h)) return deny(429, 'Câu hỏi này vừa được gửi, anh/chị xem câu trả lời ở trên nhé.', (lim.duplicateMs - (now - s.recent.get(h))) / 1000);
-  if (global.active >= limits.globalConcurrent) return deny(503, 'Trợ lý đang bận, anh/chị thử lại sau ít giây.', 5);
-  if (global.count >= limits.dailyMax || global.tokens >= limits.dailyTokens) return deny(503, 'Trợ lý đã đạt giới hạn sử dụng trong ngày, vui lòng quay lại vào ngày mai.', secondsToMidnightVN());
+  if (!lim.allowDuplicate && s.recent.has(h)) return deny(429, 'Bạn vừa gửi câu này. Xem câu trả lời ở trên nhé.', (lim.duplicateMs - (now - s.recent.get(h))) / 1000);
+  if (global.active >= limits.globalConcurrent) return deny(503, 'Mình đang bận. Bạn thử lại sau vài giây nhé.', 5);
+  if (global.count >= limits.dailyMax || global.tokens >= limits.dailyTokens) return deny(503, 'Hôm nay mình đã hết lượt trả lời. Bạn quay lại ngày mai nhé.', secondsToMidnightVN());
 
   s.hits.push(now);
   s.last = now;

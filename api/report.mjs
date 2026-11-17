@@ -12,14 +12,14 @@ const BUDGET_OPTIONS = {
 };
 // Câu hỏi bổ sung cho tiêu chí còn thiếu; gợi ý ngân sách đổi theo mua hay thuê.
 export function askFor(key, criteria = {}) {
-  if (key === 'home') return { key, q: 'Anh/chị muốn mua hay thuê, chung cư hay nhà đất?', options: ['Mua căn hộ', 'Thuê căn hộ', 'Mua nhà đất', 'Thuê nhà đất'] };
+  if (key === 'home') return { key, q: 'Bạn muốn mua hay thuê? Căn hộ hay nhà đất?', options: ['Mua căn hộ', 'Thuê căn hộ', 'Mua nhà đất', 'Thuê nhà đất'] };
   if (key === 'budget') {
     const deal = parseCriteria({ home: criteria.home }).deal;
     return { key, q: deal === 'thue' ? 'Tiền thuê mỗi tháng khoảng bao nhiêu?' : deal === 'mua' ? 'Ngân sách mua khoảng bao nhiêu?' : 'Ngân sách khoảng bao nhiêu (giá mua hoặc tiền thuê mỗi tháng)?', options: BUDGET_OPTIONS[deal] || [...BUDGET_OPTIONS.mua.slice(0, 2), ...BUDGET_OPTIONS.thue.slice(0, 2)] };
   }
-  if (key === 'family') return { key, q: 'Nhà mình có mấy người, con mấy tuổi, có ông bà ở cùng không?', options: ['Vợ chồng chưa có con', 'Có con dưới 6 tuổi', 'Có con đang đi học', 'Có ông bà ở cùng'] };
-  if (key === 'area') return { key, q: 'Anh/chị muốn ở khu nào, và đi làm ở đâu?', options: ['Ocean Park 1', 'Làm ở Long Biên', 'Làm ở Cầu Giấy', 'Làm gần nhà'] };
-  return { key, q: 'Tiện ích nào quan trọng nhất với nhà mình?', options: ['Trường gần', 'Chợ, siêu thị', 'Công viên', 'Bệnh viện', 'Xe buýt'] };
+  if (key === 'family') return { key, q: 'Nhà bạn có mấy người? Các bé mấy tuổi, có ông bà ở cùng không?', options: ['Vợ chồng chưa có con', 'Có con dưới 6 tuổi', 'Có con đang đi học', 'Có ông bà ở cùng'] };
+  if (key === 'area') return { key, q: 'Bạn muốn ở khu nào và đi làm ở đâu?', options: ['Ocean Park 1', 'Làm ở Long Biên', 'Làm ở Cầu Giấy', 'Làm gần nhà'] };
+  return { key, q: 'Bạn cần tiện ích nào nhất?', options: ['Trường gần', 'Chợ, siêu thị', 'Công viên', 'Bệnh viện', 'Xe buýt'] };
 }
 function amountPhrase(t) {
   const num = '(\\d+(?:[.,]\\d+)?)';

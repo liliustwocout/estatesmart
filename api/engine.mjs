@@ -395,10 +395,10 @@ function screen(crit, all) {
   });
   let fits = run({});
   const strict = fits.length;
-  if (fits.length < 3 && crit.bedrooms) { fits = run({ bed: false }); notes.push('Ít căn đủ số phòng ngủ, tôi tính cả căn ít phòng hơn.'); }
-  if (fits.length < 3 && crit.budget) { fits = run({ bed: false, extra: 10 }); notes.push('Ít căn trong ngân sách, tôi nới thêm 10%.'); }
-  if (fits.length < 3 && crit.group) { fits = run({ bed: false, extra: 10, group: false }); notes.push(`Ít ${crit.group === 'chung_cu' ? 'căn hộ' : 'nhà đất'} khớp điều kiện, tôi thêm cả ${crit.group === 'chung_cu' ? 'nhà đất' : 'căn hộ'}.`); }
-  if (fits.length < 3) { fits = pool; notes.push('Dữ liệu hiện có ít căn khớp, tôi xếp hạng tất cả căn cùng hình thức.'); }
+  if (fits.length < 3 && crit.bedrooms) { fits = run({ bed: false }); notes.push('Có ít căn đủ phòng ngủ nên mình xem thêm căn ít phòng hơn.'); }
+  if (fits.length < 3 && crit.budget) { fits = run({ bed: false, extra: 10 }); notes.push('Có ít căn đúng tầm giá nên mình nới thêm 10% khi tìm.'); }
+  if (fits.length < 3 && crit.group) { fits = run({ bed: false, extra: 10, group: false }); notes.push(`Có ít ${crit.group === 'chung_cu' ? 'căn hộ' : 'nhà đất'} khớp nên mình xem thêm ${crit.group === 'chung_cu' ? 'nhà đất' : 'căn hộ'}.`); }
+  if (fits.length < 3) { fits = pool; notes.push('Có ít căn khớp nên mình xem cả những căn còn lại.'); }
   return { fits, strict, notes };
 }
 
