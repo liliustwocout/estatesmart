@@ -1,29 +1,35 @@
-// Trang Trợ lý mặt bằng (/tro-ly/): chat bên trái, khung kết quả bên phải.
-// Khung phải có 4 trạng thái: chờ → danh sách 3 mặt bằng → chi tiết (bản đồ 3D, ảnh) → báo cáo đầy đủ.
+// Trang Trợ lý chọn nhà (/tro-ly/): chat bên trái, khung kết quả bên phải.
+// Khung phải có 4 trạng thái: chờ → danh sách 3 căn → chi tiết (bản đồ tiện ích, ảnh) → báo cáo đầy đủ.
 // Chuyển động theo hai đường cong: ease-layout (khung đẩy nhau, ảnh phóng to) và ease-reveal (nội dung hiện ra).
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Mascot from '../mascot/Mascot.jsx';
 import Hunt from './Hunt.jsx';
+import { HomeCard, EcoCard, TravelCard } from './visual.jsx';
 
 const REDUCE = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const T = (ms) => (REDUCE ? 20 : ms);
-// 5 AI Agent, hiện thành checklist khi đang thẩm định để người dùng đọc kịp từng bước.
+// 5 AI Agent, hiện thành checklist khi đang chấm điểm để người dùng đọc kịp từng bước.
 const AGENTS = [
-  { name: 'Phân tích nhu cầu', detail: 'Đọc mô hình, khu vực, ngân sách và diện tích' },
-  { name: 'Sàng lọc mặt bằng', detail: 'Loại mặt bằng vượt ngân sách hoặc lệch diện tích' },
-  { name: 'Đánh giá vị trí', detail: 'Chung cư, trường học, xe buýt trong 500 m' },
-  { name: 'Phân tích cạnh tranh', detail: 'Cơ sở cùng ngành quanh từng mặt bằng' },
-  { name: 'Chấm điểm và khuyến nghị', detail: 'Xếp hạng, chọn ba mặt bằng đáng xem nhất' }
+  { name: 'Hiểu gia đình', detail: 'Mua hay thuê, ngân sách, tuổi con, ông bà, nơi đi làm' },
+  { name: 'Sàng lọc căn', detail: 'Loại căn vượt ngân sách hoặc thiếu phòng ngủ' },
+  { name: 'Học hành và sức khoẻ', detail: 'Trường theo tuổi con, phòng khám, bệnh viện' },
+  { name: 'Sinh hoạt và đi lại', detail: 'Chợ, siêu thị, công viên, xe buýt, đường đi làm' },
+  { name: 'Chấm điểm sống', detail: 'Xếp hạng, chọn ba căn hợp nhất với gia đình' }
 ];
 const STEP_MS = 750;
 const FOUND_MS = 1500; // Mascot giơ ghim “tìm thấy” trước khi hiện danh sách
 const OOPS_MS = 2200;
 const SUGGESTIONS = [
-  'Mở quán cà phê ở Ocean Park, ngân sách khoảng 50 triệu/tháng, diện tích 150–250 m², cần chỗ đỗ ô tô',
-  'Tìm mặt bằng trà sữa gần trường học, dưới 30 triệu/tháng',
-  'Cửa hàng tiện lợi gần chung cư, diện tích 60–100 m², tầm 25 triệu'
+  'Mua căn hộ khoảng 4,5 tỷ ở Ocean Park, nhà có bé 4 tuổi, chồng làm ở Cầu Giấy, cần gần trường',
+  'Thuê nhà đất dưới 40 triệu, hai con 8 và 12 tuổi, ông bà ở cùng, gần bệnh viện và chợ',
+  'Vợ chồng chưa có con, thuê căn hộ 10–15 triệu, làm ở Long Biên'
 ];
+const GROUP_LABEL = { giao_duc: 'Trường học', mua_sam: 'Chợ, siêu thị', y_te: 'Y tế', xanh: 'Công viên, thể thao', di_lai: 'Đi lại' };
 const pad2 = (n) => String(n).padStart(2, '0');
+const lower1 = (s) => String(s).charAt(0).toLowerCase() + String(s).slice(1);
+// Tóm tắt tiêu chí thành một dòng, dùng trong checklist và khi mở link chia sẻ.
+const needOf = (c = {}) => [c.home, c.budget && 'ngân sách ' + lower1(c.budget), c.family && lower1(c.family), c.area].filter(Boolean).join(', ');
+const shortPrice = (r) => (r.deal === 'thue' ? String(r.price).replace(' triệu/tháng', ' tr') : r.price);
 const profileHref = (code) => '/mat-bang/?ma=' + encodeURIComponent(code);
 let uid = 0;
 const id = () => ++uid;
@@ -110,7 +116,7 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
   if (m.k === 'agents') {
     return (
       <div className={'b-agents es-up' + (m.done ? ' is-done' : '')} role="status">
-        <p className="ag-title">{m.done ? 'Đội ngũ đã thẩm định xong' : m.reading ? 'Đang đọc nhu cầu của anh/chị' : 'Đội ngũ đang thẩm định'}{!m.done && <Dots />}</p>
+        <p className="ag-title">{m.done ? 'Đội ngũ đã chấm điểm xong' : m.reading ? 'Đang đọc nhu cầu của gia đình' : 'Đội ngũ đang chấm điểm'}{!m.done && <Dots />}</p>
         <span className="ag-bar" aria-hidden="true"><i style={{ transform: `scaleX(${m.done ? 1 : m.reading ? 0.06 : (m.step + 0.6) / AGENTS.length})` }} /></span>
         <ol>
           {AGENTS.map((a, i) => {
@@ -149,7 +155,7 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
           <button key={r.code} type="button" className={'mini es-up' + (active === i ? ' is-on' : '')} style={{ animationDelay: 120 + i * 80 + 'ms' }} onClick={() => onPick(i)} aria-label={`Mở ${r.name}, ${r.score} điểm`}>
             <span className="mi-idx">{pad2(i + 1)}</span>
             <span className="mi-name">{r.name.split(',')[0]}, {r.name.split(',').slice(1).join(',').trim()}</span>
-            <span className="mi-price">{Math.round(r.rentM)} tr</span>
+            <span className="mi-price">{shortPrice(r)}</span>
             <span className="mi-score"><CountUp to={r.score} delay={200 + i * 80} /></span>
           </button>
         ))}
@@ -162,8 +168,7 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
       <div className="b-sum es-up">
         <p className="lbl">Đang xem {pad2(m.i + 1)}</p>
         <p className="sum-name">{m.name}</p>
-        <p className="sum-line">{m.score}/100 · {m.price} · {m.area} m²</p>
-        {m.risk && <p className="sum-risk">Rủi ro chính: {m.risk}</p>}
+        <p className="sum-line">Điểm sống {m.score}/100, {m.price}, {m.area} m², {m.bedrooms} phòng ngủ</p>
       </div>
     );
   }
@@ -191,7 +196,7 @@ function ContactCard({ r, msg, setMsg, onCopy }) {
     if (Object.keys(e2).length) { setErr(e2); return; }
     setState('sending');
     try {
-      await postJson('/api/leads', { code: r.code, name: f.name, phone: f.phone, consent: f.consent, website: f.website, message: msg, source: 'owner_msg', role: 'Chủ doanh nghiệp' });
+      await postJson('/api/leads', { code: r.code, name: f.name, phone: f.phone, consent: f.consent, website: f.website, message: msg, source: 'owner_msg', role: r.deal === 'thue' ? 'Người thuê' : 'Người mua' });
       setState('sent');
     } catch (ex) {
       setState('idle');
@@ -202,8 +207,8 @@ function ContactCard({ r, msg, setMsg, onCopy }) {
     return (
       <section className="card c-contact" style={{ '--i': 4 }}>
         <h3>Liên hệ chủ nhà</h3>
-        <p className="sent-ok" role="status"><span aria-hidden="true">✓</span> Đã gửi lời nhắn về {r.code}. Đội ngũ estateSmartAI sẽ liên hệ chủ nhà và gọi lại cho anh/chị để hẹn lịch xem.</p>
-        <p className="sent">Bản thử nghiệm: thông tin mặt bằng là dữ liệu mô phỏng, đội ngũ sẽ xác nhận lại khi gọi.</p>
+        <p className="sent-ok" role="status"><span aria-hidden="true">✓</span> Đã gửi lời nhắn về {r.code}. Đội ngũ estateSmartAI sẽ liên hệ chủ nhà và gọi lại cho anh/chị để hẹn lịch xem nhà.</p>
+        <p className="sent">Bản thử nghiệm: thông tin căn nhà là dữ liệu mô phỏng, đội ngũ sẽ xác nhận lại khi gọi.</p>
         <a className="full-link" href={profileHref(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
       </section>
     );
@@ -225,7 +230,7 @@ function ContactCard({ r, msg, setMsg, onCopy }) {
             <input id="oc-phone" type="tel" inputMode="tel" value={f.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="tel" placeholder="0901 234 567" aria-invalid={err.phone ? 'true' : 'false'} />
             {err.phone && <p className="c-err">{err.phone}</p>}
           </div>
-          <label className="c-consent"><input type="checkbox" checked={f.consent} onChange={(e) => set('consent', e.target.checked)} />Tôi đồng ý để estateSmartAI lưu họ tên, số điện thoại và liên hệ lại về mặt bằng này.</label>
+          <label className="c-consent"><input type="checkbox" checked={f.consent} onChange={(e) => set('consent', e.target.checked)} />Tôi đồng ý để estateSmartAI lưu họ tên, số điện thoại và liên hệ lại về căn nhà này.</label>
           {err.consent && <p className="c-err">{err.consent}</p>}
           <input className="trap" tabIndex={-1} autoComplete="off" aria-hidden="true" value={f.website} onChange={(e) => set('website', e.target.value)} />
         </div>
@@ -247,57 +252,60 @@ function ReportGrid({ r, open, onCopy, msg, setMsg }) {
     return (
       <div className="rgrid skel" aria-busy="true">
         <span className="sr-only">Đang tải báo cáo…</span>
-        {[0, 1, 2, 3, 4].map((i) => <div key={i} className={'card sk' + (i === 0 ? ' c-comp' : '')} style={{ '--i': i }}><i /><i /><i /></div>)}
+        {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className={'card sk' + (i === 0 || i === 2 ? ' c-wide' : '')} style={{ '--i': i }}><i /><i /><i /></div>)}
       </div>
     );
   }
-  const t = r.traffic;
-  const max = Math.max(r.rentCompare.mine, r.rentCompare.median) * 1.08;
+  const pc = r.priceCompare;
+  const max = Math.max(pc.mine, pc.median) * 1.08;
+  const weights = Object.entries(r.weights).sort((a, b) => b[1] - a[1]);
   return (
     <div className="rgrid">
-      <section className="card c-comp" style={{ '--i': 0 }}>
-        <header><h3>Đối thủ cùng ngành trong {r.compRadius} m</h3><span className="big comp"><CountUp to={r.compCount} run={open} delay={250} /></span></header>
-        {r.competitors.length ? (
-          <div className="tbl-wrap">
-            <table>
-              <thead><tr><th>Cửa hàng</th><th>Loại</th><th className="num">Cách</th><th>Nguồn</th></tr></thead>
-              <tbody>{r.competitors.map((c, i) => <tr key={i} style={{ '--i': i }}><td>{c.name}</td><td>{c.kind}</td><td className="num">{c.dText}</td><td>{c.source}</td></tr>)}</tbody>
-            </table>
-          </div>
-        ) : <p className="empty">Chưa có cơ sở cùng ngành nào trong {r.compRadius} m trên OpenStreetMap.</p>}
-        <p className="read"><i className="dot good" />{r.compNote}</p>
-      </section>
+      <HomeCard r={r} />
 
-      <section className="card c-traffic" style={{ '--i': 1 }}>
-        <header><h3>Lưu lượng theo giờ</h3><span className="tag">Ước lượng</span></header>
-        <div className="bars" role="img" aria-label={'Lưu lượng ước lượng: ' + t.bars.map((b) => b.label + ' ' + b.v + '%').join(', ')}>
-          {t.bars.map((b, i) => (
-            <div key={b.label} className={'bar-col' + (i === t.peak ? ' is-peak' : '')} style={{ '--i': i }} title={i === t.peak ? 'Giờ cao điểm' : undefined}>
-              <span className={'bar' + (i === t.peak ? ' peak' : '')} style={{ height: Math.max(6, b.v) + '%' }} />
-              <span className="bar-l">{b.label}</span>
-            </div>
+      <section className="card c-score" style={{ '--i': 1 }}>
+        <header><h3>Điểm sống</h3><span className="big"><CountUp to={r.score} run={open} delay={250} /><small>/100</small></span></header>
+        <ul className="parts">
+          {weights.map(([k, w], i) => (
+            <li key={k} style={{ '--i': i }}>
+              <span className="pl">{r.componentLabels[k]}<small>{w}%</small></span>
+              <span className="track"><span className="fill mine" style={{ width: r.parts[k] + '%' }} /></span>
+              <span className="pv">{r.parts[k]}</span>
+            </li>
           ))}
-        </div>
-        <p className="read">{t.text}</p>
-        <p className="src">Ước lượng từ loại tiện ích xung quanh (OpenStreetMap), không phải số đo thực tế.</p>
+        </ul>
+        <p className="src">Số % là trọng số theo {r.family}.</p>
       </section>
 
-      <section className="card c-rent" style={{ '--i': 2 }}>
-        <h3>Giá thuê so với khu vực</h3>
+      <EcoCard r={r} />
+
+      <section className="card c-day" style={{ '--i': 3 }}>
+        <header><h3>Một ngày của gia đình</h3><span className="tag">Ước lượng</span></header>
+        {r.day.length ? (
+          <ol className="day">
+            {r.day.map((d, i) => (
+              <li key={d.time + d.task} style={{ '--i': i }}>
+                <span className="dt">{d.time}</span>
+                <span className="dd"><b>{d.task}</b><span>{d.place}</span></span>
+                <span className="dm">{d.text}</span>
+              </li>
+            ))}
+          </ol>
+        ) : <p className="empty">Chưa đủ dữ liệu tiện ích để dựng lịch một ngày.</p>}
+      </section>
+
+      <section className="card c-rent" style={{ '--i': 4 }}>
+        <header><h3>{r.deal === 'thue' ? 'Giá thuê' : 'Giá bán'}</h3>{Math.abs(pc.diff) >= 3 && <span className={'diff ' + (pc.diff > 0 ? 'up' : 'down')}>{pc.diff > 0 ? '+' : '−'}{Math.abs(pc.diff)}%</span>}</header>
         <div className="cmp">
-          <div className="cmp-row"><span>Mặt bằng này</span><b><CountUp to={r.rentCompare.mine} run={open} delay={300} /> triệu/tháng</b></div>
-          <span className="track"><span className="fill mine" style={{ width: (r.rentCompare.mine / max) * 100 + '%' }} /></span>
-          <div className="cmp-row muted"><span>Trung vị khu vực</span><b><CountUp to={r.rentCompare.median} run={open} delay={450} /> triệu/tháng</b></div>
-          <span className="track"><span className="fill med" style={{ width: (r.rentCompare.median / max) * 100 + '%' }} /></span>
+          <div className="cmp-row"><span>Căn này</span><b><CountUp to={pc.mine} run={open} delay={300} /> {pc.unit}</b></div>
+          <span className="track"><span className="fill mine" style={{ width: (pc.mine / max) * 100 + '%' }} /></span>
+          <div className="cmp-row muted"><span>Mức chung</span><b><CountUp to={pc.median} run={open} delay={450} /> {pc.unit}</b></div>
+          <span className="track"><span className="fill med" style={{ width: (pc.median / max) * 100 + '%' }} /></span>
         </div>
-        <p className="read">{r.rentCompare.diff === 0 ? 'Ngang mức chung.' : r.rentCompare.diff > 0 ? `Cao hơn mức chung khoảng ${r.rentCompare.diff}%.` : `Thấp hơn mức chung khoảng ${-r.rentCompare.diff}%.`}</p>
-        <p className="src">Quy đổi theo diện tích, so với {r.rentCompare.n} {r.rentCompare.typeLabel} trong hệ thống (dữ liệu mô phỏng).</p>
+        <p className="src">Trung vị đơn giá {pc.n} {pc.typeLabel} trong hệ thống, cùng diện tích (dữ liệu mô phỏng).</p>
       </section>
 
-      <section className="card c-access" style={{ '--i': 3 }}>
-        <h3>Tiếp cận và đỗ xe</h3>
-        <dl>{r.access.map((a, i) => <div key={a.label} className={a.warn ? 'warn' : ''} style={{ '--i': i }}><dt>{a.label}</dt><dd>{a.value}</dd></div>)}</dl>
-      </section>
+      <TravelCard r={r} />
 
       <ContactCard r={r} msg={msg} setMsg={setMsg} onCopy={onCopy} />
     </div>
@@ -307,7 +315,7 @@ function ReportGrid({ r, open, onCopy, msg, setMsg }) {
 /* ---------------- Trang ---------------- */
 
 export default function Assistant() {
-  const [msgs, setMsgs] = useState(() => [{ id: id(), k: 'bot', text: 'Chào bạn, mình là trợ lý mặt bằng. Hãy mô tả mô hình kinh doanh, khu vực và ngân sách trong một câu, hoặc chọn một câu gợi ý bên dưới.' }]);
+  const [msgs, setMsgs] = useState(() => [{ id: id(), k: 'bot', text: 'Chào bạn, mình là trợ lý chọn nhà. Kể mình nghe nhà mình có mấy người, con mấy tuổi, muốn mua hay thuê và ngân sách bao nhiêu, hoặc chọn một câu gợi ý bên dưới.' }]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false); // đang thẩm định hoặc đang trả lời
   const [criteria, setCriteria] = useState(null); // tiêu chí đang gom (chưa đủ)
@@ -318,7 +326,7 @@ export default function Assistant() {
   const [view, setView] = useState(-1); // -1 bản đồ, 0..n ảnh
   const [reportOpen, setReportOpen] = useState(false);
   const [reports, setReports] = useState({});
-  const [toggles, setToggles] = useState({ mine: true, comp: true, cust: true, links: true });
+  const [toggles, setToggles] = useState({ rings: true, giao_duc: true, mua_sam: true, y_te: true, xanh: true, di_lai: true });
   const [ownerMsg, setOwnerMsg] = useState('');
   const [shareId, setShareId] = useState(null);
   const [toast, setToast] = useState(null);
@@ -420,7 +428,7 @@ export default function Assistant() {
         return;
       }
       const crit = parsed.criteria;
-      const need = [crit.model, crit.area, crit.budget && 'ngân sách ' + crit.budget.charAt(0).toLowerCase() + crit.budget.slice(1), crit.size].filter(Boolean).join(', ');
+      const need = needOf(crit);
       setAg({ reading: false, step: 0, facts: [need || null] });
       setHunt({ mode: 'run', step: 0 });
       // Mỗi bước giữ ít nhất STEP_MS để người dùng kịp đọc; bước cuối chờ máy chủ trả kết quả.
@@ -428,21 +436,22 @@ export default function Assistant() {
       const [data] = await Promise.all([postJson('/api/recommend', { criteria: crit }), stepping]);
       if (my !== session.current) return;
       const top = data.results[0];
+      const w = data.weights || {};
       setAg({ done: true, step: AGENTS.length, facts: [
         need || null,
-        `Còn ${data.stats.fit} trên ${data.stats.total} mặt bằng phù hợp`,
-        null,
-        `${data.competitors.length} cơ sở cùng ngành quanh ba mặt bằng (OpenStreetMap)`,
+        `Còn ${data.stats.screened} trên ${data.stats.total} căn khớp điều kiện`,
+        `Trường học chiếm ${w.giao_duc ?? '–'}% điểm với ${data.criteria.familyLabel}`,
+        `${data.amenities.length} tiện ích gần ba căn được đo khoảng cách`,
         top ? `Cao nhất ${top.score}/100: ${top.name.split(',')[0]}` : null
       ] });
-      const rows = data.results.map((r) => ({ ...r, rentM: parseFloat(String(r.price).replace(/\./g, '').replace(',', '.')) }));
+      const rows = data.results;
       setCriteria(null);
       setFinal(crit);
       setRecs(rows);
       setReports({});
       setShareId(null);
       data.notes.forEach((n) => push({ k: 'bot', text: n }));
-      push({ k: 'results', text: `Đội ngũ đã rà soát ${data.stats.total} mặt bằng trong hệ thống, ${data.stats.fit} vừa ngân sách và diện tích. Đây là ba lựa chọn đáng đi xem nhất:`, rows });
+      push({ k: 'results', text: `Đội ngũ đã rà soát ${data.stats.total} căn trong hệ thống, ${data.stats.fit} căn vừa ngân sách và đủ phòng. Đây là ba căn hợp với ${data.criteria.familyLabel} nhất:`, rows });
       setSel(0);
       setView(-1);
       rows.forEach((r) => postJson('/api/report', { code: r.code, criteria: crit }).then((rp) => setReports((s) => ({ ...s, [r.code]: rp }))).catch(() => {}));
@@ -457,7 +466,7 @@ export default function Assistant() {
       stopped = true;
       if (my !== session.current) return;
       dropAg();
-      push({ k: 'bot', mood: 'oops', text: e.status === 429 ? e.message : 'Chưa kết nối được máy chủ thẩm định. Anh/chị thử lại sau ít phút.' });
+      push({ k: 'bot', mood: 'oops', text: e.status === 429 ? e.message : 'Chưa kết nối được máy chủ tư vấn. Anh/chị thử lại sau ít phút.' });
       setHunt({ mode: 'oops', step: 0 });
       leave(OOPS_MS);
       glide(chatRef.current, OOPS_MS);
@@ -474,10 +483,10 @@ export default function Assistant() {
       setShareId(sid);
       const link = location.origin + '/tro-ly/?phien=' + sid;
       if (navigator.share && window.matchMedia('(pointer: coarse)').matches) {
-        await navigator.share({ title: 'Ba mặt bằng phù hợp — estateSmartAI', url: link }).catch(() => {});
+        await navigator.share({ title: 'Ba căn nhà phù hợp — estateSmartAI', url: link }).catch(() => {});
       } else {
         await navigator.clipboard.writeText(link);
-        showToast('Đã sao chép link chia sẻ. Link mở lại đúng ba mặt bằng này trong 90 ngày.');
+        showToast('Đã sao chép link chia sẻ. Link mở lại đúng ba căn này trong 90 ngày.');
       }
     } catch (e) { showToast('Chưa tạo được link chia sẻ, anh/chị thử lại sau.'); }
   };
@@ -492,19 +501,19 @@ export default function Assistant() {
         const res = await fetch('/api/share/' + sid);
         const d = await res.json();
         if (!res.ok || !d.results || !d.results.length) throw new Error(d.error || 'Không mở được link');
-        const rows = d.results.map((r) => ({ ...r, rentM: parseFloat(String(r.price).replace(/\./g, '').replace(',', '.')) }));
+        const rows = d.results;
         const c = d.criteria || {};
-        const need = [c.model, c.area, c.budget && 'ngân sách ' + c.budget, c.size].filter(Boolean).join(', ');
+        const need = needOf(c);
         setFinal(c); setRecs(rows); setShareId(sid); setReports({});
         setMsgs((s) => [...s,
           { id: id(), k: 'bot', text: 'Đây là kết quả tư vấn được chia sẻ' + (need ? ' cho nhu cầu: ' + need : '') + '. Số liệu được tính lại theo dữ liệu hiện tại.' },
-          { id: id(), k: 'results', text: 'Ba mặt bằng trong kết quả này:', rows }
+          { id: id(), k: 'results', text: 'Ba căn trong kết quả này:', rows }
         ]);
         setPhase('list');
         rows.forEach((r) => postJson('/api/report', { code: r.code, criteria: c }).then((rp) => setReports((x) => ({ ...x, [r.code]: rp }))).catch(() => {}));
         ensureMap();
       } catch (e) {
-        setMsgs((s) => [...s, { id: id(), k: 'bot', text: 'Link chia sẻ đã hết hạn hoặc không còn. Anh/chị mô tả nhu cầu để tư vấn lại nhé.' }]);
+        setMsgs((s) => [...s, { id: id(), k: 'bot', text: (e.message && /hiệu lực|hết hạn/.test(e.message) ? e.message : 'Link chia sẻ đã hết hạn hoặc không còn.') + ' Anh/chị kể về gia đình và nhu cầu để tư vấn lại nhé.' }]);
       }
     })();
   }, []);
@@ -518,7 +527,7 @@ export default function Assistant() {
     const botId = id();
     setMsgs((s) => [...s, { id: id(), k: 'user', role: 'user', text: question }, { id: botId, k: 'thinking', text: 'Đang xem lại dữ liệu…' }]);
     const set = (patch) => setMsgs((s) => s.map((m) => (m.id === botId ? { ...m, ...patch } : m)));
-    const fail = 'Hiện chưa kết nối được trợ lý AI. Anh/chị có thể mở từng mặt bằng để xem bản đồ, hình ảnh và báo cáo.';
+    const fail = 'Hiện chưa kết nối được trợ lý AI. Anh/chị có thể mở từng căn để xem bản đồ tiện ích, hình ảnh và báo cáo.';
     let text = '';
     try {
       const res = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, signal: ctrl.signal, body: JSON.stringify({ message: question, criteria: final || {}, history: prior, codes: (recs || []).map((r) => r.code) }) });
@@ -611,8 +620,7 @@ export default function Assistant() {
     setTimeout(() => { if (my === session.current) hideZoom(true); }, T(260));
     moving.current = false;
     const r = recs[i];
-    const rp = reports[r.code];
-    push({ k: 'sum', i, name: r.name, score: r.score, price: r.price, area: r.size.replace(' m²', ''), risk: (rp && rp.mainRisk) || (r.cons && r.cons[0]) || null });
+    push({ k: 'sum', i, name: r.name, score: r.score, price: r.price, area: r.size.replace(' m²', ''), bedrooms: r.bedrooms });
   };
   const back = async () => {
     if (phase !== 'detail' || moving.current) return;
@@ -634,7 +642,7 @@ export default function Assistant() {
     session.current++;
     if (askCtrl.current) askCtrl.current.abort();
     setBusy(false);
-    setMsgs([{ id: id(), k: 'bot', text: 'Mình bắt đầu phiên mới. Anh/chị mô tả nhu cầu trong một câu nhé.' }]);
+    setMsgs([{ id: id(), k: 'bot', text: 'Mình bắt đầu phiên mới. Anh/chị kể về gia đình và nhu cầu trong một câu nhé.' }]);
     setRecs(null); setFinal(null); setCriteria(null); setPhase('idle'); setReportOpen(false); setView(-1); setHunt(null);
     moving.current = false; hideZoom(false);
     if (mapRef.current) mapRef.current.update(null);
@@ -658,7 +666,13 @@ export default function Assistant() {
   const thinking = busy;
   const talking = msgs.some((m) => m.streaming);
   const sheetOpen = detail && reportOpen;
-  const thumbs = useMemo(() => [{ label: 'Bản đồ 3D', v: -1 }, ...((rep && rep.photos) || []).map((p, j) => ({ ...p, v: j }))], [rep]);
+  const thumbs = useMemo(() => [{ label: 'Bản đồ', v: -1 }, ...((rep && rep.photos) || []).map((p, j) => ({ ...p, v: j }))], [rep]);
+  // Số tiện ích đang vẽ trên bản đồ theo từng nhóm chú giải (thể thao gộp vào công viên).
+  const groupCount = useMemo(() => {
+    const n = {};
+    for (const x of (rep && rep.nearest) || []) if (!x.inside) { const g = x.group === 'the_thao' ? 'xanh' : x.group; n[g] = (n[g] || 0) + 1; }
+    return n;
+  }, [rep]);
   // Hiện: chậm rãi, có trễ theo thứ tự. Ẩn: nhanh, không trễ, để chuyển cảnh không phải chờ.
   const reveal = (on, delay = 0, off = 'translateY(12px)') => (on
     ? { opacity: 1, transform: 'none', transitionDelay: delay + 's' }
@@ -680,13 +694,13 @@ export default function Assistant() {
 
       <div className="as-main">
         {/* ---------- CHAT ---------- */}
-        <aside className="as-chat" ref={chatRef} aria-label="Trợ lý mặt bằng">
+        <aside className="as-chat" ref={chatRef} aria-label="Trợ lý chọn nhà">
           <header className="ch-head">
             <span className={'robot' + (thinking && !talking ? ' is-thinking' : '')} aria-hidden="true">
               <Mascot pose={talking ? 'avatar-noi' : 'avatar'} size={30} follow />
             </span>
             <div className="ch-title">
-              <h1>Trợ lý mặt bằng</h1>
+              <h1>Trợ lý chọn nhà</h1>
               <p><i className={'live' + (busy ? ' busy' : '')} aria-hidden="true" />{busy ? (talking ? 'Đang trả lời' : 'Đội ngũ đang làm việc') : 'Đội ngũ 5 chuyên viên AI đang trực tuyến'}</p>
             </div>
             <button type="button" className="ch-x" onClick={reset} aria-label="Bắt đầu phiên mới">
@@ -710,23 +724,23 @@ export default function Assistant() {
           <form className={'ch-input' + (busy ? ' is-busy' : '')} onSubmit={(e) => { e.preventDefault(); send(); }}>
             <label htmlFor="as-input" className="sr-only">Mô tả nhu cầu hoặc đặt câu hỏi</label>
             <input id="as-input" ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" maxLength={500}
-              placeholder={recs && !criteria ? (busy ? 'Trợ lý đang trả lời…' : 'Hỏi thêm về ba mặt bằng…') : 'Mô tả mô hình, khu vực, ngân sách…'} />
+              placeholder={recs && !criteria ? (busy ? 'Trợ lý đang trả lời…' : 'Hỏi thêm về ba căn…') : 'Gia đình, mua hay thuê, ngân sách…'} />
             <button type="submit" className={'send' + (busy ? ' is-busy' : draft.trim() ? ' ready' : ' dim')} aria-label={busy ? 'Đang xử lý' : 'Gửi'} aria-busy={busy}>
               {busy ? <Dots cls="send-dots" /> : <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3.5m0 0L4 7.5m4-4 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             </button>
           </form>
-          {recs && <p className="ch-note">Câu hỏi được gửi tới mô hình AI bên thứ ba, đừng nhập thông tin cá nhân. Số liệu mặt bằng là dữ liệu minh hoạ.</p>}
+          {recs && <p className="ch-note">Câu hỏi được gửi tới mô hình AI bên thứ ba, đừng nhập thông tin cá nhân. Số liệu căn nhà là dữ liệu minh hoạ.</p>}
         </aside>
 
         {/* ---------- KHUNG PHẢI ---------- */}
-        <section className="as-stage" ref={stageRef} aria-label="Kết quả thẩm định">
+        <section className="as-stage" ref={stageRef} aria-label="Kết quả tư vấn">
           {/* Chờ */}
           <div className={'st-idle' + (phase === 'idle' ? '' : ' gone')} aria-hidden={phase !== 'idle'}>
             <img src="/images/hero3.webp" alt="" />
             <div className="idle-card" style={reveal(phase === 'idle' && !hunt, hunt ? 0 : 0.5)}>
               <p className="lbl">Khu vực thí điểm</p>
               <p className="idle-t">Vinhomes Ocean Park 1, Gia Lâm</p>
-              <p className="idle-s">{busy ? 'Đội ngũ đang thẩm định…' : 'Mô tả nhu cầu bên trái để xem ba mặt bằng phù hợp nhất, bản đồ 3D và báo cáo.'}</p>
+              <p className="idle-s">{busy ? 'Đội ngũ đang chấm điểm…' : 'Kể về gia đình bên trái để xem ba căn hợp nhất, bản đồ trường, chợ, công viên quanh nhà và báo cáo.'}</p>
             </div>
             <div className="idle-guide" style={reveal(phase === 'idle' && !hunt, 0.8, 'translateY(24px) scale(.9)')} aria-hidden="true">
               <Mascot pose={draft.trim() ? '10-ngon-cai' : '01-chao'} size={104} say={idleLine} side="left" />
@@ -747,7 +761,10 @@ export default function Assistant() {
                 <span className="rinfo">
                   <span>
                     <span className="r-name">{r.name}</span>
-                    <span className="r-meta">{r.meta}</span>
+                    <span className="r-meta">{r.dealLabel} {lower1(r.typeLabel)}, {r.meta}</span>
+                    {r.chips && r.chips.length > 0 && (
+                      <span className="r-chips">{r.chips.map((c) => <span key={c.key} className="r-chip"><b>{c.label}</b> {c.text}</span>)}</span>
+                    )}
                   </span>
                   <span className="r-foot">
                     <span className="r-price">{r.price}</span>
@@ -771,9 +788,9 @@ export default function Assistant() {
                 <h2>{cur ? cur.name : ''}</h2>
               </div>
               <dl className="d-stats">
-                <div><dt>Giá thuê</dt><dd>{cur ? cur.price : ''}</dd></div>
-                <div><dt>Diện tích</dt><dd>{cur ? cur.size.replace(' m²', '') : ''} m²</dd></div>
-                <div><dt>Phù hợp</dt><dd>{cur ? <CountUp key={cur.code} to={cur.score} run={shown} delay={300} /> : ''}<small>/100</small></dd></div>
+                <div><dt>{cur && cur.deal === 'thue' ? 'Giá thuê' : 'Giá bán'}</dt><dd>{cur ? shortPrice(cur) : ''}</dd></div>
+                <div><dt>Diện tích</dt><dd>{cur ? cur.size.replace(' m²', '') : ''} m²<small>{cur ? `, ${cur.bedrooms} PN` : ''}</small></dd></div>
+                <div><dt>Điểm sống</dt><dd>{cur ? <CountUp key={cur.code} to={cur.score} run={shown} delay={300} /> : ''}<small>/100</small></dd></div>
               </dl>
               <div className="d-actions">
                 {cur && <a className="d-profile" href={profileHref(cur.code)} tabIndex={detail ? undefined : -1}>
@@ -797,15 +814,11 @@ export default function Assistant() {
                   {rep && (
                     <>
                       <div className="legend" style={reveal(shown && view < 0, 0.4, 'translateY(-8px)')}>
-                        {[['mine', 'Mặt bằng'], ['comp', `Đối thủ cùng ngành (${rep.compCount})`], ['cust', `Nguồn khách (${rep.labels.length})`], ['links', 'Khoảng cách']].map(([k, label]) => (
-                          <button key={k} type="button" className={'lg ' + k} aria-pressed={toggles[k]} onClick={() => setToggles((s) => ({ ...s, [k]: !s[k] }))}><i aria-hidden="true" />{label}</button>
+                        {[['rings', 'Vòng 300 m, 600 m, 1 km'], ...Object.entries(GROUP_LABEL).filter(([k]) => groupCount[k]).map(([k, label]) => [k, `${label} (${groupCount[k]})`])].map(([k, label]) => (
+                          <button key={k} type="button" className={'lg g-' + k} aria-pressed={toggles[k]} onClick={() => setToggles((s) => ({ ...s, [k]: !s[k] }))}><i aria-hidden="true" />{label}</button>
                         ))}
                       </div>
-                      <div className="decide" style={reveal(shown, 0.48, 'translateY(18px)')}>
-                        <div><p className="lbl good">Điểm mạnh</p><ul>{rep.strengths.slice(0, 2).map((t) => <li key={t}>{t}</li>)}</ul></div>
-                        <div><p className="lbl risk">Rủi ro</p><ul className="risk">{rep.risks.slice(0, 2).map((t) => <li key={t}>{t}</li>)}</ul></div>
-                      </div>
-                      <p className="map-note" style={reveal(shown && view < 0, 0.6, 'none')}>Khối nhà từ OpenStreetMap · khoảng cách là đường thẳng</p>
+                      <p className="map-note" style={reveal(shown && view < 0, 0.6, 'none')}>Tiện ích từ OpenStreetMap, có thể thiếu · khoảng cách theo đường chim bay</p>
                     </>
                   )}
                 </div>

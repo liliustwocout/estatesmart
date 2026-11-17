@@ -1,11 +1,16 @@
-// Bản đồ 3D cho báo cáo mặt bằng: MapLibre nghiêng, khối nhà thật từ OpenStreetMap (qua OpenFreeMap),
-// khối mặt bằng đề xuất (màu nhấn), khối đối thủ (màu cam đất), nhãn khoảng cách và đường nối.
+// Bản đồ tiện ích quanh căn nhà: MapLibre nghiêng, khối nhà thật từ OpenStreetMap (qua OpenFreeMap),
+// căn đang xem (màu nhấn), vòng 300 m / 600 m / 1 km, nhãn tiện ích gần nhất theo nhóm và đường nối.
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const STYLE = 'https://tiles.openfreemap.org/styles/positron';
 const HOME = { center: [105.9475, 20.9935], zoom: 14.6, pitch: 50, bearing: -18 };
-const C = { mine: '#A3562B', comp: '#D98F3E', bldg: '#E9E1D3', ground: '#F1ECE3', water: '#C9D6D3', park: '#DCE3CF' };
+const C = { mine: '#A3562B', bldg: '#E9E1D3', ground: '#F1ECE3', water: '#C9D6D3', park: '#DCE3CF', ring: '#1F1C19' };
+// Màu từng nhóm tiện ích (khớp .m3-pill.g-* và .lg.g-* trong assistant.css). Thể thao vẽ chung với công viên.
+export const GROUP_COLOR = { giao_duc: '#3E6A8A', mua_sam: '#B07A2A', y_te: '#A63E26', xanh: '#4F6B2F', di_lai: '#5B5148' };
+const legendGroup = (g) => (g === 'the_thao' ? 'xanh' : g);
+// Vòng khoảng cách quanh nhà (đường chim bay). Trang không hiện số phút đi bộ, chỉ hiện mét và km.
+const RINGS = [{ label: '300 m', r: 300 }, { label: '600 m', r: 600 }, { label: '1 km', r: 1000 }];
 const EMPTY = { type: 'FeatureCollection', features: [] };
 
 // Hình vuông quanh điểm (lng, lat), cạnh `side` mét.
@@ -14,6 +19,7 @@ function square(lng, lat, side, props) {
   const dx = side / 2 / (111320 * Math.cos((lat * Math.PI) / 180));
   return { type: 'Feature', properties: props, geometry: { type: 'Polygon', coordinates: [[[lng - dx, lat - dy], [lng + dx, lat - dy], [lng + dx, lat + dy], [lng - dx, lat + dy], [lng - dx, lat - dy]]] } };
 }
+const offset = (lng, lat, north) => [lng, lat + north / 111320];
 
 let pillN = 0;
 function pill(text, cls) {
@@ -34,9 +40,11 @@ export function createMap3D(container) {
 
   let ready = false;
   let pending = null;
-  let markers = { mine: [], comp: [], cust: [] };
-  let show = { mine: true, comp: true, cust: true, links: true };
+  let markers = [];
+  let show = { rings: true, giao_duc: true, mua_sam: true, y_te: true, xanh: true, di_lai: true };
   let drawRaf = 0;
+  let last = null; // { r, targets }
+  let dead = false; // đã huỷ bản đồ: bỏ qua mọi lệnh vẽ còn sót
 
   map.on('load', () => {
     const style = map.getStyle();
@@ -61,10 +69,10 @@ export function createMap3D(container) {
         }
       });
     }
+    map.addSource('rings', { type: 'geojson', data: EMPTY });
+    map.addLayer({ id: 'rings', type: 'line', source: 'rings', paint: { 'line-color': C.ring, 'line-width': ['get', 'w'], 'line-dasharray': [2, 2], 'line-opacity': ['get', 'o'] } });
     map.addSource('links', { type: 'geojson', data: EMPTY });
-    map.addLayer({ id: 'links', type: 'line', source: 'links', paint: { 'line-color': '#1F1C19', 'line-width': 2, 'line-dasharray': [0.6, 1.6], 'line-opacity': 0.75 } });
-    map.addSource('ring', { type: 'geojson', data: EMPTY });
-    map.addLayer({ id: 'ring', type: 'line', source: 'ring', paint: { 'line-color': C.mine, 'line-width': 1.5, 'line-dasharray': [3, 2], 'line-opacity': 0.7 } });
+    map.addLayer({ id: 'links', type: 'line', source: 'links', paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-dasharray': [0.6, 1.6], 'line-opacity': 0.8 } });
     map.addSource('blocks', { type: 'geojson', data: EMPTY });
     map.addLayer({
       id: 'blocks', type: 'fill-extrusion', source: 'blocks',
@@ -74,98 +82,101 @@ export function createMap3D(container) {
     if (pending) { const p = pending; pending = null; update(p); }
   });
 
-  function circle(lng, lat, r) {
+  function circle(lng, lat, r, props) {
     const pts = [];
-    for (let i = 0; i <= 64; i++) {
-      const a = (i / 64) * 2 * Math.PI;
+    for (let i = 0; i <= 72; i++) {
+      const a = (i / 72) * 2 * Math.PI;
       pts.push([lng + (r / (111320 * Math.cos((lat * Math.PI) / 180))) * Math.cos(a), lat + (r / 111320) * Math.sin(a)]);
     }
-    return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } };
+    return { type: 'Feature', properties: props, geometry: { type: 'LineString', coordinates: pts } };
   }
 
   function clearMarkers() {
     pillN = 0;
-    Object.values(markers).flat().forEach((m) => m.remove());
-    markers = { mine: [], comp: [], cust: [] };
+    markers.forEach((m) => m.marker.remove());
+    markers = [];
   }
 
-  function applyVisibility() {
-    if (!ready) return;
-    map.setLayoutProperty('links', 'visibility', show.links ? 'visible' : 'none');
-    for (const [k, list] of Object.entries(markers)) list.forEach((m) => { m.getElement().style.display = show[k] ? '' : 'none'; });
-    const src = map.getSource('blocks');
-    if (src && src._lastData) {
-      src.setData({ type: 'FeatureCollection', features: src._lastData.features.filter((f) => (f.properties.kind === 'mine' ? show.mine : show.comp)) });
-    }
+  const visible = (t) => show[legendGroup(t.group)] !== false;
+
+  // Vẽ dần: vòng đi bộ nở ra, đường nối kéo dài từ căn nhà ra từng tiện ích, khối căn nhà mọc lên.
+  function draw(p) {
+    if (!last || dead || !ready || !map.getStyle()) return;
+    const { r, targets, block } = last;
+    const e = 1 - Math.pow(1 - p, 3);
+    const g = 1 - Math.pow(1 - Math.min(1, p * 1.6), 3);
+    map.getSource('rings').setData({ type: 'FeatureCollection', features: show.rings ? RINGS.map((x, i) => circle(r.lng, r.lat, Math.max(1, x.r * e), { w: i === 2 ? 1.2 : 1.6, o: 0.75 - i * 0.15 })) : [] });
+    const shown = targets.filter(visible);
+    map.getSource('links').setData({ type: 'FeatureCollection', features: shown.map((t, i) => {
+      const q = Math.min(1, Math.max(0, e * 1.3 - i * 0.04));
+      return { type: 'Feature', properties: { color: GROUP_COLOR[legendGroup(t.group)] || C.ring }, geometry: { type: 'LineString', coordinates: [[r.lng, r.lat], [r.lng + (t.lng - r.lng) * q, r.lat + (t.lat - r.lat) * q]] } };
+    }) });
+    map.getSource('blocks').setData(block ? { type: 'FeatureCollection', features: [{ ...block, properties: { ...block.properties, h: Math.max(0.5, block.properties.h * g) } }] } : EMPTY);
   }
 
-  // Vẽ dần: đường nối kéo dài từ mặt bằng ra từng điểm, vòng bán kính nở ra, khối nhà mọc lên.
-  function draw(r, blocks, targets) {
+  function animate() {
     cancelAnimationFrame(drawRaf);
-    const R = r.compRadius || 500;
-    const frame = (p) => {
-      const e = 1 - Math.pow(1 - p, 3);
-      const grow = Math.min(1, p * 1.6); // khối nhà xong trước, đường nối chạy tiếp
-      const g = 1 - Math.pow(1 - grow, 3);
-      map.getSource('links').setData({ type: 'FeatureCollection', features: targets.map((t, i) => {
-        const q = Math.min(1, Math.max(0, (e * 1.3) - i * 0.04));
-        return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[r.lng, r.lat], [r.lng + (t.lng - r.lng) * q, r.lat + (t.lat - r.lat) * q]] } };
-      }) });
-      map.getSource('ring').setData({ type: 'FeatureCollection', features: [circle(r.lng, r.lat, Math.max(1, R * e))] });
-      const src = map.getSource('blocks');
-      const shown = blocks.features.filter((f) => (f.properties.kind === 'mine' ? show.mine : show.comp));
-      src.setData({ type: 'FeatureCollection', features: shown.map((f) => ({ ...f, properties: { ...f.properties, h: Math.max(0.5, f.properties.h * g) } })) });
-    };
-    if (reduce) { frame(1); return; }
-    frame(0);
+    if (reduce) { draw(1); return; }
+    draw(0);
     let t0 = 0;
     const DELAY = 380, DUR = 1100;
     const tick = (t) => {
       if (!t0) t0 = t;
       const p = Math.min(1, Math.max(0, (t - t0 - DELAY) / DUR));
-      frame(p);
+      draw(p);
       if (p < 1) drawRaf = requestAnimationFrame(tick);
     };
     drawRaf = requestAnimationFrame(tick);
   }
 
+  function applyVisibility() {
+    if (!ready) return;
+    for (const m of markers) m.marker.getElement().style.display = m.key === 'mine' || show[m.key] !== false ? '' : 'none';
+    draw(1);
+  }
+
   // r: báo cáo từ /api/report
   function update(r) {
+    if (dead) return;
     if (!ready) { pending = r; return; }
     cancelAnimationFrame(drawRaf);
     clearMarkers();
     if (!r) {
-      map.getSource('blocks').setData(EMPTY);
-      map.getSource('links').setData(EMPTY);
-      map.getSource('ring').setData(EMPTY);
+      last = null;
+      ['blocks', 'links', 'rings'].forEach((s) => map.getSource(s).setData(EMPTY));
       map.easeTo({ ...HOME, duration: reduce ? 0 : 900 });
       return;
     }
-    const side = Math.max(16, Math.min(28, Math.sqrt(r.area / Math.max(1, r.floors)) * 1.3));
-    const features = [square(r.lng, r.lat, side, { kind: 'mine', color: C.mine, h: Math.max(8, r.floors * 4 + 4) })];
-    r.competitors.forEach((c) => features.push(square(c.lng, c.lat, 12, { kind: 'comp', color: C.comp, h: 9 })));
-    const data = { type: 'FeatureCollection', features };
-    const src = map.getSource('blocks');
-    src._lastData = data;
-    const targets = [...r.competitors.slice(0, 5), ...r.labels];
+    // Nhà đất: khối màu nhấn cao theo số tầng. Căn hộ: toà đã có khối thật từ OSM, chỉ cắm nhãn.
+    const block = r.apt ? null : square(r.lng, r.lat, Math.max(12, Math.min(24, Math.sqrt(r.area / Math.max(1, r.floors)) * 1.3)), { color: C.mine, h: Math.max(8, r.floors * 3.6 + 2) });
+    // Mỗi nhóm lấy tối đa 2 tiện ích gần nhất có trong 1,5 km, để bản đồ không rối.
+    const per = {};
+    const targets = (r.nearest || []).filter((x) => !x.inside && x.d <= 1500 && x.lat != null).filter((x) => {
+      const g = legendGroup(x.group);
+      per[g] = (per[g] || 0) + 1;
+      return per[g] <= 2;
+    });
+    last = { r, targets, block };
 
-    markers.mine.push(new maplibregl.Marker({ element: pill(r.short.split(',')[0] + ' · ' + r.score + ' điểm', 'mine'), anchor: 'bottom', offset: [0, -14] }).setLngLat([r.lng, r.lat]).addTo(map));
-    r.competitors.slice(0, 5).forEach((c) => markers.comp.push(new maplibregl.Marker({ element: pill(c.kind.split(',')[0] + ' · ' + c.dText, 'comp'), anchor: 'bottom', offset: [0, -8] }).setLngLat([c.lng, c.lat]).addTo(map)));
-    r.labels.forEach((t) => markers.cust.push(new maplibregl.Marker({ element: pill(t.text, 'cust'), anchor: 'bottom', offset: [0, -4] }).setLngLat([t.lng, t.lat]).addTo(map)));
+    markers.push({ key: 'mine', marker: new maplibregl.Marker({ element: pill((r.apt ? 'Căn ' + r.code : r.short.split(',')[0]) + ' · ' + r.score + ' điểm', 'mine'), anchor: 'bottom', offset: [0, r.apt ? -4 : -14] }).setLngLat([r.lng, r.lat]).addTo(map) });
+    for (const t of targets) {
+      const g = legendGroup(t.group);
+      markers.push({ key: g, marker: new maplibregl.Marker({ element: pill(`${t.label} · ${t.text}`, 'g-' + g), anchor: 'bottom', offset: [0, -4] }).setLngLat([t.lng, t.lat]).addTo(map) });
+    }
+    for (const x of RINGS) markers.push({ key: 'rings', marker: new maplibregl.Marker({ element: pill(x.label, 'ring'), anchor: 'center' }).setLngLat(offset(r.lng, r.lat, x.r)).addTo(map) });
     applyVisibility();
-    draw(r, data, targets);
+    animate();
 
-    const pts = [[r.lng, r.lat], ...targets.filter((t) => t.d <= 800).map((t) => [t.lng, t.lat])];
     const b = new maplibregl.LngLatBounds();
-    pts.forEach((p) => b.extend(p));
-    const cam = map.cameraForBounds(b, { padding: { top: 90, bottom: 230, left: 80, right: 80 }, maxZoom: 17.2 });
-    map.easeTo({ center: cam ? cam.center : [r.lng, r.lat], zoom: Math.max(16.1, cam ? cam.zoom : 16.6), pitch: 60, bearing: -18, duration: reduce ? 0 : 1100 });
+    [[r.lng, r.lat], offset(r.lng, r.lat, RINGS[1].r), offset(r.lng, r.lat, -RINGS[1].r), ...targets.filter((t) => t.d <= 900).map((t) => [t.lng, t.lat])].forEach((p) => b.extend(p));
+    const cam = map.cameraForBounds(b, { padding: { top: 90, bottom: 230, left: 80, right: 80 }, maxZoom: 17 });
+    map.easeTo({ center: cam ? cam.center : [r.lng, r.lat], zoom: Math.max(15.2, cam ? cam.zoom : 16), pitch: 52, bearing: -18, duration: reduce ? 0 : 1100 });
   }
 
   return {
     update,
-    toggle(key, on) { show[key] = on; applyVisibility(); },
+    toggle(key, on) { show[key] = on; if (!dead) applyVisibility(); },
     resize: () => map.resize(),
-    destroy: () => { cancelAnimationFrame(drawRaf); clearMarkers(); map.remove(); }
+    destroy: () => { if (dead) return; dead = true; cancelAnimationFrame(drawRaf); clearMarkers(); try { map.remove(); } catch (e) { /* đã gỡ */ } }
   };
 }

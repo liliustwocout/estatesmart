@@ -27,6 +27,7 @@ const num = (n) => String(r1(n)).replace('.', ',');
 const money = (n) => Math.round(n).toLocaleString('vi-VN');
 
 // ---------- Thời gian (mục 1) ----------
+// Phút đi bộ chỉ dùng bên trong để chấm điểm; mọi chữ hiển thị cho người dùng ghi khoảng cách (m, km).
 export const walkMin = (d) => Math.max(1, Math.ceil((d * 1.3) / 80)); // 80 m/phút, hệ số vòng vèo 1,3
 export const driveMin = (d) => Math.max(5, Math.ceil((d * 1.4) / 400 / 5) * 5); // 24 km/h giờ cao điểm, làm tròn 5 phút
 
@@ -123,7 +124,7 @@ function itemFor(it, home, near, bAmen) {
     key: it.key, group: it.group, label: it.label, score: Math.round(score), count,
     nearest: {
       name: p.name || (POI_KINDS[p.kind] || it.label) + ' (chưa có tên trên bản đồ)', named: !!p.name, t: p.t, d: Math.round(p.d),
-      text: it.km ? fmtDist(p.d) : best.inside ? 'trong toà' : `${p.t} phút đi bộ`,
+      text: best.inside ? 'trong toà' : fmtDist(p.d),
       partial: best.partial, inside: !!best.inside, source: p.source, sourceLabel: SOURCE_LABEL[p.source] || p.source, lat: p.lat, lng: p.lng
     }
   };
@@ -323,7 +324,7 @@ export function assess(l, crit, w = weightsFor(crit)) {
   if (crit.work.length) {
     const mins = crit.work.map((lm) => ({ lm, T: driveMin(distance(l, lm)) }));
     const s = mins.reduce((a, m) => a + (m.T <= 20 ? 100 : m.T >= 60 ? 0 : (100 * (60 - m.T)) / 40), 0) / mins.length;
-    commute = { score: Math.round(s), trips: mins.map((m) => ({ to: m.lm.name, minutes: m.T, lat: m.lm.lat, lng: m.lm.lng })) };
+    commute = { score: Math.round(s), trips: mins.map((m) => ({ to: m.lm.name, minutes: m.T, km: num(distance(l, m.lm) / 1000), lat: m.lm.lat, lng: m.lm.lng })) };
   }
   const diLaiParts = [[g.di_lai, (iw.xe_buyt * (it.xe_buyt ? 1 : 0)) + (iw.metro * (it.metro ? 1 : 0))], [commute && commute.score, iw.di_lam]].filter(([v, wt]) => v != null && wt > 0);
   const avg = (pairs) => { const W = pairs.reduce((a, [, x]) => a + x, 0); return W ? pairs.reduce((a, [v, x]) => a + v * x, 0) / W : 50; };
@@ -349,16 +350,16 @@ function pros(r, crit) {
   if (crit.budget && overPct(l, crit) <= 0) add(cw.budget, `Giá ${priceText(l)} nằm trong ngân sách.`);
   for (const k of ['mam_non', 'tieu_hoc', 'thcs', 'thpt']) {
     const x = it[k];
-    if (x && x.score >= 80 && iw[k] >= 3 && x.nearest && !x.nearest.partial && x.nearest.named) add(cw.giao_duc * iw[k] / 3, x.nearest.inside ? `Có ${x.nearest.name.toLowerCase()}.` : `${x.nearest.name} khoảng ${x.nearest.t} phút đi bộ.`);
+    if (x && x.score >= 80 && iw[k] >= 3 && x.nearest && !x.nearest.partial && x.nearest.named) add(cw.giao_duc * iw[k] / 3, x.nearest.inside ? `Có ${x.nearest.name.toLowerCase()}.` : `${x.nearest.name} cách khoảng ${x.nearest.text}.`);
   }
   const shops = ['cho', 'sieu_thi', 'tien_loi'].reduce((n, k) => n + (it[k] ? r.eco.near.filter((p) => ITEM[k].match(p) && p.t <= 10).length : 0), 0);
-  if (shops >= 3) add(cw.hang_ngay * 0.9, `Có ${shops} chỗ đi chợ, siêu thị, cửa hàng tiện lợi trong 10 phút đi bộ.`);
-  else if (it.sieu_thi && it.sieu_thi.score >= 80 && it.sieu_thi.nearest.named) add(cw.hang_ngay * 0.8, `${it.sieu_thi.nearest.name} khoảng ${it.sieu_thi.nearest.t} phút đi bộ.`);
-  if (it.cong_vien && it.cong_vien.nearest && it.cong_vien.nearest.t <= 3 && !it.cong_vien.nearest.inside) add(cw.xanh, `Công viên ngay cạnh nhà, khoảng ${it.cong_vien.nearest.t} phút đi bộ.`);
+  if (shops >= 3) add(cw.hang_ngay * 0.9, `Có ${shops} chỗ đi chợ, siêu thị, cửa hàng tiện lợi trong khoảng 600 m.`);
+  else if (it.sieu_thi && it.sieu_thi.score >= 80 && it.sieu_thi.nearest.named) add(cw.hang_ngay * 0.8, `${it.sieu_thi.nearest.name} cách khoảng ${it.sieu_thi.nearest.text}.`);
+  if (it.cong_vien && it.cong_vien.nearest && it.cong_vien.nearest.t <= 3 && !it.cong_vien.nearest.inside) add(cw.xanh, `Công viên ngay cạnh nhà, cách khoảng ${it.cong_vien.nearest.text}.`);
   if (r.eco.inside.length) add(cw.xanh * 0.8, `Toà có ${r.eco.inside.map((a) => BUILDING_AMENITIES[a].toLowerCase()).join(', ')}.`);
   if (it.benh_vien && it.benh_vien.score >= 80 && it.benh_vien.nearest.named && crit.family && crit.family.grandparents) add(cw.hang_ngay, `${it.benh_vien.nearest.name} cách khoảng ${it.benh_vien.nearest.text}.`);
-  if (r.commute) for (const t of r.commute.trips) if (t.minutes <= 25) add(cw.di_lai, `Đi làm ${t.to} ước khoảng ${t.minutes} phút.`);
-  if (it.xe_buyt && it.xe_buyt.nearest && it.xe_buyt.nearest.t <= 3) add(cw.di_lai * 0.6, `Điểm xe buýt khoảng ${it.xe_buyt.nearest.t} phút đi bộ.`);
+  if (r.commute) for (const t of r.commute.trips) if (t.minutes <= 25) add(cw.di_lai, `Chỗ làm ở ${t.to} cách khoảng ${t.km} km.`);
+  if (it.xe_buyt && it.xe_buyt.nearest && it.xe_buyt.nearest.t <= 3) add(cw.di_lai * 0.6, `Điểm xe buýt cách khoảng ${it.xe_buyt.nearest.text}.`);
   return out.sort((a, b) => b[0] - a[0]).map(([, s]) => s).slice(0, 3);
 }
 
@@ -374,8 +375,8 @@ function cons(r, crit) {
   const schoolAge = f && f.ages.some((a) => a >= 3 && a <= 14);
   const schoolNear = ['mam_non', 'tieu_hoc', 'thcs'].some((k) => it[k] && it[k].nearest && !it[k].nearest.inside && it[k].nearest.t <= 15);
   if ((schoolAge || (f && f.unknownAges)) && schoolNear) out.push('Trường gần nhất chưa chắc đúng tuyến; hỏi phường nơi căn nhà thuộc về để biết địa bàn tuyển sinh.');
-  if (it.cho && (!it.cho.nearest || it.cho.nearest.t > 15)) out.push('Chưa ghi nhận chợ trong 15 phút đi bộ theo dữ liệu hiện có; nên đi một vòng quanh khu.');
-  if (r.commute) for (const t of r.commute.trips) if (t.minutes > 40) out.push(`Đi làm ${t.to} ước khoảng ${t.minutes} phút; thử đi đúng giờ cao điểm trước khi quyết.`);
+  if (it.cho && (!it.cho.nearest || it.cho.nearest.t > 15)) out.push('Chưa ghi nhận chợ trong khoảng 1 km theo dữ liệu hiện có; nên đi một vòng quanh khu.');
+  if (r.commute) for (const t of r.commute.trips) if (t.minutes > 40) out.push(`Chỗ làm ở ${t.to} cách khoảng ${t.km} km; thử đi đúng giờ cao điểm trước khi quyết.`);
   return out.slice(0, 3);
 }
 
@@ -429,7 +430,6 @@ export function recommend(raw) {
     notes,
     results: top.map((r, i) => card(r, i + 1)),
     amenities,
-    competitors: [], // giao diện cũ còn đọc trường này; bỏ khi làm lại trang Trợ lý
     osm: { date: OSM_DATE, source: 'OpenStreetMap (ODbL)' }
   };
 }
@@ -462,8 +462,7 @@ function card(r, rank) {
     lat: l.lat, lng: l.lng, src: `/images/${l.image}.webp`, alt: `${TYPES[l.type]}: ${l.name}`,
     massing: APARTMENT_TYPES.includes(l.type) ? `Tầng ${l.floor}, ${TYPES[l.type].toLowerCase()}` : `${l.floors} tầng, ${TYPES[l.type].toLowerCase()}${l.yard_m2 ? ', có sân' : ''}`,
     massingIdx: MASSING[l.type] ?? 2,
-    parts: r.parts, groups: r.groups, chips: chips(r), pros: r.pros, cons: r.cons,
-    competitors: 0 // giao diện cũ
+    parts: r.parts, groups: r.groups, chips: chips(r), pros: r.pros, cons: r.cons
   };
 }
 
@@ -477,7 +476,7 @@ export function dayPlan(r, crit) {
     const k = a < 6 ? 'mam_non' : a <= 10 ? 'tieu_hoc' : a <= 14 ? 'thcs' : a <= 18 ? 'thpt' : null;
     if (k) stop('7:00', 'Đưa con đi học', it[k]);
   }
-  if (r.commute) for (const t of r.commute.trips) out.push({ time: '7:30', task: `Đi làm ${t.to}`, place: t.to, text: `khoảng ${t.minutes} phút đi xe`, minutes: t.minutes, lat: t.lat, lng: t.lng, key: 'di_lam' });
+  if (r.commute) for (const t of r.commute.trips) out.push({ time: '7:30', task: `Đi làm ${t.to}`, place: t.to, text: `cách khoảng ${t.km} km`, minutes: t.minutes, lat: t.lat, lng: t.lng, key: 'di_lam' });
   else stop('7:30', 'Ra điểm xe buýt', it.xe_buyt);
   if (f && f.grandparents) stop('9:00', 'Ông bà đi chợ', it.cho && it.cho.nearest ? it.cho : it.sieu_thi);
   stop('17:30', 'Ghé siêu thị', it.sieu_thi && it.sieu_thi.nearest && it.sieu_thi.nearest.t <= 15 ? it.sieu_thi : it.tien_loi);
@@ -551,10 +550,10 @@ export function profile(code, raw = {}) {
       { label: l.deal === 'ban' ? 'Pháp lý' : 'Nội thất', value: l.deal === 'ban' ? LEGAL[l.legal] : FURN[l.furnished], note: l.mgmt_fee ? `phí dịch vụ ${num(l.mgmt_fee)} nghìn/m²/tháng` : '' }
     ],
     rooms: roomsOf(l),
-    locationHeadline: `${near10.length} loại tiện ích trong 10 phút đi bộ quanh nhà.`,
+    locationHeadline: `${near10.length} loại tiện ích trong khoảng 600 m quanh nhà.`,
     access: [
       { label: 'Điểm xe buýt gần nhất', value: it.xe_buyt && it.xe_buyt.nearest ? it.xe_buyt.nearest.text : 'Chưa ghi nhận', ref: '2' },
-      ...(r.commute ? r.commute.trips.map((t) => ({ label: `Đi làm ${t.to}`, value: `khoảng ${t.minutes} phút đi xe`, ref: '3' })) : []),
+      ...(r.commute ? r.commute.trips.map((t) => ({ label: `Đi làm ${t.to}`, value: `cách khoảng ${t.km} km`, ref: '3' })) : []),
       { label: 'Chỗ đỗ ô tô', value: PARK[l.car_parking] || 'Chưa rõ', ref: '1' },
       { label: 'Thang máy', value: apt || l.elevator ? 'Có' : 'Không có', ref: '1' }
     ].slice(0, 4),
@@ -590,8 +589,8 @@ export function promptListings(codes, raw) {
       `${l.code} (hạng ${i + 1}, điểm sống ${r.score}/100): ${l.name}, ${PLACE}, Hà Nội`,
       `  ${DEALS[l.deal]} ${TYPES[l.type].toLowerCase()}, giá ${priceText(l)}, ${l.area_m2} m², ${l.bedrooms} phòng ngủ, ${l.bathrooms} phòng tắm, ${apt ? `tầng ${l.floor}` : `${l.floors} tầng${l.elevator ? ', có thang máy' : ''}`}${l.yard_m2 ? `, sân ${l.yard_m2} m²` : ''}.`,
       `  ${l.deal === 'ban' ? `Pháp lý: ${LEGAL[l.legal]}. ` : ''}Nội thất: ${FURN[l.furnished] || 'chưa rõ'}. Chỗ đỗ ô tô: ${PARK[l.car_parking] || 'chưa rõ'}.${l.mgmt_fee ? ` Phí dịch vụ ${num(l.mgmt_fee)} nghìn/m²/tháng.` : ''}${r.eco.inside.length ? ` Tiện ích trong toà: ${r.eco.inside.map((a) => BUILDING_AMENITIES[a].toLowerCase()).join(', ')}.` : ''}`,
-      `  Tiện ích quanh nhà (phút đi bộ ước lượng theo đường chim bay; OpenStreetMap, có thể thiếu):\n    ${eco}`,
-      r.commute ? `  Đi làm: ${r.commute.trips.map((t) => `${t.to} khoảng ${t.minutes} phút đi xe`).join('; ')} (ước lượng).` : '',
+      `  Tiện ích quanh nhà (khoảng cách theo đường chim bay; OpenStreetMap, có thể thiếu):\n    ${eco}`,
+      r.commute ? `  Đi làm: ${r.commute.trips.map((t) => `${t.to} cách khoảng ${t.km} km`).join('; ')} (đo tới trung tâm quận).` : '',
       `  Điểm thành phần: ${Object.entries(r.parts).map(([k, v]) => `${COMPONENT_LABEL[k].toLowerCase()} ${v}`).join(', ')}.`,
       `  Ưu điểm: ${r.pros.join(' ') || 'chưa có.'} Cần kiểm chứng: ${r.cons.join(' ') || 'chưa ghi nhận.'}${l.note ? ` Ghi chú của người đăng: ${l.note}.` : ''}`
     ].filter(Boolean).join('\n');

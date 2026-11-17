@@ -362,7 +362,7 @@ Hero giữ `01-chao` ("Chào bạn!"), CTA cuối giữ `10-ngon-cai`. Khối 5 
 | 1. Chốt và docs | Trả lời mục 0; cập nhật tài liệu này; viết `PHUONG_PHAP_CHAM_DIEM.md`; sửa `README.md` | Docs mô tả đúng sản phẩm mới, chưa động code — **xong** |
 | 2. Dữ liệu | `fetch-osm.mjs` + `pois.json` mới; schema `homes`, `buildings`, `pois_manual`; `homes.csv` 30 căn | `npm run dev` trong `api/` tạo DB mới, `/api/health` ổn — **xong** |
 | 3. Chấm điểm và API | `engine.mjs`, `report.mjs`, `intake.mjs`, `prompt.mjs`, `leads.mjs`, `server.mjs` | Gọi API với 3 hồ sơ gia đình khác nhau ra Top 3 khác nhau, giải thích được — **xong**; API vẫn trả thêm các trường tên cũ để giao diện hiện tại chạy tạm, bỏ ở giai đoạn 4 |
-| 4. Trợ lý | Câu hỏi, bản đồ vòng đi bộ, lớp tiện ích, báo cáo "một ngày" | Đi hết luồng trên 390px và 1440px |
+| 4. Trợ lý | Câu hỏi, bản đồ vòng đi bộ, lớp tiện ích, báo cáo "một ngày" | Đi hết luồng trên 390px và 1440px — **xong**; báo cáo ở trang Trợ lý chỉ có số liệu vẽ bằng biểu tượng, nhận định AI chỉ ở trang hồ sơ |
 | 5. Hồ sơ và quản trị | `Listing.dc.html` → `/nha/`, chuyển hướng `/mat-bang/`; Admin cột mới, tab Tiện ích | Thêm một căn và một tiện ích từ quản trị, thấy ngay trên hồ sơ |
 | 6. Landing và SEO | `Main.dc.html`, `index.html`, sitemap, ảnh mới | Không còn chữ "mặt bằng", "F&B", "quán" ngoài ngữ cảnh ăn uống |
 | 7. Mascot: chữ | Câu nói và nhãn ở mục 9.1, 9.3–9.5 (dùng tư thế tạm); `gen_mascot.py` phần mô tả; `KE_HOACH_MASCOT.md` | Không còn "đối thủ", "tin đăng", "mặt bằng" trong lời Mascot — **xong** trên nhánh `feat/nha-o-gia-dinh` |

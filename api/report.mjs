@@ -1,6 +1,6 @@
 // Phục vụ trang Trợ lý kiểu "báo cáo": đọc câu mô tả tự do, dựng báo cáo một căn nhà (hệ sinh thái tiện ích, một ngày của gia đình).
-import { homes, TYPES, DEALS, APARTMENT_TYPES, PARKING, BUILDING_AMENITIES } from './db.mjs';
-import { assess, parseCriteria, familyLabel, ecoGroups, dayPlan, chips, priceCompare, priceText, roundWeights, COMPONENT_LABEL, GROUPS, LANDMARKS, OSM_DATE, PLACE } from './engine.mjs';
+import { homes, TYPES, DEALS, APARTMENT_TYPES, PARKING, BUILDING_AMENITIES, DIRECTIONS, LEGAL, FURNISHED } from './db.mjs';
+import { assess, parseCriteria, familyLabel, ecoGroups, dayPlan, chips, priceCompare, priceText, roundWeights, COMPONENT_LABEL, LANDMARKS, OSM_DATE, PLACE } from './engine.mjs';
 
 // ---------- Đọc một câu mô tả tự do thành 5 tiêu chí (không cần mô hình ngôn ngữ) ----------
 export const KEYS = ['home', 'budget', 'family', 'area', 'priorities'];
@@ -59,7 +59,9 @@ export function parseFree(text, prev = {}) {
   if (zone) areaParts.push(zone);
   else if (/ocean park|vinhomes/.test(low)) areaParts.push('Ocean Park 1');
   const work = low.match(/(?:đi làm|làm việc|làm ở|làm tại|\blàm\b|công ty|văn phòng|cơ quan)[^,.;]{0,40}/);
-  if (work && LANDMARKS.some((lm) => lm.alias.some((a) => work[0].includes(a)))) areaParts.push(work[0].trim());
+  // Lấy lại đoạn từ câu gốc để giữ chữ hoa của tên địa danh (chữ thường có cùng độ dài với chữ gốc).
+  const orig = String(text || '').slice(0, 500);
+  if (work && LANDMARKS.some((lm) => lm.alias.some((a) => work[0].includes(a)))) areaParts.push((orig.length === low.length ? orig.slice(work.index, work.index + work[0].length) : work[0]).trim());
   out.area = cap(areaParts.join(', '));
 
   const pri = [];
@@ -109,10 +111,6 @@ export function report(code, raw = {}) {
     key: x.key, group: g.key, label: x.label, name: x.nearest.name, text: x.nearest.text, minutes: x.nearest.t, d: x.nearest.d,
     inside: x.nearest.inside, partial: x.nearest.partial, source: x.nearest.sourceLabel, lat: x.nearest.lat, lng: x.nearest.lng, weight: x.weight
   }))).sort((a, b) => b.weight - a.weight || a.d - b.d);
-  const near10 = nearest.filter((x) => x.inside || x.minutes <= 10);
-  const scored = groups.filter((g) => g.score != null);
-  const strong = scored.reduce((a, g) => (!a || g.score > a.score ? g : a), null);
-  const weak = scored.reduce((a, g) => (!a || g.score < a.score ? g : a), null);
 
   const lower1 = (s) => String(s).charAt(0).toLowerCase() + String(s).slice(1);
   const message = `Chào anh/chị, gia đình em (${familyLabel(crit)}) đang tìm ${l.deal === 'ban' ? 'mua' : 'thuê'} ${TYPES[l.type].toLowerCase()} ở ${PLACE}`
@@ -122,38 +120,27 @@ export function report(code, raw = {}) {
 
   return {
     code: l.code, name: l.name, short: l.name.split(',')[0] + ', ' + l.zone, zone: l.zone, type: l.type, typeLabel: TYPES[l.type], deal: l.deal, dealLabel: DEALS[l.deal],
-    lat: l.lat, lng: l.lng, floors: apt ? 1 : l.floors, area: l.area_m2, bedrooms: l.bedrooms, score: r.score, parts: r.parts, groups: r.groups,
-    priceText: priceText(l), rentText: priceText(l), rent: pc.mine,
+    lat: l.lat, lng: l.lng, apt, floor: l.floor, floors: apt ? 1 : l.floors, area: l.area_m2, bedrooms: l.bedrooms, score: r.score, parts: r.parts, groups: r.groups,
+    priceText: priceText(l),
     family: familyLabel(crit), weights: roundWeights(r.weights.components), componentLabels: COMPONENT_LABEL,
-    strengths: r.pros.length ? r.pros : ['Chưa có điểm mạnh nổi bật theo dữ liệu hiện có.'],
-    risks: r.cons.length ? r.cons : ['Chưa ghi nhận điều cần lưu ý lớn theo dữ liệu; vẫn nên đi xem nhà.'],
-    mainRisk: r.cons[0] || null,
+    // Nhận định (ưu điểm, điều cần kiểm chứng) chỉ hiện ở trang hồ sơ, xem profile() trong engine.mjs.
     eco: groups, nearest, day, chips: chips(r),
-    inside: r.eco.inside.map((a) => BUILDING_AMENITIES[a]),
+    inside: r.eco.inside.map((a) => ({ key: a, label: BUILDING_AMENITIES[a] })),
     commute: r.commute ? r.commute.trips : [],
     priceCompare: pc,
-    labels: nearest.filter((x) => !x.inside && x.d <= 1500).slice(0, 6).map((x) => ({ text: `${x.label} · ${x.text}`, lat: x.lat, lng: x.lng, kind: x.key, d: x.d })),
+    // Thông số căn, để giao diện vẽ thành biểu tượng (không phải câu chữ).
+    home: {
+      area: l.area_m2, bedrooms: l.bedrooms, bathrooms: l.bathrooms, floor: l.floor, floors: l.floors, apt,
+      direction: l.direction, directionLabel: DIRECTIONS[l.direction] || null,
+      legal: l.deal === 'ban' ? l.legal : null, legalLabel: l.deal === 'ban' ? LEGAL[l.legal] : null,
+      furnished: l.furnished, furnishedLabel: FURNISHED[l.furnished] || null,
+      parking: l.car_parking, parkingLabel: PARKING[l.car_parking] || null,
+      elevator: apt || !!l.elevator, yard: l.yard_m2 || 0, mgmtFee: l.mgmt_fee
+    },
+    bus: r.items.xe_buyt && r.items.xe_buyt.nearest ? { d: r.items.xe_buyt.nearest.d, text: r.items.xe_buyt.nearest.text, name: r.items.xe_buyt.nearest.name } : null,
     photos: [{ label: apt ? 'Phòng khách' : 'Mặt tiền', src: '/images/' + l.image + '.webp' }, ...['Bên trong', apt ? 'Phòng ngủ' : 'Sân vườn', 'Bếp'].map((label, i) => ({ label, src: '/images/' + pics[i] + '.webp' }))],
     message,
     osm: { date: OSM_DATE },
-    simulated: true,
-
-    // Trường giữ tên cũ để trang Trợ lý hiện tại vẫn chạy; bỏ khi làm lại giao diện (giai đoạn 4).
-    competitors: nearest.slice(0, 8).map((x) => ({ name: x.name, kind: x.label, d: x.d, dText: x.text, lat: x.lat, lng: x.lng, source: x.source })),
-    compCount: near10.length, compRadius: 800,
-    compNote: strong && weak ? `Mạnh nhất: ${strong.label.toLowerCase()} (${strong.score}). Yếu nhất: ${weak.label.toLowerCase()} (${weak.score}).` : '',
-    traffic: (() => {
-      const bars = scored.map((g) => ({ label: g.label, v: g.score }));
-      const peak = bars.reduce((best, b, i) => (b.v > bars[best].v ? i : best), 0);
-      return { bars, peak, text: strong ? `Điểm cao nhất ở nhóm ${strong.label.toLowerCase()}.` : '' };
-    })(),
-    rentCompare: { mine: pc.mine, median: pc.median, diff: pc.diff, n: pc.n, typeLabel: pc.typeLabel },
-    access: [
-      { label: 'Điểm xe buýt gần nhất', value: r.items.xe_buyt && r.items.xe_buyt.nearest ? r.items.xe_buyt.nearest.text : 'Chưa ghi nhận', warn: !(r.items.xe_buyt && r.items.xe_buyt.nearest && r.items.xe_buyt.nearest.t <= 10) },
-      ...(r.commute ? r.commute.trips.map((t) => ({ label: `Đi làm ${t.to}`, value: `khoảng ${t.minutes} phút`, warn: t.minutes > 40 })) : []),
-      { label: 'Chỗ đỗ ô tô', value: PARKING[l.car_parking] || 'Chưa rõ', warn: l.car_parking === 'khong' },
-      { label: 'Thang máy', value: apt || l.elevator ? 'Có' : 'Không có', warn: !apt && !l.elevator && (l.floors || 1) >= 3 }
-    ],
-    groupLabels: GROUPS
+    simulated: true
   };
 }

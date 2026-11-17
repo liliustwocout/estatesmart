@@ -19,7 +19,7 @@ Nguyên tắc giữ từ bản cũ:
 | Phút đi bộ `t` | `d × 1,3 / 80`, làm tròn lên | 80 m/phút ≈ 4,8 km/h, nhịp đi bộ thong thả có trẻ con |
 | Phút đi xe tới nơi làm việc | `d × 1,4 / 400`, làm tròn tới 5 phút | 400 m/phút ≈ 24 km/h trung bình giờ cao điểm nội đô; chỉ dùng cho điểm mốc ở mục 5 |
 
-Giao diện luôn ghi "khoảng N phút đi bộ" và chú thích "ước lượng theo đường chim bay". Khi có định tuyến đi bộ thật (tự cài OSRM hoặc Valhalla), chỉ cần thay hàm tính `t`; phần chấm điểm giữ nguyên.
+**Giao diện không hiện số phút** (người dùng thấy "20 phút đi bộ" dễ cảm giác xa hơn thực tế). Mọi chữ hiển thị, kể cả câu trả lời của trợ lý AI, ghi khoảng cách bằng mét hoặc km theo đường chim bay; vòng trên bản đồ là 300 m, 600 m, 1 km. Phút đi bộ và phút đi xe chỉ dùng bên trong để chấm điểm theo các ngưỡng dưới đây. Khi có định tuyến đi bộ thật (tự cài OSRM hoặc Valhalla), chỉ cần thay hàm tính `t`; phần chấm điểm giữ nguyên.
 
 ---
 
