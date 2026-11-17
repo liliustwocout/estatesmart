@@ -4,6 +4,7 @@
 import React, { useEffect, useInsertionEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { POSES, STYLE, META } from './poses.js';
 import useMascot, { REST } from './useMascot.js';
+import { fitBalance } from '../styles/fitText.js';
 import './mascot.css';
 
 const VIEW = Object.fromEntries(META.map((m) => [m.slug, m.viewBox]));
@@ -64,6 +65,16 @@ export default function Mascot({
     if (svg?.pauseAnimations) (paused.current || reduceMotion() ? svg.pauseAnimations() : svg.unpauseAnimations());
   };
   useLayoutEffect(syncPause, [html]);
+
+  // Bong bóng co vừa khít, không để 1–2 chữ rớt dòng (src/styles/fitText.js)
+  const bubbleRef = useRef(null);
+  useLayoutEffect(() => { fitBalance(bubbleRef.current); }, [lastLine.current, side, size]);
+  useEffect(() => {
+    const fit = () => fitBalance(bubbleRef.current);
+    window.addEventListener('resize', fit);
+    document.fonts?.ready.then(fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
   useEffect(() => {
     const el = m.rootRef.current;
     if (!el) return undefined;
@@ -97,7 +108,7 @@ export default function Mascot({
       {...a11y}
       {...m.handlers}
     >
-      <span className={'mascot-bubble' + (line ? ' is-on' : '')} aria-hidden="true">{lastLine.current && <span key={lastLine.current} className="mascot-line">{lastLine.current}</span>}</span>
+      <span ref={bubbleRef} className={'mascot-bubble' + (line ? ' is-on' : '')} aria-hidden="true">{lastLine.current && <span key={lastLine.current} className="mascot-line">{lastLine.current}</span>}</span>
       <span className="mascot-svg" dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );

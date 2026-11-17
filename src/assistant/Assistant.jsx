@@ -336,6 +336,7 @@ export default function Assistant() {
   const zoomAnims = useRef([]);
   const moving = useRef(false); // đang chạy chuyển cảnh: bỏ qua bấm chồng
   const threadRef = useRef(null);
+  const chatRef = useRef(null);
   const inputRef = useRef(null);
   const askCtrl = useRef(null);
   const session = useRef(0);
@@ -398,6 +399,13 @@ export default function Assistant() {
       later(T(600)).then(() => { if (my === session.current) setHunt((h) => (h && h.mode === 'leave' ? null : h)); });
     });
     setHunt({ mode: 'read', step: 0 });
+    // Màn hình hẹp (khung kết quả nằm dưới chat): lướt xuống xem đội ngũ làm việc, xong thì lướt về khung chat.
+    const narrow = window.innerWidth <= 980;
+    const glide = (el, wait = 0) => later(T(wait)).then(() => {
+      if (!narrow || my !== session.current || !el) return;
+      el.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'start' });
+    });
+    if (narrow) { inputRef.current?.blur(); glide(stageRef.current, 120); } // đóng bàn phím rồi mới lướt
     let stopped = false; // máy chủ lỗi: dừng đếm bước, không để bước sau đè lên trạng thái lỗi
     try {
       const parsed = await postJson('/api/parse', { text, prev: criteria || {} });
@@ -406,6 +414,7 @@ export default function Assistant() {
         setCriteria(parsed.criteria);
         dropAg();
         leave();
+        glide(chatRef.current, 500);
         push({ k: 'ask', text: parsed.ask.q, options: parsed.ask.options, open: true });
         setBusy(false);
         return;
@@ -443,6 +452,7 @@ export default function Assistant() {
       if (my !== session.current) return;
       setPhase('list');
       leave();
+      glide(chatRef.current, 700); // kịp thấy danh sách hiện ra rồi về khung chat đọc kết quả
     } catch (e) {
       stopped = true;
       if (my !== session.current) return;
@@ -450,6 +460,7 @@ export default function Assistant() {
       push({ k: 'bot', mood: 'oops', text: e.status === 429 ? e.message : 'Chưa kết nối được máy chủ thẩm định. Anh/chị thử lại sau ít phút.' });
       setHunt({ mode: 'oops', step: 0 });
       leave(OOPS_MS);
+      glide(chatRef.current, OOPS_MS);
     } finally {
       if (my === session.current) setBusy(false);
     }
@@ -669,7 +680,7 @@ export default function Assistant() {
 
       <div className="as-main">
         {/* ---------- CHAT ---------- */}
-        <aside className="as-chat" aria-label="Trợ lý mặt bằng">
+        <aside className="as-chat" ref={chatRef} aria-label="Trợ lý mặt bằng">
           <header className="ch-head">
             <span className={'robot' + (thinking && !talking ? ' is-thinking' : '')} aria-hidden="true">
               <Mascot pose={talking ? 'avatar-noi' : 'avatar'} size={30} follow />

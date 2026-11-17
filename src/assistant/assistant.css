@@ -340,6 +340,7 @@ body { margin: 0; background: var(--page); }
 @media (max-width: 980px) {
   .as-main { grid-template-columns: 1fr; height: auto; min-height: 0; }
   .as-chat { height: 72vh; height: 72dvh; min-height: 480px; }
+  .as-chat, .as-stage { scroll-margin-top: 8px; }
   .as-stage { height: 92vh; height: 92dvh; min-height: 620px; }
   .row { gap: 16px; padding-right: 16px; }
   .ri { flex-basis: 46%; }
