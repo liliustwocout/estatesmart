@@ -205,6 +205,30 @@ a{color:inherit;text-decoration:none}
 .done .sub{margin-top:10px;color:rgba(27,25,22,.78)}
 .foot-note{margin:20px var(--gutter) 0;padding-bottom:28px;font-size:14px;color:var(--ink-2)}
 
+
+/* Hiện dần khi cuộn tới: src/styles/reveal.js gắn data-in cho [data-reveal]; chỉ ẩn khi có JS (lớp .js trên <html>) */
+.rv{transition:opacity 650ms var(--ease-out),transform 850ms var(--ease-out);transition-delay:calc(var(--d,0) * 70ms)}
+.js [data-reveal]:not([data-in]) .rv{opacity:0;transform:translate3d(0,28px,0)}
+/* Biểu đồ phân khúc: thanh chạy từ 0 tới giá trị khi section vào màn hình, lần lượt từng thanh */
+.track i{animation:none;transition:transform 1100ms var(--ease-out)}
+.seg-row:nth-child(3) .track i{transition-delay:120ms}
+.seg-row:nth-child(4) .track i{transition-delay:240ms}
+.js [data-reveal]:not([data-in]) .track i{transform:scaleX(0) !important}
+.seg-head span:last-child{font-variant-numeric:tabular-nums}
+/* Dòng thông số: đường kẻ tự vẽ từ trái sang */
+.rows div{position:relative;border-top:0}
+.rows div::before{content:'';position:absolute;left:0;right:0;top:0;height:1px;background:var(--line);transform-origin:left;transition:transform 1000ms var(--ease-out);transition-delay:calc(var(--d,0) * 70ms + 120ms)}
+.js [data-reveal]:not([data-in]) .rows div::before{transform:scaleX(0)}
+.pc li{transition:opacity 600ms var(--ease-out),transform 800ms var(--ease-out);transition-delay:calc(var(--d,0) * 80ms + 200ms)}
+.js [data-reveal]:not([data-in]) .pc li{opacity:0;transform:translate3d(-12px,0,0)}
+/* Nút đang gửi: sọc chạy + vòng quay, rõ là hệ thống đang làm việc */
+.btn[aria-busy="true"]{opacity:1;cursor:progress;background-image:repeating-linear-gradient(-45deg,rgba(247,243,236,.14) 0 10px,transparent 10px 20px);background-size:28.28px 28.28px;animation:busy 700ms linear infinite}
+@keyframes busy{to{background-position:28.28px 0}}
+.dots-l{display:inline-flex;gap:3px;margin-left:2px}
+.dots-l i{width:4px;height:4px;border-radius:50%;background:currentColor;animation:dl 900ms ease-in-out infinite}
+.dots-l i:nth-child(2){animation-delay:.12s}.dots-l i:nth-child(3){animation-delay:.24s}
+@keyframes dl{0%,60%,100%{opacity:.3;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+
 @media (max-width:1100px){
 .specs{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
@@ -255,7 +279,7 @@ a{color:inherit;text-decoration:none}
 <main class="swap {{loadCls}}" key="{{l.code}}" aria-busy="{{busy}}">
 
 <!-- HERO -->
-<section class="hero">
+<section class="hero" data-guide="hero">
 <img src="{{l.hero}}" alt="{{l.heroAlt}}" style="object-position: {{l.heroPos}}">
 <div class="hero-shade"></div>
 <div class="hero-top">
@@ -264,6 +288,7 @@ a{color:inherit;text-decoration:none}
 </div>
 <div class="hero-body">
 <div>
+{{guide.hero}}
 <h1>{{l.name}}</h1>
 <p class="hero-attr">{{l.place}}, {{l.facts}}. Cập nhật {{l.updated}}.</p>
 <div class="hero-actions">
@@ -281,21 +306,23 @@ a{color:inherit;text-decoration:none}
 </section>
 
 <!-- THÔNG SỐ -->
-<section class="wrap" style="padding-top: 48px" aria-label="Thông số chính">
+<section class="wrap" style="padding-top: 48px" aria-label="Thông số chính" data-guide="specs" data-reveal>
+{{guide.specs}}
 <dl class="specs">
 <sc-for list="{{l.specs}}" as="s" hint-placeholder-count="5">
-<div><dt>{{s.label}}</dt><dd>{{s.value}}</dd><dd>{{s.note}}</dd></div>
+<div class="rv" style="--d: {{$index}}"><dt>{{s.label}}</dt><dd>{{s.value}}</dd><dd>{{s.note}}</dd></div>
 </sc-for>
 </dl>
 </section>
 
 <!-- KHÔNG GIAN -->
-<section class="wrap sec">
-<div class="sec-head">
+<section class="wrap sec" data-guide="rooms" data-reveal>
+{{guide.rooms}}
+<div class="sec-head rv">
 <h2 class="h2">{{roomCount}} không gian, công năng đề xuất</h2>
 <p>AI gợi ý công năng theo mô hình {{l.modelLower}}, dựa trên diện tích, ánh sáng và lối tiếp cận của từng khu vực.</p>
 </div>
-<div class="rooms">
+<div class="rooms rv" style="--d: 1">
 <div>
 <div class="room-list" role="group" aria-label="Chọn không gian, dùng phím mũi tên lên xuống" onKeyDown="{{roomKey}}">
 <sc-for list="{{rooms}}" as="r" hint-placeholder-count="4">
@@ -317,28 +344,30 @@ a{color:inherit;text-decoration:none}
 </section>
 
 <!-- VỊ TRÍ -->
-<section class="wrap sec">
-<h2 class="h2" style="max-width: 22ch; margin-bottom: 40px">{{l.locationHeadline}}</h2>
+<section class="wrap sec" data-guide="location" data-reveal>
+{{guide.location}}
+<h2 class="h2 rv" style="max-width: 22ch; margin-bottom: 40px">{{l.locationHeadline}}</h2>
 <div class="two">
-<div class="rows">
+<div class="rows rv" style="--d: 1">
 <h3 class="h3">Khả năng tiếp cận</h3>
 <sc-for list="{{l.access}}" as="a" hint-placeholder-count="4">
-<div><span>{{a.label}}</span><span>{{a.value}}<a class="ref" href="#nguon-{{a.ref}}" aria-label="Nguồn {{a.ref}}">{{a.ref}}</a></span></div>
+<div style="--d: {{$index}}"><span>{{a.label}}</span><span>{{a.value}}<a class="ref" href="#nguon-{{a.ref}}" aria-label="Nguồn {{a.ref}}">{{a.ref}}</a></span></div>
 </sc-for>
 </div>
-<div class="rows">
+<div class="rows rv" style="--d: 2">
 <h3 class="h3">Tiện ích xung quanh</h3>
 <sc-for list="{{l.amenities}}" as="a" hint-placeholder-count="4">
-<div><span>{{a.label}}</span><span>{{a.value}}<a class="ref" href="#nguon-{{a.ref}}" aria-label="Nguồn {{a.ref}}">{{a.ref}}</a></span></div>
+<div style="--d: {{$index}}"><span>{{a.label}}</span><span>{{a.value}}<a class="ref" href="#nguon-{{a.ref}}" aria-label="Nguồn {{a.ref}}">{{a.ref}}</a></span></div>
 </sc-for>
 </div>
 </div>
 </section>
 
 <!-- CẠNH TRANH -->
-<section class="wrap sec">
+<section class="wrap sec" data-guide="comp" data-reveal>
+{{guide.comp}}
 <div class="comp">
-<div class="panel fill">
+<div class="panel fill rv">
 <div>
 <h2 class="h3">Phân tích cạnh tranh</h2>
 <span class="num big">{{l.compCount}}</span>
@@ -349,7 +378,7 @@ a{color:inherit;text-decoration:none}
 <p class="gap">{{l.gap}}</p>
 </div>
 </div>
-<div class="panel line">
+<div class="panel line rv" style="--d: 1">
 <h3 class="h3">{{segTitle}}</h3>
 <sc-for list="{{segments}}" as="s" hint-placeholder-count="3">
 <div class="seg-row">
@@ -363,15 +392,16 @@ a{color:inherit;text-decoration:none}
 </section>
 
 <!-- NHẬN ĐỊNH -->
-<section class="wrap sec">
-<h2 class="h3">Nhận định AI</h2>
-<p class="verdict">{{l.verdict}}</p>
+<section class="wrap sec" data-guide="verdict" data-reveal>
+{{guide.verdict}}
+<h2 class="h3 rv">Nhận định AI</h2>
+<p class="verdict rv" style="--d: 1">{{l.verdict}}</p>
 <div class="two pc" style="margin-top: 48px">
 <div>
 <h3 class="h3">Ưu điểm</h3>
 <ul>
 <sc-for list="{{l.pros}}" as="p" hint-placeholder-count="3">
-<li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg><span>{{p}}</span></li>
+<li style="--d: {{$index}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg><span>{{p}}</span></li>
 </sc-for>
 </ul>
 </div>
@@ -379,7 +409,7 @@ a{color:inherit;text-decoration:none}
 <h3 class="h3" style="color: var(--accent)">Rủi ro cần kiểm chứng</h3>
 <ul>
 <sc-for list="{{l.cons}}" as="p" hint-placeholder-count="3">
-<li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color: var(--accent)"><path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg><span>{{p}}</span></li>
+<li style="--d: {{$index}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color: var(--accent)"><path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg><span>{{p}}</span></li>
 </sc-for>
 </ul>
 </div>
@@ -392,9 +422,10 @@ a{color:inherit;text-decoration:none}
 </section>
 
 <!-- ĐẶT LỊCH -->
-<section id="dat-lich" class="sec contact">
-<div class="contact-media"><img src="{{l.contactImg}}" alt="" loading="lazy"></div>
-<div class="form">
+<section id="dat-lich" class="sec contact" data-guide="contact" data-reveal>
+{{guide.contact}}
+<div class="contact-media rv"><img src="{{l.contactImg}}" alt="" loading="lazy"></div>
+<div class="form rv" style="--d: 1">
 <div>
 <p class="label">Gửi yêu cầu khảo sát, hồ sơ {{l.code}}</p>
 <h2 class="h2" style="margin-top: 10px">Đặt lịch khảo sát thực địa</h2>
@@ -447,7 +478,7 @@ a{color:inherit;text-decoration:none}
 <div class="trap" aria-hidden="true"><label for="f-web">Website</label><input id="f-web" type="text" tabIndex="-1" autoComplete="off" value="{{form.website}}" onChange="{{setWeb}}"></div>
 <sc-if value="{{errors._}}" hint-placeholder-val="{{ false }}"><p class="form-err" role="alert">{{errors._}}</p></sc-if>
 <div class="form-actions">
-<button type="submit" class="btn" aria-busy="{{sendingAttr}}">{{submitLabel}}<sc-if value="{{sending}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{notSending}}" hint-placeholder-val="{{ true }}"><svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if></button>
+<button type="submit" class="btn" aria-busy="{{sendingAttr}}">{{submitLabel}}<sc-if value="{{sending}}" hint-placeholder-val="{{ false }}"><span class="dots-l" aria-hidden="true"><i></i><i></i><i></i></span><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{notSending}}" hint-placeholder-val="{{ true }}"><svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if></button>
 <button type="button" class="btn btn-ghost save" onClick="{{toggleSave}}" aria-pressed="{{savedPressed}}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5h8a.5.5 0 0 1 .5.5v10.6L8 10.9l-4.5 2.7V3a.5.5 0 0 1 .5-.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path></svg>{{saveLabel}}</button>
 </div>
 </form>
@@ -679,6 +710,7 @@ class Component extends DCLogic {
     const dateText = form.date ? 'Ngày khảo sát mong muốn: ' + form.date.split('-').reverse().join('/') + '.' : 'Chưa chọn ngày khảo sát.';
     return {
       l,
+      guide: this.props.guide || {},
       topbarCls: this.state.scrolled ? 'is-solid' : '',
       loadCls: this.state.loading ? 'is-loading' : '',
       busy: this.state.loading ? 'true' : 'false',

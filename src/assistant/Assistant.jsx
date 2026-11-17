@@ -24,6 +24,7 @@ const SUGGESTIONS = [
   'Cửa hàng tiện lợi gần chung cư, diện tích 60–100 m², tầm 25 triệu'
 ];
 const pad2 = (n) => String(n).padStart(2, '0');
+const profileHref = (code) => '/mat-bang/?ma=' + encodeURIComponent(code);
 let uid = 0;
 const id = () => ++uid;
 
@@ -34,10 +35,73 @@ async function postJson(url, body, signal) {
   return data;
 }
 const later = (ms) => new Promise((r) => setTimeout(r, ms));
-const relRect = (el, base) => {
-  const a = el.getBoundingClientRect(), b = base.getBoundingClientRect();
-  return { left: a.left - b.left, top: a.top - b.top, width: a.width, height: a.height };
+// Vị trí phần tử so với khung `base`, bỏ qua transform đang chạy (hàng danh sách có thể đang trượt).
+const offRect = (el, base) => {
+  let x = 0, y = 0, n = el;
+  while (n && n !== base) { x += n.offsetLeft; y += n.offsetTop; n = n.offsetParent; }
+  return { left: x, top: y, width: el.offsetWidth, height: el.offsetHeight };
 };
+// cubic-bezier(x1, y1, x2, y2) → hàm tiến độ, để tính sẵn từng khung hình cho Web Animations.
+function bezier(x1, y1, x2, y2) {
+  const at = (a, b, t) => 3 * a * t * (1 - t) * (1 - t) + 3 * b * t * t * (1 - t) + t * t * t;
+  return (x) => {
+    let lo = 0, hi = 1, t = x;
+    for (let i = 0; i < 22; i++) { t = (lo + hi) / 2; if (at(x1, x2, t) < x) lo = t; else hi = t; }
+    return at(y1, y2, t);
+  };
+}
+const EASE_OPEN = bezier(0.65, 0, 0.15, 1); // tăng tốc dứt khoát, đáp rất êm
+const EASE_CLOSE = bezier(0.5, 0, 0.2, 1);
+const OPEN_MS = 640;
+const CLOSE_MS = 540;
+// Ảnh của hàng phóng thành khung bản đồ chỉ bằng transform (chạy trên GPU, không dàn trang lại mỗi khung hình).
+// Khung zoom luôn đặt đúng vị trí bản đồ; mỗi khung hình tính scale của khung và scale bù của ảnh
+// sao cho ảnh luôn “cover” đúng như object-fit ở kích thước trung gian, không méo, không giật ở hai đầu.
+function zoomKeys(a, b, nw, nh, from, to, ease, fadeIn) {
+  const kB = Math.max(b.width / nw, b.height / nh);
+  const bcx = b.left + b.width / 2, bcy = b.top + b.height / 2;
+  const acx = a.left + a.width / 2, acy = a.top + a.height / 2;
+  const outer = [], inner = [], round = [];
+  const N = 36;
+  for (let j = 0; j <= N; j++) {
+    const o = j / N;
+    const t = from + (to - from) * ease(o);
+    const w = a.width + (b.width - a.width) * t, h = a.height + (b.height - a.height) * t;
+    const sx = w / b.width, sy = h / b.height;
+    const k = Math.max(w / nw, h / nh);
+    const r = 22 - 2 * t;
+    const f = { offset: o, transform: `translate3d(${((acx - bcx) * (1 - t)).toFixed(2)}px, ${((acy - bcy) * (1 - t)).toFixed(2)}px, 0) scale(${sx.toFixed(5)}, ${sy.toFixed(5)})` };
+    if (fadeIn) f.opacity = Math.min(1, o / 0.18);
+    outer.push(f);
+    inner.push({ offset: o, transform: `scale(${(k / (kB * sx)).toFixed(5)}, ${(k / (kB * sy)).toFixed(5)})` });
+    round.push({ offset: o, borderRadius: `${(r / sx).toFixed(2)}px / ${(r / sy).toFixed(2)}px` });
+  }
+  return { outer, inner, round };
+}
+
+// Số chạy từ 0 lên giá trị thật khi `run` bật.
+function CountUp({ to, run = true, ms = 900, delay = 0 }) {
+  const n = Number(to);
+  const dec = Number.isFinite(n) && !Number.isInteger(n) ? 1 : 0;
+  const [v, setV] = useState(run && !REDUCE ? 0 : n);
+  useEffect(() => {
+    if (!Number.isFinite(n)) return undefined;
+    if (!run || REDUCE) { setV(n); return undefined; }
+    let raf = 0, t0 = 0;
+    const tick = (t) => {
+      if (!t0) t0 = t;
+      const p = Math.min(1, Math.max(0, (t - t0 - delay) / ms));
+      setV(n * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    setV(0);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [n, run]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!Number.isFinite(n)) return <>{to}</>;
+  return <>{v.toLocaleString('vi-VN', { minimumFractionDigits: dec, maximumFractionDigits: dec })}</>;
+}
+const Dots = ({ cls = 'dots' }) => <span className={cls} aria-hidden="true"><i /><i /><i /></span>;
 
 /* ---------------- Cột chat ---------------- */
 
@@ -46,12 +110,13 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
   if (m.k === 'agents') {
     return (
       <div className={'b-agents es-up' + (m.done ? ' is-done' : '')} role="status">
-        <p className="ag-title">{m.done ? 'Đội ngũ đã thẩm định xong' : m.reading ? 'Đang đọc nhu cầu của anh/chị…' : 'Đội ngũ đang thẩm định'}</p>
+        <p className="ag-title">{m.done ? 'Đội ngũ đã thẩm định xong' : m.reading ? 'Đang đọc nhu cầu của anh/chị' : 'Đội ngũ đang thẩm định'}{!m.done && <Dots />}</p>
+        <span className="ag-bar" aria-hidden="true"><i style={{ transform: `scaleX(${m.done ? 1 : m.reading ? 0.06 : (m.step + 0.6) / AGENTS.length})` }} /></span>
         <ol>
           {AGENTS.map((a, i) => {
             const st = m.done || i < m.step ? 'done' : i === m.step && !m.reading ? 'run' : 'wait';
             return (
-              <li key={a.name} className={st}>
+              <li key={a.name} className={st} style={{ '--i': i }}>
                 <span className="ag-ico" aria-hidden="true">
                   {st === 'done' ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m2.5 6.2 2.3 2.3 4.7-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg> : null}
                 </span>
@@ -67,7 +132,7 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
       </div>
     );
   }
-  if (m.k === 'thinking') return <div className="b-bot thinking es-up" role="status"><span className="m-tile" aria-hidden="true"><Mascot pose="02-chay-tim" size={30} /></span>{m.text}</div>;
+  if (m.k === 'thinking') return <div className="b-bot thinking es-up" role="status"><span className="m-tile" aria-hidden="true"><Mascot pose="02-chay-tim" size={30} /></span><span>{m.text}</span><Dots /></div>;
   if (m.k === 'ask') {
     return (
       <div className="b-group es-up">
@@ -81,11 +146,11 @@ function Bubble({ m, onPick, active, onAsk, onShare }) {
       <div className="b-results es-up">
         <p>{m.text}</p>
         {m.rows.map((r, i) => (
-          <button key={r.code} type="button" className={'mini' + (active === i ? ' is-on' : '')} onClick={() => onPick(i)} aria-label={`Mở ${r.name}, ${r.score} điểm`}>
+          <button key={r.code} type="button" className={'mini es-up' + (active === i ? ' is-on' : '')} style={{ animationDelay: 120 + i * 80 + 'ms' }} onClick={() => onPick(i)} aria-label={`Mở ${r.name}, ${r.score} điểm`}>
             <span className="mi-idx">{pad2(i + 1)}</span>
             <span className="mi-name">{r.name.split(',')[0]}, {r.name.split(',').slice(1).join(',').trim()}</span>
             <span className="mi-price">{Math.round(r.rentM)} tr</span>
-            <span className="mi-score">{r.score}</span>
+            <span className="mi-score"><CountUp to={r.score} delay={200 + i * 80} /></span>
           </button>
         ))}
         {onShare && <button type="button" className="share-b" onClick={onShare}><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M7 4.5l1-1a2.8 2.8 0 0 1 4 4l-1 1M9 11.5l-1 1a2.8 2.8 0 0 1-4-4l1-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>Chia sẻ kết quả</button>}
@@ -135,16 +200,16 @@ function ContactCard({ r, msg, setMsg, onCopy }) {
   };
   if (state === 'sent') {
     return (
-      <section className="card c-contact">
+      <section className="card c-contact" style={{ '--i': 4 }}>
         <h3>Liên hệ chủ nhà</h3>
         <p className="sent-ok" role="status"><span aria-hidden="true">✓</span> Đã gửi lời nhắn về {r.code}. Đội ngũ estateSmartAI sẽ liên hệ chủ nhà và gọi lại cho anh/chị để hẹn lịch xem.</p>
         <p className="sent">Bản thử nghiệm: thông tin mặt bằng là dữ liệu mô phỏng, đội ngũ sẽ xác nhận lại khi gọi.</p>
-        <a className="full-link" href={'/mat-bang/?ma=' + encodeURIComponent(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
+        <a className="full-link" href={profileHref(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
       </section>
     );
   }
   return (
-    <form className="card c-contact" onSubmit={submit} noValidate>
+    <form className="card c-contact" style={{ '--i': 4 }} onSubmit={submit} noValidate>
       <h3>Liên hệ chủ nhà</h3>
       <label className="sr-only" htmlFor="owner-msg">Tin nhắn gửi chủ nhà</label>
       <textarea id="owner-msg" value={msg} onChange={(e) => setMsg(e.target.value)} rows={open ? 3 : 5} maxLength={1000} />
@@ -167,38 +232,48 @@ function ContactCard({ r, msg, setMsg, onCopy }) {
       )}
       {err._ && <p className="c-err" role="alert">{err._}</p>}
       <div className="c-actions">
-        <button type="submit" className="btn-light" disabled={state === 'sending'}>{state === 'sending' ? 'Đang gửi…' : open ? 'Gửi lời nhắn' : 'Gửi cho chủ nhà'}</button>
+        <button type="submit" className={'btn-light' + (state === 'sending' ? ' is-loading' : '')} disabled={state === 'sending'} aria-busy={state === 'sending'}>
+          {state === 'sending' ? <>Đang gửi<Dots /></> : open ? 'Gửi lời nhắn' : 'Gửi cho chủ nhà'}
+        </button>
         <button type="button" className="btn-ghost-d" onClick={onCopy}>Sao chép</button>
       </div>
-      <a className="full-link" href={'/mat-bang/?ma=' + encodeURIComponent(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
+      <a className="full-link" href={profileHref(r.code)}>Mở hồ sơ để in hoặc tải PDF</a>
     </form>
   );
 }
 
-function ReportGrid({ r, onCopy, msg, setMsg }) {
-  if (!r) return <div className="grid-wait">Đang tải báo cáo…</div>;
+function ReportGrid({ r, open, onCopy, msg, setMsg }) {
+  if (!r) {
+    return (
+      <div className="rgrid skel" aria-busy="true">
+        <span className="sr-only">Đang tải báo cáo…</span>
+        {[0, 1, 2, 3, 4].map((i) => <div key={i} className={'card sk' + (i === 0 ? ' c-comp' : '')} style={{ '--i': i }}><i /><i /><i /></div>)}
+      </div>
+    );
+  }
   const t = r.traffic;
   const max = Math.max(r.rentCompare.mine, r.rentCompare.median) * 1.08;
   return (
     <div className="rgrid">
-      <section className="card c-comp">
-        <header><h3>Đối thủ cùng ngành trong {r.compRadius} m</h3><span className="big comp">{r.compCount}</span></header>
+      <section className="card c-comp" style={{ '--i': 0 }}>
+        <header><h3>Đối thủ cùng ngành trong {r.compRadius} m</h3><span className="big comp"><CountUp to={r.compCount} run={open} delay={250} /></span></header>
         {r.competitors.length ? (
           <div className="tbl-wrap">
             <table>
               <thead><tr><th>Cửa hàng</th><th>Loại</th><th className="num">Cách</th><th>Nguồn</th></tr></thead>
-              <tbody>{r.competitors.map((c, i) => <tr key={i}><td>{c.name}</td><td>{c.kind}</td><td className="num">{c.dText}</td><td>{c.source}</td></tr>)}</tbody>
+              <tbody>{r.competitors.map((c, i) => <tr key={i} style={{ '--i': i }}><td>{c.name}</td><td>{c.kind}</td><td className="num">{c.dText}</td><td>{c.source}</td></tr>)}</tbody>
             </table>
           </div>
         ) : <p className="empty">Chưa có cơ sở cùng ngành nào trong {r.compRadius} m trên OpenStreetMap.</p>}
         <p className="read"><i className="dot good" />{r.compNote}</p>
       </section>
 
-      <section className="card c-traffic">
+      <section className="card c-traffic" style={{ '--i': 1 }}>
         <header><h3>Lưu lượng theo giờ</h3><span className="tag">Ước lượng</span></header>
         <div className="bars" role="img" aria-label={'Lưu lượng ước lượng: ' + t.bars.map((b) => b.label + ' ' + b.v + '%').join(', ')}>
           {t.bars.map((b, i) => (
-            <div key={b.label} className="bar-col">
+            <div key={b.label} className="bar-col" style={{ '--i': i }}>
+              {i === t.peak && <span className="bar-v">Cao điểm</span>}
               <span className={'bar' + (i === t.peak ? ' peak' : '')} style={{ height: Math.max(6, b.v) + '%' }} />
               <span className="bar-l">{b.label}</span>
             </div>
@@ -208,21 +283,21 @@ function ReportGrid({ r, onCopy, msg, setMsg }) {
         <p className="src">Ước lượng từ loại tiện ích xung quanh (OpenStreetMap), không phải số đo thực tế.</p>
       </section>
 
-      <section className="card c-rent">
+      <section className="card c-rent" style={{ '--i': 2 }}>
         <h3>Giá thuê so với khu vực</h3>
         <div className="cmp">
-          <div className="cmp-row"><span>Mặt bằng này</span><b>{r.rentCompare.mine.toLocaleString('vi-VN')} triệu/tháng</b></div>
+          <div className="cmp-row"><span>Mặt bằng này</span><b><CountUp to={r.rentCompare.mine} run={open} delay={300} /> triệu/tháng</b></div>
           <span className="track"><span className="fill mine" style={{ width: (r.rentCompare.mine / max) * 100 + '%' }} /></span>
-          <div className="cmp-row muted"><span>Trung vị khu vực</span><b>{r.rentCompare.median.toLocaleString('vi-VN')} triệu/tháng</b></div>
+          <div className="cmp-row muted"><span>Trung vị khu vực</span><b><CountUp to={r.rentCompare.median} run={open} delay={450} /> triệu/tháng</b></div>
           <span className="track"><span className="fill med" style={{ width: (r.rentCompare.median / max) * 100 + '%' }} /></span>
         </div>
         <p className="read">{r.rentCompare.diff === 0 ? 'Ngang mức chung.' : r.rentCompare.diff > 0 ? `Cao hơn mức chung khoảng ${r.rentCompare.diff}%.` : `Thấp hơn mức chung khoảng ${-r.rentCompare.diff}%.`}</p>
         <p className="src">Quy đổi theo diện tích, so với {r.rentCompare.n} {r.rentCompare.typeLabel} trong hệ thống (dữ liệu mô phỏng).</p>
       </section>
 
-      <section className="card c-access">
+      <section className="card c-access" style={{ '--i': 3 }}>
         <h3>Tiếp cận và đỗ xe</h3>
-        <dl>{r.access.map((a) => <div key={a.label} className={a.warn ? 'warn' : ''}><dt>{a.label}</dt><dd>{a.value}</dd></div>)}</dl>
+        <dl>{r.access.map((a, i) => <div key={a.label} className={a.warn ? 'warn' : ''} style={{ '--i': i }}><dt>{a.label}</dt><dd>{a.value}</dd></div>)}</dl>
       </section>
 
       <ContactCard r={r} msg={msg} setMsg={setMsg} onCopy={onCopy} />
@@ -239,7 +314,7 @@ export default function Assistant() {
   const [criteria, setCriteria] = useState(null); // tiêu chí đang gom (chưa đủ)
   const [final, setFinal] = useState(null); // tiêu chí đã dùng để thẩm định
   const [recs, setRecs] = useState(null);
-  const [phase, setPhase] = useState('idle'); // idle | list | z0 | z1 | detail | b0 | b1
+  const [phase, setPhase] = useState('idle'); // idle | list | zin (đang phóng ảnh) | detail | zout (đang thu về)
   const [sel, setSel] = useState(0);
   const [view, setView] = useState(-1); // -1 bản đồ, 0..n ảnh
   const [reportOpen, setReportOpen] = useState(false);
@@ -250,13 +325,17 @@ export default function Assistant() {
   const [toast, setToast] = useState(null);
   const [entered, setEntered] = useState(REDUCE);
   const [hunt, setHunt] = useState(null); // Mascot chạy tìm ở khung phải, xem Hunt.jsx
+  const [idleSay, setIdleSay] = useState(false); // Mascot ở màn chờ bắt đầu nói sau khi trang đã vào
 
   const stageRef = useRef(null);
   const rowImgRefs = useRef([]);
   const mapSlotRef = useRef(null);
   const mapElRef = useRef(null);
   const mapRef = useRef(null);
-  const rects = useRef({ row: null, map: null });
+  const zoomRef = useRef(null);
+  const zoomImgRef = useRef(null);
+  const zoomAnims = useRef([]);
+  const moving = useRef(false); // đang chạy chuyển cảnh: bỏ qua bấm chồng
   const threadRef = useRef(null);
   const inputRef = useRef(null);
   const askCtrl = useRef(null);
@@ -268,6 +347,11 @@ export default function Assistant() {
   const detail = phase === 'detail';
 
   useEffect(() => { const t = requestAnimationFrame(() => requestAnimationFrame(() => setEntered(true))); return () => cancelAnimationFrame(t); }, []);
+  useEffect(() => { const t = setTimeout(() => setIdleSay(true), T(1500)); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    if (!recs || !final) return;
+    try { sessionStorage.setItem('es-recs', JSON.stringify({ codes: recs.map((r) => r.code), criteria: final })); } catch (e) { /* bỏ qua */ }
+  }, [recs, final]);
   useLayoutEffect(() => { const el = threadRef.current; if (el) el.scrollTop = el.scrollHeight; }, [msgs]);
   useEffect(() => () => { if (askCtrl.current) askCtrl.current.abort(); if (mapRef.current) mapRef.current.destroy(); }, []);
 
@@ -349,7 +433,6 @@ export default function Assistant() {
       setRecs(rows);
       setReports({});
       setShareId(null);
-      try { sessionStorage.setItem('es-recs', JSON.stringify({ codes: rows.map((r) => r.code), criteria: crit })); } catch (e) { /* bỏ qua */ }
       data.notes.forEach((n) => push({ k: 'bot', text: n }));
       push({ k: 'results', text: `Đội ngũ đã rà soát ${data.stats.total} mặt bằng trong hệ thống, ${data.stats.fit} vừa ngân sách và diện tích. Đây là ba lựa chọn đáng đi xem nhất:`, rows });
       setSel(0);
@@ -463,46 +546,77 @@ export default function Assistant() {
     if (recs && !criteria) askAI(t); else runSearch(t);
   };
 
-  // ---- Chuyển cảnh: ảnh của dòng phóng thành khung bản đồ, và ngược lại ----
-  const measure = (i) => {
-    const st = stageRef.current;
-    const img = rowImgRefs.current[i];
-    if (st && img) rects.current.row = relRect(img, st);
-    if (st && mapSlotRef.current) rects.current.map = relRect(mapSlotRef.current, st);
+  // ---- Chuyển cảnh: ảnh của dòng phóng thành khung bản đồ, và ngược lại (zoomKeys ở đầu file) ----
+  const stopZoom = () => { zoomAnims.current.forEach((a) => a.cancel()); zoomAnims.current = []; };
+  const hideZoom = (fade) => {
+    const el = zoomRef.current;
+    if (!el) return;
+    if (!fade || REDUCE) { stopZoom(); el.style.display = 'none'; return; }
+    const f = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, easing: 'ease-out', fill: 'forwards' });
+    zoomAnims.current.push(f);
+    f.onfinish = () => { stopZoom(); el.style.display = 'none'; };
   };
+  // dir 1: hàng → bản đồ; dir -1: bản đồ → hàng. Trả về khi chuyển động xong.
+  const runZoom = (i, dir) => new Promise((resolve) => {
+    const st = stageRef.current, el = zoomRef.current, img = zoomImgRef.current;
+    const cell = rowImgRefs.current[i], slot = mapSlotRef.current;
+    stopZoom();
+    if (!st || !el || !img || !cell || !slot || !el.animate || REDUCE) { if (el) el.style.display = 'none'; resolve(); return; }
+    const a = offRect(cell, st), b = offRect(slot, st);
+    const pic = cell.querySelector('img');
+    const nw = (pic && pic.naturalWidth) || b.width, nh = (pic && pic.naturalHeight) || b.height;
+    if (pic && img.getAttribute('src') !== pic.getAttribute('src')) img.src = pic.getAttribute('src');
+    Object.assign(el.style, { display: 'block', left: b.left + 'px', top: b.top + 'px', width: b.width + 'px', height: b.height + 'px', opacity: '' });
+    const k = dir > 0 ? zoomKeys(a, b, nw, nh, 0, 1, EASE_OPEN, false) : zoomKeys(a, b, nw, nh, 1, 0, EASE_CLOSE, true);
+    const opt = { duration: dir > 0 ? OPEN_MS : CLOSE_MS, easing: 'linear', fill: 'both' };
+    const list = [el.animate(k.outer, opt), img.animate(k.inner, opt), el.animate(k.round, opt)];
+    zoomAnims.current = list;
+    let done = false;
+    const end = () => { if (!done) { done = true; resolve(); } };
+    list[0].onfinish = end;
+    list[0].oncancel = end;
+  });
+
   const open = async (i) => {
-    if (!recs) return;
-    if (phase === 'detail' && sel !== i) { await back(); await later(T(120)); }
-    else if (phase !== 'list') { if (phase === 'detail' && sel === i) return; return; }
+    if (!recs || moving.current) return;
+    if (phase === 'detail' && sel === i) return;
+    if (phase === 'detail') await back();
+    else if (phase !== 'list') return;
+    moving.current = true;
+    const my = session.current;
     ensureMap();
     loadReport(recs[i].code, final);
     // Màn hình hẹp: khung kết quả nằm dưới chat, cuộn tới trước khi phóng ảnh.
     if (window.innerWidth <= 980 && stageRef.current) {
       stageRef.current.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth', block: 'start' });
-      await later(T(450));
+      await later(T(420));
     }
     setSel(i);
     setView(-1);
-    measure(i);
-    setPhase('z0');
-    // Mỗi bước chỉ chạy nếu trang còn ở đúng bước trước (khung hình có thể đến trễ khi tab bị ẩn).
-    requestAnimationFrame(() => requestAnimationFrame(() => setPhase((p) => (p === 'z0' ? 'z1' : p))));
-    await later(T(880));
-    setPhase((p) => (p === 'z0' || p === 'z1' ? 'detail' : p));
+    setPhase('zin');
+    await runZoom(i, 1);
+    if (my !== session.current) { moving.current = false; return; }
+    setPhase((p) => (p === 'zin' ? 'detail' : p));
+    // Ảnh phủ thêm một nhịp cho bản đồ kịp hiện, rồi mờ đi để lộ bản đồ 3D bên dưới
+    setTimeout(() => { if (my === session.current) hideZoom(true); }, T(260));
+    moving.current = false;
     const r = recs[i];
     const rp = reports[r.code];
     push({ k: 'sum', i, name: r.name, score: r.score, price: r.price, area: r.size.replace(' m²', ''), risk: (rp && rp.mainRisk) || (r.cons && r.cons[0]) || null });
   };
   const back = async () => {
-    if (phase !== 'detail') return;
-    if (reportOpen) { setReportOpen(false); await later(T(980)); } // đợi phần báo cáo trượt xuống hẳn rồi mới đo
-    measure(sel);
-    setPhase('b0');
-    await later(T(300));
-    setPhase((p) => (p === 'b0' ? 'b1' : p));
-    await later(T(880));
-    setPhase((p) => (p === 'b1' || p === 'b0' ? 'list' : p));
+    if (phase !== 'detail' || moving.current) return;
+    moving.current = true;
+    const my = session.current;
+    if (reportOpen) { setReportOpen(false); await later(T(260)); } // báo cáo trượt xuống trước
+    setPhase('zout');
+    await runZoom(sel, -1);
+    if (my !== session.current) { moving.current = false; return; }
+    setPhase((p) => (p === 'zout' ? 'list' : p));
     setView(-1);
+    // Đợi ảnh thật của hàng hiện lại rồi mới gỡ ảnh zoom, để không chớp
+    requestAnimationFrame(() => requestAnimationFrame(() => hideZoom(false)));
+    moving.current = false;
   };
 
   const reset = () => {
@@ -512,32 +626,34 @@ export default function Assistant() {
     setBusy(false);
     setMsgs([{ id: id(), k: 'bot', text: 'Mình bắt đầu phiên mới. Anh/chị mô tả nhu cầu trong một câu nhé.' }]);
     setRecs(null); setFinal(null); setCriteria(null); setPhase('idle'); setReportOpen(false); setView(-1); setHunt(null);
+    moving.current = false; hideZoom(false);
     if (mapRef.current) mapRef.current.update(null);
     showToast('Đã bắt đầu phiên mới.', { label: 'Hoàn tác', run: () => { setMsgs(snap.msgs); setRecs(snap.recs); setFinal(snap.final); setReports(snap.reports); setCriteria(snap.criteria); setSel(snap.sel); setPhase(snap.phase === 'detail' ? 'list' : snap.phase); setToast(null); } });
   };
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape' && detail) { e.preventDefault(); back(); } };
+    const onKey = (e) => {
+      if (e.key !== 'Escape' || !detail) return;
+      e.preventDefault();
+      if (reportOpen) setReportOpen(false); else back();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
 
   // ---- Giá trị hiển thị ----
-  const zooming = ['z0', 'z1', 'detail', 'b0', 'b1'].includes(phase);
-  const listShown = phase === 'list' || phase === 'z0' || phase === 'b1';
-  const zr = phase === 'z0' || phase === 'b1' ? rects.current.row : rects.current.map;
-  const zoomStyle = zooming && zr ? {
-    left: zr.left, top: zr.top, width: zr.width, height: zr.height,
-    borderRadius: phase === 'z0' || phase === 'b1' ? 18 : 20,
-    transition: phase === 'z0' ? 'none' : undefined,
-    opacity: phase === 'detail' ? 0 : 1,
-    transitionDelay: phase === 'detail' ? '.6s' : undefined
-  } : { display: 'none' };
-  const activeIdx = detail || phase === 'z1' || phase === 'z0' ? sel : -1;
+  const shown = phase === 'zin' || phase === 'detail'; // phần chi tiết hiện dần ngay trong lúc ảnh đang phóng
+  const listShown = phase === 'list' || phase === 'zout';
+  const activeIdx = shown ? sel : -1;
   const thinking = busy;
   const talking = msgs.some((m) => m.streaming);
+  const sheetOpen = detail && reportOpen;
   const thumbs = useMemo(() => [{ label: 'Bản đồ 3D', v: -1 }, ...((rep && rep.photos) || []).map((p, j) => ({ ...p, v: j }))], [rep]);
-  const reveal = (on, delay = 0, off = 'translateY(12px)') => (on ? { opacity: 1, transform: 'none', transitionDelay: delay + 's' } : { opacity: 0, transform: off, pointerEvents: 'none', transitionDelay: '0s' });
+  // Hiện: chậm rãi, có trễ theo thứ tự. Ẩn: nhanh, không trễ, để chuyển cảnh không phải chờ.
+  const reveal = (on, delay = 0, off = 'translateY(12px)') => (on
+    ? { opacity: 1, transform: 'none', transitionDelay: delay + 's' }
+    : { opacity: 0, transform: off, pointerEvents: 'none', transitionDelay: '0s', transitionDuration: '.22s' });
+  const idleLine = !idleSay || busy || hunt ? null : draft.trim() ? 'Nghe hay đấy! Bấm gửi là mình đi tìm.' : 'Gõ nhu cầu bên trái, mình đi tìm ngay!';
 
   return (
     <div className={'as-page' + (entered ? ' in' : '')}>
@@ -545,6 +661,10 @@ export default function Assistant() {
         <a className="as-brand" href="/">
           <svg width="22" height="22" viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6" /><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6" /><path d="M11.2 29.5 20.8 2.5" /></g><circle cx="21.6" cy="20.6" r="2.6" fill="#A3562B" /></svg>
           estateSmart / AI
+        </a>
+        <a className="as-home" href="/">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          Trang chủ
         </a>
       </header>
 
@@ -557,7 +677,7 @@ export default function Assistant() {
             </span>
             <div className="ch-title">
               <h1>Trợ lý mặt bằng</h1>
-              <p><i className="live" aria-hidden="true" />Đội ngũ 5 chuyên viên AI đang trực tuyến</p>
+              <p><i className={'live' + (busy ? ' busy' : '')} aria-hidden="true" />{busy ? (talking ? 'Đang trả lời' : 'Đội ngũ đang làm việc') : 'Đội ngũ 5 chuyên viên AI đang trực tuyến'}</p>
             </div>
             <button type="button" className="ch-x" onClick={reset} aria-label="Bắt đầu phiên mới">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3.5 3.5 9 9m0-9-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
@@ -567,16 +687,22 @@ export default function Assistant() {
             {msgs.map((m) => <Bubble key={m.id} m={m} onPick={open} active={activeIdx} onAsk={(o) => send(o)} onShare={recs ? share : null} />)}
             {!recs && !criteria && msgs.length <= 2 && !busy && (
               <div className="sugg">
-                {SUGGESTIONS.map((s, i) => <button key={s} type="button" className="sugg-b es-up" style={{ animationDelay: 0.75 + i * 0.09 + 's' }} onClick={() => send(s)}>{s}</button>)}
+                <p className="sugg-l es-up" style={{ animationDelay: '.6s' }}>Thử một câu mẫu</p>
+                {SUGGESTIONS.map((s, i) => (
+                  <button key={s} type="button" className="sugg-b es-up" style={{ animationDelay: 0.7 + i * 0.09 + 's' }} onClick={() => send(s)}>
+                    <span>{s}</span>
+                    <svg className="sugg-arr" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  </button>
+                ))}
               </div>
             )}
           </div>
-          <form className="ch-input" onSubmit={(e) => { e.preventDefault(); send(); }}>
+          <form className={'ch-input' + (busy ? ' is-busy' : '')} onSubmit={(e) => { e.preventDefault(); send(); }}>
             <label htmlFor="as-input" className="sr-only">Mô tả nhu cầu hoặc đặt câu hỏi</label>
             <input id="as-input" ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} autoComplete="off" maxLength={500}
               placeholder={recs && !criteria ? (busy ? 'Trợ lý đang trả lời…' : 'Hỏi thêm về ba mặt bằng…') : 'Mô tả mô hình, khu vực, ngân sách…'} />
-            <button type="submit" className={'send' + (draft.trim() && !busy ? '' : ' dim')} aria-label="Gửi">
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3.5m0 0L4 7.5m4-4 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <button type="submit" className={'send' + (busy ? ' is-busy' : draft.trim() ? ' ready' : ' dim')} aria-label={busy ? 'Đang xử lý' : 'Gửi'} aria-busy={busy}>
+              {busy ? <Dots cls="send-dots" /> : <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 13V3.5m0 0L4 7.5m4-4 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             </button>
           </form>
           {recs && <p className="ch-note">Câu hỏi được gửi tới mô hình AI bên thứ ba, đừng nhập thông tin cá nhân. Số liệu mặt bằng là dữ liệu minh hoạ.</p>}
@@ -592,14 +718,19 @@ export default function Assistant() {
               <p className="idle-t">Vinhomes Ocean Park 1, Gia Lâm</p>
               <p className="idle-s">{busy ? 'Đội ngũ đang thẩm định…' : 'Mô tả nhu cầu bên trái để xem ba mặt bằng phù hợp nhất, bản đồ 3D và báo cáo.'}</p>
             </div>
+            <div className="idle-guide" style={reveal(phase === 'idle' && !hunt, 0.8, 'translateY(24px) scale(.9)')} aria-hidden="true">
+              <Mascot pose={draft.trim() ? '10-ngon-cai' : '01-chao'} size={104} say={idleLine} side="left" />
+            </div>
           </div>
 
           {/* Danh sách */}
-          <div className="st-list" style={{ opacity: listShown ? 1 : 0, pointerEvents: phase === 'list' ? 'auto' : 'none' }} aria-hidden={!listShown}>
+          <div className="st-list" style={{ pointerEvents: phase === 'list' ? 'auto' : 'none' }} aria-hidden={!listShown}>
             {(recs || []).map((r, i) => (
               <button key={r.code} type="button" className="row" onClick={() => open(i)} aria-label={`Mở ${r.name}, ${r.score} điểm`}
-                style={listShown ? { opacity: 1, transform: 'none', transitionDelay: (phase === 'list' ? i * 0.09 : 0) + 's' } : { opacity: 0, transform: 'translateY(24px)' }}>
-                <span className="ri" ref={(el) => { rowImgRefs.current[i] = el; }} style={{ visibility: zooming && i === sel ? 'hidden' : 'visible' }}>
+                style={listShown
+                  ? { opacity: 1, transform: 'none', transitionDelay: (phase === 'zout' ? 0.12 + Math.abs(i - sel) * 0.06 : i * 0.08) + 's' }
+                  : { opacity: 0, transform: i === sel ? 'none' : 'translateY(18px) scale(.98)', transitionDuration: '.28s' }}>
+                <span className="ri" ref={(el) => { rowImgRefs.current[i] = el; }} style={{ visibility: phase !== 'list' && i === sel ? 'hidden' : 'visible' }}>
                   <img src={r.src} alt="" />
                   <span className="rbadge">{pad2(i + 1)} · {i === 0 ? 'Phù hợp nhất' : i === 1 ? 'Lựa chọn thứ hai' : 'Lựa chọn thứ ba'}</span>
                 </span>
@@ -610,16 +741,18 @@ export default function Assistant() {
                   </span>
                   <span className="r-foot">
                     <span className="r-price">{r.price}</span>
-                    <span className="r-score">{r.score}<small>/100</small></span>
+                    <span className="r-score"><CountUp to={r.score} run={listShown} delay={250 + i * 80} /><small>/100</small></span>
                   </span>
+                  <span className="r-meter" aria-hidden="true"><i style={{ transform: `scaleX(${listShown ? r.score / 100 : 0})`, transitionDelay: listShown ? 0.25 + i * 0.08 + 's' : '0s' }} /></span>
+                  <span className="r-open" aria-hidden="true">Xem chi tiết<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
                 </span>
               </button>
             ))}
           </div>
 
           {/* Chi tiết + báo cáo */}
-          <div className={'st-detail' + (detail || phase === 'b0' ? ' on' : '')} aria-hidden={!detail}>
-            <header className="d-head" style={reveal(detail, 0.1, 'translateY(-10px)')}>
+          <div className={'st-detail' + (shown || phase === 'zout' ? ' on' : '')} aria-hidden={!detail}>
+            <header className="d-head" style={reveal(shown, 0.22, 'translateY(-10px)')}>
               <button type="button" className="d-back" onClick={back} aria-label="Quay lại danh sách">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13 8H3.5m0 0L7.5 4m-4 4 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
@@ -630,58 +763,64 @@ export default function Assistant() {
               <dl className="d-stats">
                 <div><dt>Giá thuê</dt><dd>{cur ? cur.price : ''}</dd></div>
                 <div><dt>Diện tích</dt><dd>{cur ? cur.size.replace(' m²', '') : ''} m²</dd></div>
-                <div><dt>Phù hợp</dt><dd>{cur ? cur.score : ''}<small>/100</small></dd></div>
+                <div><dt>Phù hợp</dt><dd>{cur ? <CountUp key={cur.code} to={cur.score} run={shown} delay={300} /> : ''}<small>/100</small></dd></div>
               </dl>
-              <button type="button" className="d-report" onClick={() => setReportOpen((v) => !v)} aria-expanded={reportOpen}>
-                {reportOpen ? 'Thu gọn báo cáo' : 'Báo cáo đầy đủ'}
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ transform: reportOpen ? 'rotate(180deg)' : 'none' }}><path d="m4 6 4 4 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </button>
+              <div className="d-actions">
+                {cur && <a className="d-profile" href={profileHref(cur.code)} tabIndex={detail ? undefined : -1}>
+                  Hồ sơ chi tiết
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </a>}
+                <button type="button" className={'d-report' + (reportOpen ? ' is-open' : '')} onClick={() => setReportOpen((v) => !v)} aria-expanded={reportOpen} aria-controls="d-sheet">
+                  <span className="d-report-t" key={reportOpen ? 'a' : 'b'}>{reportOpen ? 'Thu gọn báo cáo' : 'Báo cáo đầy đủ'}</span>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 10 4-4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
+              </div>
             </header>
 
             <div className="d-clip" style={{ pointerEvents: detail ? 'auto' : 'none' }}>
-              <div className="d-track" style={{ transform: detail && reportOpen ? 'translateY(-50%)' : 'none' }}>
-                <div className="d-pane">
-                  <div className="d-map" ref={mapSlotRef}>
-                    <div className="mapbox" ref={mapElRef} style={{ opacity: detail ? 1 : 0 }} />
-                    <div className="photobox" style={{ opacity: detail && view >= 0 ? 1 : 0 }}>
-                      {rep && view >= 0 && <img src={rep.photos[view].src} alt={rep.photos[view].label + ', ' + rep.name} />}
-                    </div>
-                    {rep && (
-                      <>
-                        <div className="legend" style={reveal(detail && view < 0, 0.25, 'translateY(-8px)')}>
-                          {[['mine', 'Mặt bằng'], ['comp', `Đối thủ cùng ngành (${rep.compCount})`], ['cust', `Nguồn khách (${rep.labels.length})`], ['links', 'Khoảng cách']].map(([k, label]) => (
-                            <button key={k} type="button" className={'lg ' + k} aria-pressed={toggles[k]} onClick={() => setToggles((s) => ({ ...s, [k]: !s[k] }))}><i aria-hidden="true" />{label}</button>
-                          ))}
-                        </div>
-                        <div className="decide" style={reveal(detail, 0.3)}>
-                          <div><p className="lbl good">Điểm mạnh</p><ul>{rep.strengths.slice(0, 2).map((t) => <li key={t}>{t}</li>)}</ul></div>
-                          <div><p className="lbl risk">Rủi ro</p><ul className="risk">{rep.risks.slice(0, 2).map((t) => <li key={t}>{t}</li>)}</ul></div>
-                        </div>
-                        <p className="map-note" style={reveal(detail && view < 0, 0.4, 'none')}>Khối nhà từ OpenStreetMap · khoảng cách là đường thẳng</p>
-                      </>
-                    )}
+              <div className={'d-pane' + (sheetOpen ? ' is-back' : '')}>
+                <div className="d-map" ref={mapSlotRef}>
+                  <div className="mapbox" ref={mapElRef} style={{ opacity: detail ? 1 : 0 }} />
+                  <div className="photobox" style={{ opacity: detail && view >= 0 ? 1 : 0 }}>
+                    {rep && view >= 0 && <img key={view} src={rep.photos[view].src} alt={rep.photos[view].label + ', ' + rep.name} />}
                   </div>
-                  <div className="d-strip">
-                    {thumbs.map((t, k) => (
-                      <button key={t.label} type="button" className={'th' + (view === t.v ? ' on' : '') + (t.v < 0 ? ' th-map' : '')} onClick={() => setView(t.v)} aria-pressed={view === t.v} style={reveal(detail, 0.15 + k * 0.06, 'translateY(16px)')}>
-                        {t.src ? <img src={t.src} alt="" /> : <span className="th-grid" aria-hidden="true" />}
-                        <span className="thl">{t.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {rep && (
+                    <>
+                      <div className="legend" style={reveal(shown && view < 0, 0.4, 'translateY(-8px)')}>
+                        {[['mine', 'Mặt bằng'], ['comp', `Đối thủ cùng ngành (${rep.compCount})`], ['cust', `Nguồn khách (${rep.labels.length})`], ['links', 'Khoảng cách']].map(([k, label]) => (
+                          <button key={k} type="button" className={'lg ' + k} aria-pressed={toggles[k]} onClick={() => setToggles((s) => ({ ...s, [k]: !s[k] }))}><i aria-hidden="true" />{label}</button>
+                        ))}
+                      </div>
+                      <div className="decide" style={reveal(shown, 0.48, 'translateY(18px)')}>
+                        <div><p className="lbl good">Điểm mạnh</p><ul>{rep.strengths.slice(0, 2).map((t) => <li key={t}>{t}</li>)}</ul></div>
+                        <div><p className="lbl risk">Rủi ro</p><ul className="risk">{rep.risks.slice(0, 2).map((t) => <li key={t}>{t}</li>)}</ul></div>
+                      </div>
+                      <p className="map-note" style={reveal(shown && view < 0, 0.6, 'none')}>Khối nhà từ OpenStreetMap · khoảng cách là đường thẳng</p>
+                    </>
+                  )}
                 </div>
-                <div className="d-pane d-report-pane" style={reveal(detail && reportOpen, 0.2, 'translateY(24px)')}>
-                  <ReportGrid r={rep} msg={ownerMsg} setMsg={setOwnerMsg}
-                    onCopy={() => { navigator.clipboard?.writeText(ownerMsg).then(() => showToast('Đã sao chép tin nhắn.')).catch(() => showToast('Trình duyệt chặn sao chép, hãy chọn và sao chép thủ công.')); }} />
+                <div className="d-strip">
+                  {thumbs.map((t, k) => (
+                    <button key={t.label} type="button" className={'th' + (view === t.v ? ' on' : '') + (t.v < 0 ? ' th-map' : '')} onClick={() => setView(t.v)} aria-pressed={view === t.v} style={reveal(shown, 0.3 + k * 0.05, 'translateY(16px)')}>
+                      {t.src ? <img src={t.src} alt="" /> : <span className="th-grid" aria-hidden="true" />}
+                      <span className="thl">{t.label}</span>
+                    </button>
+                  ))}
                 </div>
+              </div>
+              {/* Báo cáo đầy đủ: tấm trượt từ dưới lên phủ bản đồ */}
+              <div id="d-sheet" className={'d-sheet' + (sheetOpen ? ' open' : '')} aria-hidden={!sheetOpen} role="region" aria-label="Báo cáo đầy đủ">
+                <button type="button" className="sheet-grip" onClick={() => setReportOpen(false)} aria-label="Thu gọn báo cáo" tabIndex={sheetOpen ? 0 : -1}><i /></button>
+                <ReportGrid r={rep} open={sheetOpen} msg={ownerMsg} setMsg={setOwnerMsg}
+                  onCopy={() => { navigator.clipboard?.writeText(ownerMsg).then(() => showToast('Đã sao chép tin nhắn.')).catch(() => showToast('Trình duyệt chặn sao chép, hãy chọn và sao chép thủ công.')); }} />
               </div>
             </div>
           </div>
 
           <Hunt hunt={hunt} />
 
-          {/* Ảnh đang phóng to / thu nhỏ */}
-          <div className="zoom" style={zoomStyle} aria-hidden="true">{cur && <img src={cur.src} alt="" />}</div>
+          {/* Ảnh đang phóng to / thu nhỏ: điều khiển bằng Web Animations trong runZoom() */}
+          <div className="zoom" ref={zoomRef} aria-hidden="true"><img ref={zoomImgRef} alt="" /></div>
         </section>
       </div>
 

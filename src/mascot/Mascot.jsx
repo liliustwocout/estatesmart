@@ -33,6 +33,7 @@ export default function Mascot({
   onPose,
   className = '',
   style,
+  side, // 'left': bong bóng nằm bên trái thay vì phía trên
 }) {
   useInsertionEffect(addStyle, []);
   const rest = POSES[pose] ? pose : REST;
@@ -86,6 +87,7 @@ export default function Mascot({
       ref={m.rootRef}
       className={cls}
       data-pose={slug}
+      data-side={side}
       style={{
         ...style,
         width: size,
@@ -95,7 +97,7 @@ export default function Mascot({
       {...a11y}
       {...m.handlers}
     >
-      <span className={'mascot-bubble' + (line ? ' is-on' : '')} aria-hidden="true">{lastLine.current}</span>
+      <span className={'mascot-bubble' + (line ? ' is-on' : '')} aria-hidden="true">{lastLine.current && <span key={lastLine.current} className="mascot-line">{lastLine.current}</span>}</span>
       <span className="mascot-svg" dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );

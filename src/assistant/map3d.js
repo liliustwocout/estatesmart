@@ -15,10 +15,15 @@ function square(lng, lat, side, props) {
   return { type: 'Feature', properties: props, geometry: { type: 'Polygon', coordinates: [[[lng - dx, lat - dy], [lng + dx, lat - dy], [lng + dx, lat + dy], [lng - dx, lat + dy], [lng - dx, lat - dy]]] } };
 }
 
+let pillN = 0;
 function pill(text, cls) {
   const el = document.createElement('div');
-  el.className = 'm3-pill ' + cls;
-  el.textContent = text;
+  el.className = 'm3-pill-wrap';
+  const inner = document.createElement('span');
+  inner.className = 'm3-pill ' + cls;
+  inner.style.animationDelay = 500 + (pillN++ % 12) * 70 + 'ms';
+  inner.textContent = text;
+  el.appendChild(inner);
   return el;
 }
 
@@ -31,6 +36,7 @@ export function createMap3D(container) {
   let pending = null;
   let markers = { mine: [], comp: [], cust: [] };
   let show = { mine: true, comp: true, cust: true, links: true };
+  let drawRaf = 0;
 
   map.on('load', () => {
     const style = map.getStyle();
@@ -78,6 +84,7 @@ export function createMap3D(container) {
   }
 
   function clearMarkers() {
+    pillN = 0;
     Object.values(markers).flat().forEach((m) => m.remove());
     markers = { mine: [], comp: [], cust: [] };
   }
@@ -92,9 +99,40 @@ export function createMap3D(container) {
     }
   }
 
+  // Vẽ dần: đường nối kéo dài từ mặt bằng ra từng điểm, vòng bán kính nở ra, khối nhà mọc lên.
+  function draw(r, blocks, targets) {
+    cancelAnimationFrame(drawRaf);
+    const R = r.compRadius || 500;
+    const frame = (p) => {
+      const e = 1 - Math.pow(1 - p, 3);
+      const grow = Math.min(1, p * 1.6); // khối nhà xong trước, đường nối chạy tiếp
+      const g = 1 - Math.pow(1 - grow, 3);
+      map.getSource('links').setData({ type: 'FeatureCollection', features: targets.map((t, i) => {
+        const q = Math.min(1, Math.max(0, (e * 1.3) - i * 0.04));
+        return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[r.lng, r.lat], [r.lng + (t.lng - r.lng) * q, r.lat + (t.lat - r.lat) * q]] } };
+      }) });
+      map.getSource('ring').setData({ type: 'FeatureCollection', features: [circle(r.lng, r.lat, Math.max(1, R * e))] });
+      const src = map.getSource('blocks');
+      const shown = blocks.features.filter((f) => (f.properties.kind === 'mine' ? show.mine : show.comp));
+      src.setData({ type: 'FeatureCollection', features: shown.map((f) => ({ ...f, properties: { ...f.properties, h: Math.max(0.5, f.properties.h * g) } })) });
+    };
+    if (reduce) { frame(1); return; }
+    frame(0);
+    let t0 = 0;
+    const DELAY = 380, DUR = 1100;
+    const tick = (t) => {
+      if (!t0) t0 = t;
+      const p = Math.min(1, Math.max(0, (t - t0 - DELAY) / DUR));
+      frame(p);
+      if (p < 1) drawRaf = requestAnimationFrame(tick);
+    };
+    drawRaf = requestAnimationFrame(tick);
+  }
+
   // r: báo cáo từ /api/report
   function update(r) {
     if (!ready) { pending = r; return; }
+    cancelAnimationFrame(drawRaf);
     clearMarkers();
     if (!r) {
       map.getSource('blocks').setData(EMPTY);
@@ -109,15 +147,13 @@ export function createMap3D(container) {
     const data = { type: 'FeatureCollection', features };
     const src = map.getSource('blocks');
     src._lastData = data;
-    src.setData(data);
     const targets = [...r.competitors.slice(0, 5), ...r.labels];
-    map.getSource('links').setData({ type: 'FeatureCollection', features: targets.map((t) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[r.lng, r.lat], [t.lng, t.lat]] } })) });
-    map.getSource('ring').setData({ type: 'FeatureCollection', features: [circle(r.lng, r.lat, r.compRadius || 500)] });
 
     markers.mine.push(new maplibregl.Marker({ element: pill(r.short.split(',')[0] + ' · ' + r.score + ' điểm', 'mine'), anchor: 'bottom', offset: [0, -14] }).setLngLat([r.lng, r.lat]).addTo(map));
     r.competitors.slice(0, 5).forEach((c) => markers.comp.push(new maplibregl.Marker({ element: pill(c.kind.split(',')[0] + ' · ' + c.dText, 'comp'), anchor: 'bottom', offset: [0, -8] }).setLngLat([c.lng, c.lat]).addTo(map)));
     r.labels.forEach((t) => markers.cust.push(new maplibregl.Marker({ element: pill(t.text, 'cust'), anchor: 'bottom', offset: [0, -4] }).setLngLat([t.lng, t.lat]).addTo(map)));
     applyVisibility();
+    draw(r, data, targets);
 
     const pts = [[r.lng, r.lat], ...targets.filter((t) => t.d <= 800).map((t) => [t.lng, t.lat])];
     const b = new maplibregl.LngLatBounds();
@@ -130,6 +166,6 @@ export function createMap3D(container) {
     update,
     toggle(key, on) { show[key] = on; applyVisibility(); },
     resize: () => map.resize(),
-    destroy: () => { clearMarkers(); map.remove(); }
+    destroy: () => { cancelAnimationFrame(drawRaf); clearMarkers(); map.remove(); }
   };
 }
