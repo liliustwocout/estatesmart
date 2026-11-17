@@ -1,0 +1,3 @@
+code,osm_id,kind,level,name,lat,lng,verified,hidden,status,note
+TI-01,w1370266208,hospital,,area 09,21.002367,105.943561,0,1,active,Ẩn: thẻ bệnh viện sai trên OSM (tên là mã khu)
+TI-02,n5187739822,supermarket,,Quán ăn,21.005316,105.935509,0,1,active,Ẩn: quán ăn bị gắn nhầm là siêu thị trên OSM

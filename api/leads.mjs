@@ -1,4 +1,4 @@
-// Yêu cầu khảo sát / liên hệ chủ nhà: lưu vào SQLite, báo cho nhóm qua Telegram, quản lý ở trang quản trị.
+// Yêu cầu xem nhà / liên hệ chủ nhà: lưu vào SQLite, báo cho nhóm qua Telegram, quản lý ở trang quản trị.
 // Có thông tin cá nhân (họ tên, số điện thoại): chỉ nhận khi người dùng đồng ý, không ghi vào log.
 import { createHash, randomBytes } from 'node:crypto';
 import { db, getByCode } from './db.mjs';
@@ -16,8 +16,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS shares (
   id TEXT PRIMARY KEY, created TEXT NOT NULL, criteria TEXT NOT NULL, codes TEXT NOT NULL
 )`);
 
-export const LEAD_STATUS = { new: 'Mới', called: 'Đã gọi', scheduled: 'Đã hẹn khảo sát', closed: 'Đã đóng' };
-const ROLES = ['Chủ doanh nghiệp', 'Quản lý vận hành', 'Môi giới', 'Khác'];
+export const LEAD_STATUS = { new: 'Mới', called: 'Đã gọi', scheduled: 'Đã hẹn xem nhà', closed: 'Đã đóng' };
+const ROLES = ['Người mua', 'Người thuê', 'Người thân của người mua, thuê', 'Môi giới', 'Khác'];
 
 export class LeadError extends Error {
   constructor(errors, status = 400) { super('Thông tin chưa hợp lệ'); this.errors = errors; this.status = status; }
@@ -67,7 +67,7 @@ export async function createLead(body, ip) {
   if (body.consent !== true) e.consent = 'Cần đồng ý để nhóm estateSmartAI liên hệ lại.';
   const code = body.code ? String(body.code).toUpperCase().slice(0, 20) : '';
   const listing = code ? getByCode(code) : null;
-  if (code && !listing) e.code = 'Không tìm thấy mặt bằng.';
+  if (code && !listing) e.code = 'Không tìm thấy căn nhà.';
   if (Object.keys(e).length) throw new LeadError(e);
   if (!allow(ip)) throw new LeadError({ _: 'Anh/chị đã gửi nhiều yêu cầu, vui lòng thử lại sau.' }, 429);
 
@@ -88,8 +88,8 @@ async function notifyTelegram(l) {
   if (!telegramEnabled()) return;
   const site = process.env.SITE_URL || 'https://estatesmart.site';
   const lines = [
-    `<b>${l.source === 'owner_msg' ? 'Tin nhắn gửi chủ nhà' : 'Yêu cầu khảo sát'} #${l.id}</b>`,
-    l.code ? `Mặt bằng: <b>${esc(l.code)}</b> · ${esc(l.listing)}` : null,
+    `<b>${l.source === 'owner_msg' ? 'Tin nhắn gửi chủ nhà' : 'Yêu cầu xem nhà'} #${l.id}</b>`,
+    l.code ? `Căn: <b>${esc(l.code)}</b> · ${esc(l.listing)}` : null,
     `Khách: ${esc(l.name)} (${esc(l.role)})`,
     `Điện thoại: <code>${esc(l.phone)}</code>`,
     l.date ? `Ngày muốn xem: ${esc(l.date.split('-').reverse().join('/'))}` : null,

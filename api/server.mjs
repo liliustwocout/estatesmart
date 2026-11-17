@@ -1,9 +1,9 @@
 // Máy chủ API của estateSmartAI. Chạy: node server.mjs (Node 22, không cần thư viện ngoài).
 //   GET  /api/health      → trạng thái
-//   POST /api/recommend   → 5 Agent thẩm định, trả Top 3 mặt bằng + đối thủ quanh đó
-//   POST /api/profiles    → hồ sơ chi tiết của các mặt bằng (trang /mat-bang/)
+//   POST /api/recommend   → 5 Agent chấm điểm sống, trả Top 3 căn nhà + tiện ích quanh đó
+//   POST /api/profiles    → hồ sơ chi tiết của các căn (trang /mat-bang/, sau này /nha/)
 //   POST /api/parse       → đọc câu mô tả tự do thành tiêu chí, báo mục còn thiếu (có khoá mô hình thì dùng AI, xem intake.mjs)
-//   POST /api/report      → báo cáo một mặt bằng cho trang Trợ lý (bản đồ 3D, đối thủ, lưu lượng ước lượng…)
+//   POST /api/report      → báo cáo một căn cho trang Trợ lý (hệ sinh thái tiện ích, một ngày của gia đình…)
 //   POST /api/chat        → trợ lý AI trả lời câu hỏi tự do, truyền dần từng đoạn chữ (text/event-stream)
 //   /api/admin/*          → trang quản trị (xem admin.mjs)
 import { createServer } from 'node:http';
@@ -16,6 +16,7 @@ import { createLead, LeadError, createShare, getShare, telegramEnabled } from '.
 import { report } from './report.mjs';
 import { handleAdmin, adminEnabled } from './admin.mjs';
 import { listActive } from './db.mjs';
+import { KEYS } from './report.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const MAX_MESSAGE = 500; // ký tự mỗi câu hỏi
@@ -58,9 +59,9 @@ async function readJson(req, max = MAX_BODY) {
 const cleanText = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 const cleanCriteria = (c) => {
   const o = c && typeof c === 'object' ? c : {};
-  return Object.fromEntries(['model', 'area', 'budget', 'size', 'needs'].map((k) => [k, cleanText(o[k], 120)]));
+  return Object.fromEntries(KEYS.map((k) => [k, cleanText(o[k], 120)]));
 };
-const cleanCodes = (v) => (Array.isArray(v) ? v : []).filter((c) => typeof c === 'string' && /^[A-Za-z0-9-]{2,20}$/.test(c)).slice(0, 3).map((c) => c.toUpperCase());
+const cleanCodes = (v) => (Array.isArray(v) ? v : []).filter((c) => typeof c === 'string' && /^[A-Za-z0-9.-]{2,20}$/.test(c)).slice(0, 3).map((c) => c.toUpperCase());
 
 // Giới hạn nhẹ cho các API tính toán (không tốn token): 30 lần mỗi phút mỗi IP.
 const light = new Map();
@@ -131,16 +132,19 @@ async function route(req, res, url, ip) {
   const m = req.method;
 
   if (m === 'GET' && p === '/api/health') {
-    return sendJson(res, 200, { ok: true, llm: !!llmConfig.apiKey, admin: adminEnabled(), telegram: telegramEnabled(), listings: listActive().length });
+    return sendJson(res, 200, { ok: true, llm: !!llmConfig.apiKey, admin: adminEnabled(), telegram: telegramEnabled(), homes: listActive().length });
   }
 
-  // Mở link chia sẻ: dựng lại đúng ba mặt bằng và tiêu chí đã lưu.
+  // Mở link chia sẻ: dựng lại đúng ba căn và tiêu chí đã lưu.
   const sm = p.match(/^\/api\/share\/([A-Za-z0-9]{6,20})$/);
   if (m === 'GET' && sm) {
     if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
     const sh = getShare(sm[1]);
     if (!sh) return sendJson(res, 404, { error: 'Link đã hết hạn hoặc không tồn tại.' });
-    return sendJson(res, 200, { ...sh, results: cardsFor(sh.codes, sh.criteria) });
+    const results = cardsFor(sh.codes, sh.criteria);
+    // Link tạo trước khi đổi sang chủ đề nhà ở (mã mặt bằng cũ) không còn căn nào để hiện.
+    if (!results.length) return sendJson(res, 410, { error: 'Link này thuộc phiên bản cũ hoặc các căn đã được gỡ, không còn hiệu lực.' });
+    return sendJson(res, 200, { ...sh, results });
   }
 
   if (p.startsWith('/api/admin/')) {
@@ -153,7 +157,7 @@ async function route(req, res, url, ip) {
 
   if (p === '/api/chat') return handleChat(req, res, ip);
 
-  // Yêu cầu khảo sát / tin nhắn gửi chủ nhà (có thông tin cá nhân, không ghi vào log).
+  // Yêu cầu xem nhà / tin nhắn gửi chủ nhà (có thông tin cá nhân, không ghi vào log).
   if (p === '/api/leads') {
     const body = await readJson(req);
     try { return sendJson(res, 200, await createLead(body, ip)); }
@@ -164,7 +168,7 @@ async function route(req, res, url, ip) {
     if (!lightAllow(ip)) return sendJson(res, 429, { error: 'Anh/chị thao tác hơi nhanh, thử lại sau ít giây.' }, { 'retry-after': '10' });
     const body = await readJson(req);
     const codes = cleanCodes(body.codes);
-    if (!codes.length) throw new HttpError(400, 'Thiếu mã mặt bằng');
+    if (!codes.length) throw new HttpError(400, 'Thiếu mã căn');
     return sendJson(res, 200, { id: createShare(cleanCriteria(body.criteria), codes) });
   }
 
@@ -173,9 +177,9 @@ async function route(req, res, url, ip) {
     const body = await readJson(req);
     if (p === '/api/parse') return sendJson(res, 200, await parseSmart(cleanText(body.text, 500), cleanCriteria(body.prev), ip, body.step));
     const code = cleanCodes([body.code])[0];
-    if (!code) throw new HttpError(400, 'Thiếu mã mặt bằng');
+    if (!code) throw new HttpError(400, 'Thiếu mã căn');
     const r = report(code, cleanCriteria(body.criteria));
-    return r ? sendJson(res, 200, r) : sendJson(res, 404, { error: 'Không tìm thấy mặt bằng' });
+    return r ? sendJson(res, 200, r) : sendJson(res, 404, { error: 'Không tìm thấy căn nhà' });
   }
 
   if (p === '/api/recommend' || p === '/api/profiles') {
@@ -184,7 +188,7 @@ async function route(req, res, url, ip) {
     const criteria = cleanCriteria(body.criteria);
     if (p === '/api/recommend') return sendJson(res, 200, recommend(criteria));
     const codes = cleanCodes(body.codes);
-    if (!codes.length) throw new HttpError(400, 'Thiếu mã mặt bằng');
+    if (!codes.length) throw new HttpError(400, 'Thiếu mã căn');
     return sendJson(res, 200, { profiles: codes.map((c) => profile(c, criteria)).filter(Boolean) });
   }
 
@@ -204,7 +208,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`estateSmartAI API chạy ở cổng ${PORT}; ${listActive().length} mặt bằng; mô hình ${llmConfig.model} (${llmConfig.apiKey ? 'có khoá' : 'chưa có khoá'}); quản trị: ${adminEnabled() ? 'bật' : 'tắt'}`);
+  console.log(`estateSmartAI API chạy ở cổng ${PORT}; ${listActive().length} căn nhà; mô hình ${llmConfig.model} (${llmConfig.apiKey ? 'có khoá' : 'chưa có khoá'}); quản trị: ${adminEnabled() ? 'bật' : 'tắt'}`);
 });
 
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => server.close(() => process.exit(0)));

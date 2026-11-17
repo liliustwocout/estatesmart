@@ -32,8 +32,8 @@ Thông tin hiện tại của dự án:
 12. [Xử lý sự cố](#12-xử-lý-sự-cố)
 13. [Checklist](#13-checklist)
 14. [Bật trợ lý AI (DeepSeek)](#14-bật-trợ-lý-ai-deepseek)
-15. [Dữ liệu mặt bằng và trang quản trị](#15-dữ-liệu-mặt-bằng-và-trang-quản-trị)
-16. [Yêu cầu khảo sát, báo Telegram, link chia sẻ, PDF](#16-yêu-cầu-khảo-sát-báo-telegram-link-chia-sẻ-pdf)
+15. [Dữ liệu nhà ở, tiện ích và trang quản trị](#15-dữ-liệu-nhà-ở-tiện-ích-và-trang-quản-trị)
+16. [Yêu cầu xem nhà, báo Telegram, link chia sẻ, PDF](#16-yêu-cầu-xem-nhà-báo-telegram-link-chia-sẻ-pdf)
 
 ---
 
@@ -74,7 +74,7 @@ Lập trình viên  ──git push──▶  GitHub (nhánh main)
 | `Dockerfile` | Build 2 bước: Node 22 build web tĩnh → nginx 1.27 phục vụ. Ghi mã commit vào `version.txt` |
 | `deploy/nginx.conf` | Cấu hình nginx trong container `web`: nén gzip, cache dài cho `/assets/`, không cache HTML và `version.txt` |
 | `docker-compose.yml` | Ba container: `web` (nginx), `api` (trợ lý AI) và `caddy` (reverse proxy + HTTPS) |
-| `api/` | Máy chủ API Node 22: chấm điểm 5 Agent, cơ sở dữ liệu SQLite, trang quản trị, gọi DeepSeek; có `Dockerfile` riêng (xem [mục 14](#14-bật-trợ-lý-ai-deepseek), [mục 15](#15-dữ-liệu-mặt-bằng-và-trang-quản-trị)) |
+| `api/` | Máy chủ API Node 22: chấm điểm sống 5 Agent, cơ sở dữ liệu SQLite, trang quản trị, gọi DeepSeek; có `Dockerfile` riêng (xem [mục 14](#14-bật-trợ-lý-ai-deepseek), [mục 15](#15-dữ-liệu-nhà-ở-tiện-ích-và-trang-quản-trị)) |
 | `deploy/Caddyfile` | Caddy: `/hooks/*` → webhook trên máy chủ cổng 9000, `/api/*` → `api`, còn lại → `web`; `www` chuyển về tên chính |
 | `deploy/hooks.json` | Luật của webhook: chỉ chạy khi chữ ký `X-Hub-Signature-256` đúng **và** `ref` là `refs/heads/main` |
 | `deploy/deploy.sh` | Script deploy: khoá chống chạy trùng, lấy code mới, build và thay container, dọn image cũ, ghi log |
@@ -88,7 +88,7 @@ Các file **chỉ có trên VPS**, không nằm trong repo:
 | `/opt/estatesmart/webhook.env` | `WEBHOOK_SECRET=...` (quyền 600, chủ sở hữu `deploy`) |
 | `/opt/estatesmart/app/.env` | `DOMAIN=estatesmart.site` cho docker compose (đã có trong `.gitignore`) |
 | `/opt/estatesmart/api.env` | `DEEPSEEK_API_KEY`, `ADMIN_PASSWORD`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` cho container `api` (quyền 600, chủ sở hữu `deploy`) |
-| Volume Docker `api_data` | Cơ sở dữ liệu `estatesmart.db`: mặt bằng, yêu cầu của khách (có thông tin cá nhân), link chia sẻ; giữ qua các lần deploy |
+| Volume Docker `api_data` | Cơ sở dữ liệu `estatesmart.db`: căn nhà, toà nhà, tiện ích nhập tay, yêu cầu của khách (có thông tin cá nhân), link chia sẻ; giữ qua các lần deploy |
 | `/opt/estatesmart/deploy.log` | Nhật ký mỗi lần deploy |
 | `/opt/estatesmart/deploy.lock` | Khoá để không chạy 2 lần deploy cùng lúc |
 | `/etc/systemd/system/estatesmart-webhook.service` | Dịch vụ webhook |
@@ -580,7 +580,7 @@ Sửa xong chạy lại `docker compose up -d api`. Xem mức dùng trong ngày 
 
 ### 14.2a Quy tắc trả lời của trợ lý
 
-Bộ quy tắc nằm trong `api/prompt.mjs` (hằng `RULES`): phạm vi được trả lời, những việc không được làm, không vượt quyền (không giữ chỗ, đặt cọc, báo giá thay chủ nhà, tư vấn pháp lý, dự báo lãi), không thu thập thông tin cá nhân, chống thao túng (lệnh đè, đòi xem prompt, lịch sử giả) và cách từ chối. Sửa quy tắc rồi push là deploy như bình thường. Phần quy tắc đặt ở đầu và không đổi giữa các lần hỏi nên DeepSeek tính giá rẻ hơn cho phần đầu được lưu đệm (context caching).
+Bộ quy tắc nằm trong `api/prompt.mjs` (hằng `RULES`): phạm vi được trả lời (so sánh ba căn đã đề xuất cho gia đình), những việc không được làm, không vượt quyền (không giữ chỗ, đặt cọc, báo giá thay chủ nhà, tư vấn pháp lý hay vay, dự báo tăng giá; không khẳng định trường "đúng tuyến"; không đánh giá chất lượng trường, bệnh viện; không đánh giá khu dân cư theo người sống ở đó), không thu thập thông tin cá nhân (kể cả tên, tuổi cụ thể của con), chống thao túng (lệnh đè, đòi xem prompt, lịch sử giả) và cách từ chối. Sửa quy tắc rồi push là deploy như bình thường. Phần quy tắc đặt ở đầu và không đổi giữa các lần hỏi nên DeepSeek tính giá rẻ hơn cho phần đầu được lưu đệm (context caching).
 
 ### 14.3 Chạy trên máy
 
@@ -600,24 +600,31 @@ npm run dev
 
 ### 14.4 Dữ liệu và quyền riêng tư
 
-- Gửi tới DeepSeek: tiêu chí 5 câu hỏi, câu hỏi tự do và tối đa 10 lượt hội thoại trước. Máy chủ DeepSeek đặt ở Trung Quốc; ô nhập trên trang có ghi chú để người dùng không nhập thông tin cá nhân.
+- Gửi tới DeepSeek: tiêu chí 5 câu hỏi (gồm mô tả gia đình: số con, tuổi hoặc nhóm tuổi, có ông bà ở cùng không), câu hỏi tự do và tối đa 10 lượt hội thoại trước. Máy chủ DeepSeek đặt ở Trung Quốc; ô nhập trên trang có ghi chú để người dùng không nhập thông tin cá nhân.
+- Nơi làm việc chỉ được quy về điểm mốc trung tâm quận (`api/data/landmarks.json`) để ước lượng thời gian đi làm; hệ thống **không** gửi địa chỉ người dùng gõ cho dịch vụ bản đồ hay tra địa chỉ bên ngoài.
 - Form đặt lịch (họ tên, số điện thoại) **không** đi qua API này.
 - Log container `api` chỉ ghi độ dài, số token và thời gian trả lời, không ghi nội dung câu hỏi: `docker compose logs --tail=50 api`.
 
 ---
 
-## 15. Dữ liệu mặt bằng và trang quản trị
+## 15. Dữ liệu nhà ở, tiện ích và trang quản trị
 
 ### 15.1 Dữ liệu nằm ở đâu
 
-| Dữ liệu | Nơi lưu | Cập nhật |
+| Dữ liệu | Nơi lưu | Dữ liệu mẫu (chỉ nạp khi bảng trống) |
 |---|---|---|
-| Mặt bằng (giá, diện tích, toạ độ, lối tiếp cận…) | SQLite `/data/estatesmart.db` trong volume Docker `api_data` | Trang `/quan-tri/` |
-| Dữ liệu mẫu ban đầu | `api/data/listings.csv` (30 mặt bằng **mô phỏng** ở Vinhomes Ocean Park 1) | Chỉ nạp khi cơ sở dữ liệu trống |
-| Chung cư, trường, Vincom, xe buýt, quán cùng ngành | `api/data/pois.json` (ảnh chụp OpenStreetMap) | `cd api && npm run osm`, rồi commit file mới |
+| Căn nhà: căn hộ, nhà đất; bán hoặc cho thuê; giá, phòng ngủ, tầng, pháp lý… | Bảng `homes` trong SQLite `/data/estatesmart.db` (volume Docker `api_data`) | `api/data/homes.csv`: 30 căn **mô phỏng** ở Vinhomes Ocean Park 1 |
+| Toà chung cư: toạ độ, tiện ích nội khu (bể bơi, gym, sân chơi, lớp mầm non…), phí dịch vụ | Bảng `buildings` | `api/data/buildings.csv`: 7 toà, tiện ích nội khu là **mô phỏng** |
+| Tiện ích nhập tay: thêm điểm OSM còn thiếu, sửa hoặc ẩn điểm OSM sai | Bảng `pois_manual` | `api/data/pois_manual.csv`: 2 dòng ẩn điểm OSM gắn nhầm |
+| Tiện ích từ OpenStreetMap: trường (tách cấp học theo tên), chợ, siêu thị, y tế, công viên, sân chơi, thể thao, xe buýt… | `api/data/pois.json` (ảnh chụp OSM, nằm trong repo) | `cd api && npm run osm`, rồi commit file mới |
+| Điểm mốc nơi làm việc (trung tâm quận) để ước lượng thời gian đi làm | `api/data/landmarks.json` | Sửa file rồi commit |
 | Bản đồ nền | OpenFreeMap (miễn phí, không cần khoá) | Không cần làm gì |
 
-Volume `api_data` được giữ qua các lần deploy. Sửa `listings.csv` trong repo **không** ghi đè dữ liệu đang chạy; muốn nạp lại thì dùng *Nhập CSV* trên trang quản trị.
+Volume `api_data` được giữ qua các lần deploy. Sửa file CSV mẫu trong repo **không** ghi đè dữ liệu đang chạy; muốn nạp lại thì dùng *Nhập CSV*.
+
+Hai lưu ý về dữ liệu OSM hiện có:
+- OSM chưa có nhà thuốc nào trong khu. Loại tiện ích không có điểm nào thì **không tính vào điểm** (tránh trừ đều mọi căn), và trang kết quả ghi rõ "dữ liệu chưa có…". Thêm nhà thuốc bằng tiện ích nhập tay là điểm được tính ngay.
+- OSM có 5 ga đường sắt đô thị **quy hoạch**, chưa vận hành. Hệ thống bỏ qua ga metro từ OSM; chỉ tính ga do quản trị viên nhập tay và đánh dấu *đã kiểm chứng*.
 
 ### 15.2 Bật trang quản trị
 
@@ -643,9 +650,30 @@ Bảo vệ: sai mật khẩu 5 lần trong 15 phút thì IP bị khoá 15 phút;
 
 ### 15.3 Thêm dữ liệu thật
 
-- Từng mặt bằng: *Thêm mặt bằng* hoặc bấm vào một dòng để sửa. Toạ độ lấy bằng cách nhấp chuột phải trên openstreetmap.org hoặc Google Maps. Muốn tạm ẩn thì đổi *Trạng thái* sang `hidden` thay vì xoá.
-- Hàng loạt: *Xuất CSV* để lấy file mẫu đúng cột, sửa bằng Excel hoặc Google Sheets (lưu dạng CSV UTF-8), rồi *Nhập CSV*. Có lỗi ở bất kỳ dòng nào thì không ghi dòng nào và trang báo dòng lỗi. Chọn *Thay toàn bộ* để xoá các mặt bằng không có trong file.
-- Cột `suited` (mô hình phù hợp) nhận `cafe`, `tra_sua`, `nha_hang`, `tap_hoa`, `tien_loi`, cách nhau bằng dấu `;`. Cột `type` nhận `villa`, `shophouse`, `townhouse`, `podium`, `kiosk`.
+Trang quản trị hiện có bảng **căn nhà** (thêm, sửa, ẩn, nhập/xuất CSV). Tab **Toà nhà** và **Tiện ích** sẽ có khi làm lại trang quản trị (giai đoạn 5 trong `docs/KE_HOACH_DOI_CHU_DE.md`); trong lúc chờ, API đã sẵn: `/api/admin/buildings`, `/api/admin/pois` (GET danh sách, PUT `/<mã>` để thêm/sửa, DELETE, `/import`, `/export`).
+
+**Căn nhà** (cột trong CSV):
+
+| Cột | Giá trị |
+|---|---|
+| `type` | `can_ho`, `studio`, `duplex`, `penthouse` (chung cư); `nha_pho`, `lien_ke`, `biet_thu` (nhà đất) |
+| `deal` | `ban` (cần `price_billion` tính bằng tỷ và `legal`) hoặc `thue` (cần `rent_million` tính bằng triệu/tháng) |
+| `building` | Mã toà trong bảng `buildings` (căn hộ). Có mã toà thì `lat`, `lng`, `mgmt_fee` để trống sẽ lấy theo toà |
+| `floor` / `floors` | Căn hộ ghi `floor` (tầng của căn); nhà đất ghi `floors` (số tầng) và `elevator` (có thang máy hay không) |
+| `legal` | `so_hong`, `cho_so`, `hdmb` (hợp đồng mua bán) |
+| `furnished` | `tho`, `co_ban`, `day_du` |
+| `car_parking` | `ham`, `truoc_nha`, `gan`, `khong` |
+| `direction` | `dong`, `tay`, `nam`, `bac`, `dong_nam`, `dong_bac`, `tay_nam`, `tay_bac` |
+
+**Toà nhà:** cột `amenities` nhận `be_boi`, `gym`, `san_choi`, `vuon`, `mam_non`, `tien_loi`, cách nhau bằng `;`. Mỗi căn trong toà được tính các tiện ích này là "trong toà" (1 phút).
+
+**Tiện ích nhập tay** (`pois_manual`):
+- Thêm điểm OSM còn thiếu: để trống `osm_id`, điền `kind` (xem `api/poi-kinds.mjs`), tên, toạ độ. Trường phổ thông điền thêm `level`: `th`, `thcs`, `thpt`, `lc` (liên cấp).
+- Sửa một điểm OSM (sai tên, sai vị trí, sai loại): điền `osm_id` (ví dụ `w1370266208`, xem trong `api/data/pois.json`) và giá trị đúng.
+- Ẩn một điểm OSM sai: điền `osm_id`, đặt `hidden = 1`.
+- Đánh dấu `verified = 1` khi đã đi kiểm tra tại chỗ; nguồn hiện trên trang là "Nhập tay, đã kiểm chứng".
+
+Toạ độ lấy bằng cách nhấp chuột phải trên openstreetmap.org hoặc Google Maps. Có lỗi ở bất kỳ dòng nào trong file CSV thì không ghi dòng nào và trang báo dòng lỗi; chọn *Thay toàn bộ* để xoá các dòng không có trong file. Muốn tạm ẩn một căn thì đổi *Trạng thái* sang `hidden` thay vì xoá.
 
 ### 15.4 Sao lưu
 
@@ -657,21 +685,28 @@ Hoặc đơn giản hơn: tải *Xuất CSV* trên trang quản trị định k�
 
 ### 15.5 Cách 5 Agent chấm điểm
 
-Tính bằng code trong `api/engine.mjs` (không dùng mô hình ngôn ngữ, nên cùng tiêu chí luôn ra cùng kết quả):
+Tính bằng code trong `api/engine.mjs` (không dùng mô hình ngôn ngữ, nên cùng tiêu chí luôn ra cùng kết quả). Công thức đầy đủ: [`docs/PHUONG_PHAP_CHAM_DIEM.md`](PHUONG_PHAP_CHAM_DIEM.md).
 
-| Agent | Việc | Trọng số trong điểm |
-|---|---|---|
-| Phân tích nhu cầu | Đọc 5 câu trả lời: mô hình, khu vực, khoảng ngân sách, khoảng diện tích, yêu cầu (ô tô, dải phân cách, bếp…) | — |
-| Sàng lọc | Loại mặt bằng vượt ngân sách quá 25% hoặc lệch diện tích nhiều; còn dưới 3 thì nới điều kiện | Ngân sách 25%, diện tích 20% |
-| Đánh giá vị trí | Đếm chung cư, trường, xe buýt, công viên trong 500 m, khoảng cách tới Vincom (OpenStreetMap) | 20% |
-| Phân tích cạnh tranh | Đếm cơ sở cùng ngành trong 500 m (OpenStreetMap; dữ liệu quán nhỏ có thể thiếu) | 15% |
-| Chấm điểm và khuyến nghị | Lối tiếp cận, dải phân cách, bãi đỗ, bếp, sân, mô hình phù hợp; tổng hợp Top 3, ưu điểm và rủi ro | Tiếp cận 20% |
+| Agent | Việc |
+|---|---|
+| Hiểu gia đình | Đọc 5 câu trả lời: mua hay thuê, loại nhà, ngân sách, thành phần gia đình (tuổi con, ông bà), nơi đi làm, tiện ích ưu tiên; suy ra số phòng ngủ cần |
+| Sàng lọc căn | Đúng hình thức và loại nhà; loại căn vượt ngân sách (mua quá 10%, thuê quá 20%) hoặc thiếu từ 2 phòng ngủ; còn dưới 3 căn thì nới dần và ghi rõ đã nới gì |
+| Học hành và sức khoẻ | Trường theo đúng cấp học của con, phòng khám, bệnh viện, nhà thuốc |
+| Sinh hoạt và đi lại | Chợ, siêu thị, tiện lợi, công viên, sân chơi, thể thao, xe buýt, thời gian đi làm |
+| Chấm điểm sống | Điểm 0–100 từ 6 thành phần (ngân sách 20, căn phù hợp 15, giáo dục 20, mua sắm và y tế 20, xanh và thể thao 10, đi lại 15), trọng số đổi theo gia đình; Top 3, ưu điểm, điều cần kiểm chứng, "một ngày của gia đình" |
 
-Trợ lý chat nhận đúng dữ liệu và điểm thành phần của ba mặt bằng đang hiển thị, nên giải thích được vì sao mặt bằng này xếp trên mặt bằng kia.
+Trợ lý chat nhận đúng dữ liệu, trọng số và điểm thành phần của ba căn đang hiển thị, nên giải thích được vì sao căn này xếp trên căn kia.
+
+### 15.6 Chuyển từ dữ liệu mặt bằng (chủ đề cũ)
+
+Lần deploy đầu tiên sau khi đổi chủ đề, container `api` tự tạo ba bảng mới và nạp dữ liệu mẫu. Không cần làm gì thêm.
+- Bảng `listings` (mặt bằng kinh doanh) **được giữ nguyên, không xoá**, chỉ không còn được dùng. Muốn dọn hẳn thì sao lưu trước (mục 15.4) rồi xoá bảng bằng `sqlite3`.
+- Yêu cầu khách cũ (bảng `leads`) giữ nguyên, vẫn hiện ở tab Yêu cầu.
+- Link chia sẻ tạo trước khi đổi chủ đề trỏ tới mã mặt bằng cũ, khi mở trả về "Link này thuộc phiên bản cũ… không còn hiệu lực" (mã 410).
 
 ---
 
-## 16. Yêu cầu khảo sát, báo Telegram, link chia sẻ, PDF
+## 16. Yêu cầu xem nhà, báo Telegram, link chia sẻ, PDF
 
 ### 16.1 Yêu cầu từ khách
 
@@ -679,13 +714,13 @@ Hai nơi gửi yêu cầu, đều lưu vào bảng `leads` trong cơ sở dữ l
 
 | Nơi gửi | Nội dung |
 |---|---|
-| Trang hồ sơ `/mat-bang/` → form "Đặt lịch khảo sát thực địa" | Họ tên, số điện thoại, vai trò, ngày muốn xem, lời nhắn |
+| Trang hồ sơ `/mat-bang/` (sau này `/nha/`) → form đặt lịch xem nhà | Họ tên, số điện thoại, vai trò (người mua, người thuê, người thân, môi giới, khác), ngày muốn xem, lời nhắn |
 | Trang Trợ lý → Báo cáo đầy đủ → "Gửi cho chủ nhà" | Họ tên, số điện thoại, tin nhắn soạn sẵn từ tiêu chí |
 
 - Khách phải tích ô đồng ý mới gửi được. Số điện thoại được chuẩn hoá về dạng `0xxxxxxxxx`.
-- Chống spam: ô bẫy ẩn cho bot, mỗi IP tối đa 5 yêu cầu/giờ, toàn hệ thống 200/ngày; gửi trùng (cùng số, cùng mặt bằng trong 10 phút) không tạo bản ghi mới.
-- Log máy chủ chỉ ghi mã yêu cầu và mã mặt bằng, **không ghi** họ tên hay số điện thoại.
-- Trong tab Yêu cầu: đổi trạng thái (Mới, Đã gọi, Đã hẹn khảo sát, Đã đóng), ghi chú nội bộ, xoá, xuất CSV. Xoá yêu cầu khi không còn cần để không giữ thông tin cá nhân lâu.
+- Chống spam: ô bẫy ẩn cho bot, mỗi IP tối đa 5 yêu cầu/giờ, toàn hệ thống 200/ngày; gửi trùng (cùng số, cùng căn trong 10 phút) không tạo bản ghi mới.
+- Log máy chủ chỉ ghi mã yêu cầu và mã căn, **không ghi** họ tên hay số điện thoại.
+- Trong tab Yêu cầu: đổi trạng thái (Mới, Đã gọi, Đã hẹn xem nhà, Đã đóng), ghi chú nội bộ, xoá, xuất CSV. Xoá yêu cầu khi không còn cần để không giữ thông tin cá nhân lâu.
 
 ### 16.2 Bật báo tin qua Telegram
 
@@ -709,12 +744,12 @@ TELEGRAM_CHAT_ID=-1001234567890
 cd /opt/estatesmart/app && sudo -u deploy docker compose up -d api && curl -s https://estatesmart.site/api/health
 ```
 
-Mỗi yêu cầu mới sẽ được nhắn vào nhóm: loại yêu cầu, mã mặt bằng, tên, số điện thoại, ngày muốn xem, lời nhắn và link quản trị. Lưu ý: số điện thoại của khách sẽ nằm trong lịch sử chat Telegram, nên chỉ thêm người cần thiết vào nhóm. Token lộ thì vào @BotFather → `/revoke` để tạo token mới.
+Mỗi yêu cầu mới sẽ được nhắn vào nhóm: loại yêu cầu, mã căn, tên, số điện thoại, ngày muốn xem, lời nhắn và link quản trị. Lưu ý: số điện thoại của khách sẽ nằm trong lịch sử chat Telegram, nên chỉ thêm người cần thiết vào nhóm. Token lộ thì vào @BotFather → `/revoke` để tạo token mới.
 
 ### 16.3 Link chia sẻ kết quả
 
-Nút **Chia sẻ kết quả** dưới danh sách trong trang Trợ lý lưu tiêu chí và ba mã mặt bằng (bảng `shares`, không có thông tin cá nhân), tạo link `https://estatesmart.site/tro-ly/?phien=<mã>`. Link hết hạn sau 90 ngày; khi mở, điểm số được tính lại theo dữ liệu hiện tại; mặt bằng đã ẩn hoặc xoá sẽ không hiện.
+Nút **Chia sẻ kết quả** dưới danh sách trong trang Trợ lý lưu tiêu chí và ba mã căn (bảng `shares`, không có thông tin cá nhân), tạo link `https://estatesmart.site/tro-ly/?phien=<mã>`. Link hết hạn sau 90 ngày; khi mở, điểm số được tính lại theo dữ liệu hiện tại; căn đã ẩn hoặc xoá sẽ không hiện. Link không còn căn nào (kể cả link của chủ đề mặt bằng cũ) trả về "không còn hiệu lực".
 
 ### 16.4 Tải PDF hồ sơ
 
-Nút **Tải PDF** ở đầu trang hồ sơ mở hộp thoại in của trình duyệt; chọn "Lưu dưới dạng PDF". Bản in dùng nền trắng, bỏ thanh menu và form, giữ ảnh, thông số, tiện ích, cạnh tranh, nhận định và nguồn dữ liệu.
+Nút **Tải PDF** ở đầu trang hồ sơ mở hộp thoại in của trình duyệt; chọn "Lưu dưới dạng PDF". Bản in dùng nền trắng, bỏ thanh menu và form, giữ ảnh, thông số, tiện ích quanh nhà, nhận định và nguồn dữ liệu.

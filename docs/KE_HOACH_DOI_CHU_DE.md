@@ -11,15 +11,17 @@ Tài liệu này liệt kê những gì phải đổi (docs, dữ liệu, chấm
 
 ---
 
-## 0. Cần chốt trước khi làm
+## 0. Các quyết định đã chốt
 
-| # | Câu hỏi | Đề xuất mặc định | Ảnh hưởng tới |
+Chốt ngày 17/11/2026 theo **đề xuất mặc định** dưới đây (chưa có ý kiến khác). Muốn đổi mục nào thì sửa ở đây trước khi làm giai đoạn liên quan.
+
+| # | Câu hỏi | Đã chốt | Ảnh hưởng tới |
 |---|---|---|---|
 | 1 | Mua, thuê hay cả hai? | **Cả hai**, hỏi ngay câu đầu; giá bán tính bằng tỷ, giá thuê bằng triệu/tháng | Schema, câu hỏi, chấm điểm ngân sách |
 | 2 | Khu vực thí điểm | **Giữ Vinhomes Ocean Park 1** (đã có dữ liệu OSM, bản đồ, ảnh); mở rộng sau | Dữ liệu mẫu, `fetch-osm.mjs` |
 | 3 | Đổi đường dẫn `/mat-bang/`? | Đổi sang **`/nha/`**, chuyển hướng 301 từ `/mat-bang/` | nginx, sitemap, link chia sẻ cũ |
 | 4 | Giữ tên estateSmartAI, logo, bảng màu? | **Giữ**. Chỉ đổi khẩu hiệu và nội dung | Landing, meta |
-| 5 | Đo khoảng cách | Giai đoạn đầu: đường chim bay × 1,3, quy ra phút đi bộ (80 m/phút). Ghi rõ là **ước lượng** | Engine, giao diện |
+| 5 | Đo khoảng cách | Giai đoạn đầu: đường chim bay × 1,3, quy ra phút đi bộ (80 m/phút). Ghi rõ là **ước lượng**. Chi tiết: `docs/PHUONG_PHAP_CHAM_DIEM.md` | Engine, giao diện |
 | 6 | Dữ liệu cũ (30 mặt bằng mô phỏng, link chia sẻ, yêu cầu khảo sát) | Bỏ dữ liệu mặt bằng, làm 30 căn mô phỏng mới; link chia sẻ cũ báo "hết hiệu lực"; giữ bảng `leads` | `db.mjs`, `server.mjs` |
 
 ---
@@ -73,9 +75,10 @@ Dùng thống nhất ở docs, giao diện, prompt, trang quản trị.
 
 | File | Việc | Mức độ |
 |---|---|---|
-| `README.md` | Câu mô tả dự án; bảng đường dẫn (`/nha/` thay `/mat-bang/`); mục quản trị nói "căn nhà, tiện ích" | Viết lại phần đầu |
+| `README.md` | Câu mô tả dự án và link tài liệu mới (**đã làm**); bảng đường dẫn (`/nha/` thay `/mat-bang/`) và mục quản trị đổi cùng lúc với code ở giai đoạn 5 | Viết lại phần đầu |
+| `docs/HUONG_DAN_CICD.md` mục 14–16 | Đổi **cùng commit với code** của từng giai đoạn (2, 3, 5), để tài liệu vận hành luôn đúng với thứ đang chạy | Theo giai đoạn |
 | `docs/KE_HOACH_DOI_CHU_DE.md` | Tài liệu này; cập nhật khi chốt mục 0 | Mới |
-| `docs/PHUONG_PHAP_CHAM_DIEM.md` | **Tách mới** từ `HUONG_DAN_CICD.md` mục 15.5: nhóm tiện ích, bán kính, trọng số theo hồ sơ gia đình, cách ước lượng thời gian đi bộ, giới hạn dữ liệu | Mới |
+| `docs/PHUONG_PHAP_CHAM_DIEM.md` | Thay `HUONG_DAN_CICD.md` mục 15.5: nhóm tiện ích, ngưỡng, trọng số theo hồ sơ gia đình, cách ước lượng thời gian đi bộ, giới hạn dữ liệu | **Đã viết** (đặc tả cho giai đoạn 3) |
 | `docs/HUONG_DAN_CICD.md` mục 14 | 14.2a: phạm vi trợ lý mới; 14.4: dữ liệu gửi đi gồm thành phần gia đình (không gửi tên, tuổi cụ thể của con) | Sửa |
 | `docs/HUONG_DAN_CICD.md` mục 15 | Đổi "mặt bằng" → "căn nhà"; cột CSV mới (mục 5); thêm 15.x "Quản lý tiện ích" (tab mới); 15.5 chuyển sang file phương pháp chấm điểm, để lại một dòng link | Viết lại |
 | `docs/HUONG_DAN_CICD.md` mục 16 | "Đặt lịch khảo sát thực địa" → "Đặt lịch xem nhà"; vai trò người gửi: người mua / người thuê | Sửa nhẹ |
@@ -90,6 +93,7 @@ Mục 15 và 16 của `HUONG_DAN_CICD.md` thực ra là tài liệu sản phẩm
 ## 4. Hệ sinh thái tiện ích: nhóm, bán kính, nguồn
 
 Mỗi nhóm có **bán kính tính điểm** theo phút đi bộ (thành phố 15 phút) và hiện **tiện ích gần nhất + số lượng trong bán kính**.
+Bán kính trong bảng dưới là mức tham khảo; ngưỡng dùng để chấm (`tốt` / `xa` cho từng loại) ở `docs/PHUONG_PHAP_CHAM_DIEM.md` mục 2.
 
 | Nhóm | Gồm | Bán kính | Thẻ OSM |
 |---|---|---|---|
@@ -134,6 +138,7 @@ Giữ: `code`, `name`, `zone`, `lat`, `lng`, `area_m2`, `floors` (nhà đất), 
 ### 5.3 Dữ liệu mẫu
 
 - `api/data/homes.csv`: 30 căn mô phỏng ở Ocean Park 1, trộn căn hộ (studio đến 3 phòng ngủ, các toà khác nhau) và nhà đất (liền kề, biệt thự), cả bán và thuê. Toạ độ rải để có căn rất gần trường, căn gần hồ, căn xa xe buýt, giúp so sánh thấy rõ khác biệt.
+- `api/data/landmarks.json`: các điểm mốc nơi làm việc (trung tâm quận) để ước lượng thời gian đi làm mà không gửi địa chỉ ra dịch vụ ngoài (`PHUONG_PHAP_CHAM_DIEM.md` mục 5).
 - `api/scripts/fetch-osm.mjs`: thêm thẻ ở mục 4, tách `kindergarten` khỏi `school`, tách `marketplace` khỏi `supermarket`, thêm `playground`, `pitch`, `swimming_pool`, `railway=station`; lưu thêm thẻ gốc cần để tách cấp học. Chạy lại, commit `pois.json` mới.
 
 ---
@@ -162,6 +167,8 @@ Giữ con số 5 Agent (quy trình, tiến độ 5 đoạn, tư thế Mascot đ�
 | Đi lại | 15% |
 
 Điểm mỗi nhóm tính từ **tiện ích gần nhất** (càng gần càng cao, giảm dần tới hết bán kính) cộng **độ phong phú** (có lựa chọn thứ hai, thứ ba). Vẫn tính hoàn toàn bằng code, không dùng mô hình ngôn ngữ, để cùng tiêu chí luôn ra cùng kết quả.
+
+Công thức đầy đủ (ngưỡng từng loại, hệ số theo gia đình, ngân sách, căn phù hợp, sàng lọc, mẫu câu ưu điểm và "Một ngày của gia đình"): **`docs/PHUONG_PHAP_CHAM_DIEM.md`**.
 
 ### File cần sửa
 
@@ -352,9 +359,9 @@ Hero giữ `01-chao` ("Chào bạn!"), CTA cuối giữ `10-ngon-cai`. Khối 5 
 
 | Giai đoạn | Việc | Xong khi |
 |---|---|---|
-| 1. Chốt và docs | Trả lời mục 0; cập nhật tài liệu này; viết `PHUONG_PHAP_CHAM_DIEM.md`; sửa `README.md` | Docs mô tả đúng sản phẩm mới, chưa động code |
-| 2. Dữ liệu | `fetch-osm.mjs` + `pois.json` mới; schema `homes`, `buildings`, `pois_manual`; `homes.csv` 30 căn | `npm run dev` trong `api/` tạo DB mới, `/api/health` ổn |
-| 3. Chấm điểm và API | `engine.mjs`, `report.mjs`, `intake.mjs`, `prompt.mjs`, `leads.mjs`, `server.mjs` | Gọi API với 3 hồ sơ gia đình khác nhau ra Top 3 khác nhau, giải thích được |
+| 1. Chốt và docs | Trả lời mục 0; cập nhật tài liệu này; viết `PHUONG_PHAP_CHAM_DIEM.md`; sửa `README.md` | Docs mô tả đúng sản phẩm mới, chưa động code — **xong** |
+| 2. Dữ liệu | `fetch-osm.mjs` + `pois.json` mới; schema `homes`, `buildings`, `pois_manual`; `homes.csv` 30 căn | `npm run dev` trong `api/` tạo DB mới, `/api/health` ổn — **xong** |
+| 3. Chấm điểm và API | `engine.mjs`, `report.mjs`, `intake.mjs`, `prompt.mjs`, `leads.mjs`, `server.mjs` | Gọi API với 3 hồ sơ gia đình khác nhau ra Top 3 khác nhau, giải thích được — **xong**; API vẫn trả thêm các trường tên cũ để giao diện hiện tại chạy tạm, bỏ ở giai đoạn 4 |
 | 4. Trợ lý | Câu hỏi, bản đồ vòng đi bộ, lớp tiện ích, báo cáo "một ngày" | Đi hết luồng trên 390px và 1440px |
 | 5. Hồ sơ và quản trị | `Listing.dc.html` → `/nha/`, chuyển hướng `/mat-bang/`; Admin cột mới, tab Tiện ích | Thêm một căn và một tiện ích từ quản trị, thấy ngay trên hồ sơ |
 | 6. Landing và SEO | `Main.dc.html`, `index.html`, sitemap, ảnh mới | Không còn chữ "mặt bằng", "F&B", "quán" ngoài ngữ cảnh ăn uống |

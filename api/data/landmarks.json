@@ -1,0 +1,16 @@
+{
+  "note": "Điểm mốc nơi làm việc: toạ độ gần đúng của trung tâm quận, chỉ để ước lượng thời gian đi làm (docs/PHUONG_PHAP_CHAM_DIEM.md mục 5). Không phải địa chỉ cụ thể.",
+  "landmarks": [
+    { "key": "hoan_kiem", "name": "Hoàn Kiếm", "lat": 21.0285, "lng": 105.8542, "alias": ["hoàn kiếm", "hoan kiem", "phố cổ", "hồ gươm", "bờ hồ", "tràng tiền"] },
+    { "key": "ba_dinh", "name": "Ba Đình", "lat": 21.0340, "lng": 105.8140, "alias": ["ba đình", "ba dinh", "kim mã", "liễu giai", "đội cấn", "lotte"] },
+    { "key": "dong_da", "name": "Đống Đa", "lat": 21.0150, "lng": 105.8270, "alias": ["đống đa", "dong da", "tây sơn", "chùa bộc", "thái hà", "láng hạ"] },
+    { "key": "hai_ba_trung", "name": "Hai Bà Trưng", "lat": 21.0060, "lng": 105.8570, "alias": ["hai bà trưng", "hai ba trung", "times city", "bạch mai", "minh khai", "lò đúc"] },
+    { "key": "cau_giay", "name": "Cầu Giấy", "lat": 21.0300, "lng": 105.7900, "alias": ["cầu giấy", "cau giay", "duy tân", "trần duy hưng", "xuân thủy", "dịch vọng"] },
+    { "key": "thanh_xuan", "name": "Thanh Xuân", "lat": 20.9950, "lng": 105.8080, "alias": ["thanh xuân", "thanh xuan", "royal city", "nguyễn trãi", "khuất duy tiến"] },
+    { "key": "nam_tu_liem", "name": "Nam Từ Liêm", "lat": 21.0280, "lng": 105.7720, "alias": ["nam từ liêm", "nam tu liem", "mỹ đình", "keangnam", "phạm hùng", "smart city"] },
+    { "key": "tay_ho", "name": "Tây Hồ", "lat": 21.0700, "lng": 105.8200, "alias": ["tây hồ", "tay ho", "hồ tây", "xuân diệu", "ciputra"] },
+    { "key": "hoang_mai", "name": "Hoàng Mai", "lat": 20.9800, "lng": 105.8500, "alias": ["hoàng mai", "hoang mai", "linh đàm", "giải phóng", "đền lừ"] },
+    { "key": "long_bien", "name": "Long Biên", "lat": 21.0400, "lng": 105.8900, "alias": ["long biên", "long bien", "aeon long biên", "ngọc lâm", "nguyễn văn cừ", "việt hưng"] },
+    { "key": "gia_lam", "name": "Gia Lâm", "lat": 21.0170, "lng": 105.9370, "alias": ["gia lâm", "gia lam", "trâu quỳ", "trau quy", "ocean park", "vinuni", "đa tốn", "kiêu kỵ"] }
+  ]
+}

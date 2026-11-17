@@ -1,0 +1,31 @@
+code,name,zone,type,deal,building,lat,lng,area_m2,bedrooms,bathrooms,floor,floors,direction,price_billion,rent_million,legal,furnished,mgmt_fee,car_parking,elevator,yard_m2,image,status,updated,note
+CH-01,"Căn 2 phòng ngủ, toà S1.03",The Sapphire 1,can_ho,ban,S1-03,,,69,2,2,12,,dong_nam,4.3,,so_hong,co_ban,,ham,1,0,apartment-living,active,2026-11-15,Ban công hướng hồ điều hoà
+CH-02,"Căn studio, toà S1.03",The Sapphire 1,studio,thue,S1-03,,,30,1,1,8,,tay_bac,,7.5,,day_du,,ham,1,0,apartment-tour,active,2026-11-14,"Đủ nội thất, vào ở ngay"
+CH-03,"Căn 3 phòng ngủ, toà S2.10",The Sapphire 2,can_ho,ban,S2-10,,,95,3,2,18,,dong_nam,6.4,,so_hong,co_ban,,ham,1,0,living-room-clean,active,2026-11-12,"Căn góc, hai mặt thoáng"
+CH-04,"Căn 2 phòng ngủ, toà S2.10",The Sapphire 2,can_ho,thue,S2-10,,,63,2,2,6,,tay_nam,,13,,day_du,,ham,1,0,apartment-bedroom,active,2026-11-16,
+CH-05,"Căn 2 phòng ngủ, toà M1",Masteri Waterfront,can_ho,ban,MW-M1,,,67,2,2,15,,dong_bac,5.1,,so_hong,co_ban,,ham,1,0,apartment-living,active,2026-11-10,
+CH-06,"Căn 3 phòng ngủ, toà M1",Masteri Waterfront,can_ho,thue,MW-M1,,,92,3,2,22,,nam,,22,,day_du,,ham,1,0,living-room-clean,active,2026-11-13,"Tầng cao, nhìn ra công viên"
+CH-07,"Căn 1 phòng ngủ, toà M1",Masteri Waterfront,can_ho,ban,MW-M1,,,48,1,1,9,,tay,3.3,,so_hong,day_du,,ham,1,0,apartment-tour,active,2026-11-11,
+CH-08,"Căn 2 phòng ngủ, toà R1.02",Zenpark,can_ho,ban,ZP-R1,,,70,2,2,10,,dong,4.6,,cho_so,co_ban,,ham,1,0,apartment-bedroom-2,active,2026-11-09,Đang làm thủ tục cấp sổ
+CH-09,"Căn 3 phòng ngủ, toà R1.02",Zenpark,can_ho,ban,ZP-R1,,,98,3,2,25,,dong_nam,6.8,,cho_so,tho,,ham,1,0,living-room-clean,active,2026-11-08,
+CH-10,"Căn studio, toà R1.02",Zenpark,studio,thue,ZP-R1,,,32,1,1,5,,bac,,7,,day_du,,ham,1,0,apartment-tour,active,2026-11-15,
+CH-11,"Căn 2 phòng ngủ, toà P2",The Pavilion,can_ho,ban,PV-P2,,,66,2,2,14,,nam,4.8,,hdmb,co_ban,,ham,1,0,apartment-living,active,2026-11-07,Mua lại hợp đồng mua bán
+CH-12,"Căn 3 phòng ngủ, toà P2",The Pavilion,can_ho,thue,PV-P2,,,90,3,2,20,,dong_nam,,18,,day_du,,ham,1,0,apartment-bedroom,active,2026-11-14,
+CH-13,"Căn 2 phòng ngủ, toà ZR1",The Zurich,can_ho,ban,ZR-1,,,72,2,2,11,,tay_nam,5.6,,hdmb,day_du,,ham,1,0,apartment-bedroom-2,active,2026-11-06,
+CH-14,"Căn 1 phòng ngủ, toà ZR1",The Zurich,can_ho,thue,ZR-1,,,45,1,1,7,,dong,,10,,day_du,,ham,1,0,apartment-tour,active,2026-11-16,
+CH-15,"Căn 3 phòng ngủ, toà BE1",The Beverly,can_ho,ban,BE-1,,,102,3,2,16,,dong_nam,7.9,,cho_so,co_ban,,ham,1,0,living-room-clean,active,2026-11-12,
+CH-16,"Căn 2 phòng ngủ, toà BE1",The Beverly,can_ho,thue,BE-1,,,68,2,2,9,,tay_bac,,15,,day_du,,ham,1,0,apartment-living,active,2026-11-15,
+CH-17,"Căn duplex 4 phòng ngủ, toà S1.03",The Sapphire 1,duplex,ban,S1-03,,,140,4,3,29,,nam,11.5,,so_hong,co_ban,,ham,1,0,living-room-clean,active,2026-11-05,Hai tầng thông nhau
+CH-18,"Căn 2 phòng ngủ tầng thấp, toà S2.10",The Sapphire 2,can_ho,ban,S2-10,,,60,2,1,3,,bac,3.7,,so_hong,tho,,ham,1,0,apartment-bedroom,active,2026-11-10,
+ND-01,"Biệt thự đơn lập ven hồ, Ngọc Trai",Ngọc Trai,biet_thu,ban,,20.9895,105.9505,300,5,5,,3,nam,62,,so_hong,co_ban,,truoc_nha,0,110,hero3,active,2026-11-12,Sân vườn rộng nhìn ra hồ
+ND-02,"Nhà liền kề 4 tầng, Hải Âu",Hải Âu,lien_ke,ban,,20.9975,105.9505,90,4,4,,4,dong,21,,so_hong,tho,,truoc_nha,0,0,landscape-house-clean,active,2026-11-10,
+ND-03,"Nhà phố 5 tầng có thang máy, San Hô",San Hô,nha_pho,thue,,20.9935,105.956,85,4,4,,5,tay_nam,,38,,day_du,,truoc_nha,1,0,side,active,2026-11-14,
+ND-04,"Biệt thự song lập, Ngọc Trai",Ngọc Trai,biet_thu,thue,,20.990624,105.950103,180,4,4,,3,dong_nam,,55,,day_du,,truoc_nha,0,60,exterior-garden-clean,active,2026-11-13,
+ND-05,"Nhà liền kề, Hải Âu",Hải Âu,lien_ke,thue,,20.996,105.952961,75,3,3,,4,bac,,30,,co_ban,,truoc_nha,0,0,top,active,2026-11-11,
+ND-06,"Nhà phố 5 tầng có thang máy, San Hô",San Hô,nha_pho,ban,,20.99436,105.957376,100,4,5,,5,dong,27,,so_hong,co_ban,,truoc_nha,1,0,nightSide,active,2026-11-09,
+ND-07,"Biệt thự đơn lập, Sao Biển",Sao Biển,biet_thu,ban,,20.988055,105.955548,240,5,5,,3,nam,48,,so_hong,co_ban,,truoc_nha,0,80,patio-front-clean,active,2026-11-08,
+ND-08,"Nhà liền kề đại lộ nội khu",Đại lộ nội khu,lien_ke,ban,,20.991814,105.941316,80,4,4,,4,tay,19.5,,cho_so,tho,,truoc_nha,0,0,landscape-house-clean,active,2026-11-07,
+ND-09,"Nhà liền kề gần VinUni",Gần VinUni,lien_ke,thue,,20.987915,105.947135,80,4,4,,4,dong_bac,,32,,co_ban,,truoc_nha,0,0,side,active,2026-11-15,
+ND-10,"Biệt thự có thang máy, Hải Âu",Hải Âu,biet_thu,ban,,20.997298,105.952211,200,5,5,,3,tay_nam,45,,hdmb,co_ban,,truoc_nha,1,70,hero3,active,2026-11-06,
+ND-11,"Nhà phố gần Vincom Mega Mall",Gần Vincom Mega Mall,nha_pho,thue,,20.992002,105.95723,95,4,4,,5,nam,,42,,day_du,,truoc_nha,1,0,top,active,2026-11-16,
+ND-12,"Biệt thự đơn lập, Sao Biển",Sao Biển,biet_thu,thue,,20.986824,105.953499,220,5,5,,3,dong,,70,,day_du,,truoc_nha,0,90,exterior-garden-clean,active,2026-11-12,

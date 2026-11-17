@@ -1,73 +1,105 @@
 // Cơ sở dữ liệu SQLite (node:sqlite có sẵn trong Node 22, không cần thư viện ngoài).
-// File nằm ở DB_PATH (trên VPS: volume Docker /data). Lần chạy đầu, bảng trống sẽ được nạp từ data/listings.csv.
+// File nằm ở DB_PATH (trên VPS: volume Docker /data). Bảng trống được nạp từ file CSV mẫu trong data/.
+//   homes        căn nhà (căn hộ, nhà đất; bán hoặc cho thuê)        ← data/homes.csv
+//   buildings    toà chung cư: tiện ích nội khu, phí dịch vụ         ← data/buildings.csv
+//   pois_manual  tiện ích nhập tay, hoặc sửa / ẩn điểm OpenStreetMap  ← data/pois_manual.csv
+// Bảng `listings` (mặt bằng kinh doanh, chủ đề cũ) không còn được dùng; để nguyên, không xoá.
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { POI_KINDS, SCHOOL_LEVELS } from './poi-kinds.mjs';
 
 const here = (p) => fileURLToPath(new URL(p, import.meta.url));
 const DB_PATH = process.env.DB_PATH || here('./data/local.db');
 
+// ---------- Giá trị cho các cột chọn ----------
+export const TYPES = { can_ho: 'Căn hộ', studio: 'Căn hộ studio', duplex: 'Căn hộ duplex', penthouse: 'Penthouse', nha_pho: 'Nhà phố', lien_ke: 'Nhà liền kề', biet_thu: 'Biệt thự' };
+export const APARTMENT_TYPES = ['can_ho', 'studio', 'duplex', 'penthouse'];
+export const DEALS = { ban: 'Bán', thue: 'Cho thuê' };
+export const DIRECTIONS = { dong: 'Đông', tay: 'Tây', nam: 'Nam', bac: 'Bắc', dong_nam: 'Đông Nam', dong_bac: 'Đông Bắc', tay_nam: 'Tây Nam', tay_bac: 'Tây Bắc' };
+export const LEGAL = { so_hong: 'Đã có sổ hồng', cho_so: 'Đang chờ sổ', hdmb: 'Hợp đồng mua bán' };
+export const FURNISHED = { tho: 'Bàn giao thô', co_ban: 'Nội thất cơ bản', day_du: 'Đủ nội thất' };
+export const PARKING = { ham: 'Hầm để xe trong toà', truoc_nha: 'Đỗ trước nhà', gan: 'Bãi đỗ gần', khong: 'Không có chỗ đỗ ô tô' };
+export const BUILDING_AMENITIES = { be_boi: 'Bể bơi', gym: 'Phòng gym', san_choi: 'Sân chơi trẻ em', vuon: 'Vườn nội khu', mam_non: 'Lớp mầm non trong toà', tien_loi: 'Cửa hàng tiện lợi dưới toà' };
+
+const STATUS = { type: 'enum', label: 'Trạng thái', values: ['active', 'hidden'], def: 'active' };
+const UPDATED = { type: 'text', label: 'Cập nhật', pattern: /^\d{4}-\d{2}-\d{2}$/ };
+const CODE = { type: 'text', label: 'Mã', required: true, pattern: /^[A-Z0-9.-]{2,20}$/ };
+const LAT = { type: 'num', label: 'Vĩ độ', min: 20.9, max: 21.1 };
+const LNG = { type: 'num', label: 'Kinh độ', min: 105.8, max: 106.05 };
+
 // Mô tả từng cột: kiểu, giới hạn, nhãn tiếng Việt (dùng cho kiểm tra dữ liệu, CSV và trang quản trị).
-export const TYPES = { villa: 'Biệt thự', shophouse: 'Shophouse', townhouse: 'Nhà phố', podium: 'Khối đế chung cư', kiosk: 'Ki-ốt' };
-export const MODELS = { cafe: 'Quán cà phê', tra_sua: 'Trà sữa', nha_hang: 'Nhà hàng', tap_hoa: 'Tạp hoá', tien_loi: 'Cửa hàng tiện lợi' };
 export const FIELDS = {
-  code: { type: 'text', label: 'Mã', required: true, pattern: /^[A-Z0-9-]{2,20}$/ },
+  code: CODE,
   name: { type: 'text', label: 'Tên', required: true, max: 120 },
   zone: { type: 'text', label: 'Phân khu', required: true, max: 60 },
-  type: { type: 'enum', label: 'Loại', required: true, values: Object.keys(TYPES) },
-  lat: { type: 'num', label: 'Vĩ độ', required: true, min: 20.9, max: 21.1 },
-  lng: { type: 'num', label: 'Kinh độ', required: true, min: 105.8, max: 106.05 },
-  area_m2: { type: 'num', label: 'Diện tích (m²)', required: true, min: 5, max: 5000 },
-  floors: { type: 'int', label: 'Số tầng', min: 1, max: 10, def: 1 },
-  frontage_m: { type: 'num', label: 'Mặt tiền (m)', min: 0, max: 100, def: 0 },
-  road_m: { type: 'num', label: 'Lòng đường (m)', min: 0, max: 100, def: 0 },
-  rent_million: { type: 'num', label: 'Giá thuê (triệu/tháng)', required: true, min: 1, max: 2000 },
-  deposit_months: { type: 'int', label: 'Đặt cọc (tháng)', min: 0, max: 24, def: 3 },
-  min_term_years: { type: 'int', label: 'Hợp đồng tối thiểu (năm)', min: 0, max: 20, def: 2 },
-  divider: { type: 'bool', label: 'Có dải phân cách cứng', def: 0 },
-  uturn_m: { type: 'int', label: 'Điểm quay đầu cách (m)', min: 0, max: 5000 },
-  two_way: { type: 'bool', label: 'Đường hai chiều', def: 1 },
-  car_parking_m: { type: 'int', label: 'Bãi đỗ ô tô gần nhất (m)', min: 0, max: 5000, def: 300 },
-  sidewalk_m: { type: 'num', label: 'Vỉa hè trước cửa (m)', min: 0, max: 30 },
-  moto_slots: { type: 'int', label: 'Chỗ để xe máy', min: 0, max: 500, def: 0 },
-  yard_m2: { type: 'num', label: 'Sân (m²)', min: 0, max: 2000, def: 0 },
-  kitchen: { type: 'bool', label: 'Đã có bếp', def: 0 },
-  suited: { type: 'list', label: 'Mô hình phù hợp', values: Object.keys(MODELS), def: 'cafe' },
-  image: { type: 'text', label: 'Ảnh', max: 60, pattern: /^[A-Za-z0-9-]+$/, def: 'landscape-house-clean' },
-  status: { type: 'enum', label: 'Trạng thái', values: ['active', 'hidden'], def: 'active' },
-  updated: { type: 'text', label: 'Cập nhật', pattern: /^\d{4}-\d{2}-\d{2}$/ },
+  type: { type: 'enum', label: 'Loại nhà', required: true, values: Object.keys(TYPES) },
+  deal: { type: 'enum', label: 'Hình thức', required: true, values: Object.keys(DEALS) },
+  building: { type: 'text', label: 'Mã toà (căn hộ)', max: 20, pattern: /^[A-Z0-9.-]{2,20}$/ },
+  lat: { ...LAT, label: 'Vĩ độ (trống thì lấy theo toà)' },
+  lng: { ...LNG, label: 'Kinh độ (trống thì lấy theo toà)' },
+  area_m2: { type: 'num', label: 'Diện tích (m²)', required: true, min: 10, max: 2000 },
+  bedrooms: { type: 'int', label: 'Phòng ngủ', required: true, min: 0, max: 10 },
+  bathrooms: { type: 'int', label: 'Phòng tắm', min: 0, max: 10, def: 1 },
+  floor: { type: 'int', label: 'Tầng của căn (căn hộ)', min: 0, max: 80 },
+  floors: { type: 'int', label: 'Số tầng (nhà đất)', min: 1, max: 10 },
+  direction: { type: 'enum', label: 'Hướng', values: Object.keys(DIRECTIONS) },
+  price_billion: { type: 'num', label: 'Giá bán (tỷ)', min: 0.1, max: 1000 },
+  rent_million: { type: 'num', label: 'Giá thuê (triệu/tháng)', min: 1, max: 1000 },
+  legal: { type: 'enum', label: 'Pháp lý (căn bán)', values: Object.keys(LEGAL) },
+  furnished: { type: 'enum', label: 'Nội thất', values: Object.keys(FURNISHED), def: 'co_ban' },
+  mgmt_fee: { type: 'num', label: 'Phí dịch vụ (nghìn đ/m²/tháng, trống thì lấy theo toà)', min: 0, max: 200 },
+  car_parking: { type: 'enum', label: 'Chỗ đỗ ô tô', values: Object.keys(PARKING), def: 'gan' },
+  elevator: { type: 'bool', label: 'Có thang máy', def: 0 },
+  yard_m2: { type: 'num', label: 'Sân vườn (m²)', min: 0, max: 2000, def: 0 },
+  image: { type: 'text', label: 'Ảnh', max: 60, pattern: /^[A-Za-z0-9-]+$/, def: 'apartment-living' },
+  status: STATUS,
+  updated: UPDATED,
   note: { type: 'text', label: 'Ghi chú', max: 300, def: '' }
 };
-export const COLUMNS = Object.keys(FIELDS);
+
+export const BUILDING_FIELDS = {
+  code: CODE,
+  name: { type: 'text', label: 'Tên toà', required: true, max: 80 },
+  zone: { type: 'text', label: 'Dự án / phân khu', required: true, max: 60 },
+  lat: { ...LAT, required: true },
+  lng: { ...LNG, required: true },
+  handover_year: { type: 'int', label: 'Năm bàn giao', min: 1990, max: 2100 },
+  amenities: { type: 'list', label: 'Tiện ích nội khu', values: Object.keys(BUILDING_AMENITIES), optional: true },
+  mgmt_fee: { type: 'num', label: 'Phí dịch vụ (nghìn đ/m²/tháng)', min: 0, max: 200 },
+  status: STATUS,
+  note: { type: 'text', label: 'Ghi chú', max: 300, def: '' }
+};
+
+// Một dòng tiện ích nhập tay. Có osm_id: sửa hoặc ẩn (hidden = 1) điểm OpenStreetMap đó. Không có: thêm điểm mới.
+export const POI_FIELDS = {
+  code: CODE,
+  osm_id: { type: 'text', label: 'Mã điểm OSM (để sửa / ẩn)', max: 24, pattern: /^[nwr]\d{1,15}$/ },
+  kind: { type: 'enum', label: 'Loại tiện ích', required: true, values: Object.keys(POI_KINDS) },
+  level: { type: 'enum', label: 'Cấp học (trường phổ thông)', values: Object.keys(SCHOOL_LEVELS), def: '' },
+  name: { type: 'text', label: 'Tên', max: 120, def: '' },
+  lat: { ...LAT, required: true },
+  lng: { ...LNG, required: true },
+  verified: { type: 'bool', label: 'Đã kiểm chứng tại chỗ', def: 0 },
+  hidden: { type: 'bool', label: 'Ẩn điểm OSM này', def: 0 },
+  status: STATUS,
+  note: { type: 'text', label: 'Ghi chú', max: 300, def: '' }
+};
 
 mkdirSync(dirname(DB_PATH), { recursive: true });
 export const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 3000;');
-db.exec(`CREATE TABLE IF NOT EXISTS listings (
-  id INTEGER PRIMARY KEY,
-  code TEXT NOT NULL UNIQUE, name TEXT NOT NULL, zone TEXT NOT NULL, type TEXT NOT NULL,
-  lat REAL NOT NULL, lng REAL NOT NULL, area_m2 REAL NOT NULL, floors INTEGER, frontage_m REAL, road_m REAL,
-  rent_million REAL NOT NULL, deposit_months INTEGER, min_term_years INTEGER, divider INTEGER, uturn_m INTEGER, two_way INTEGER,
-  car_parking_m INTEGER, sidewalk_m REAL, moto_slots INTEGER, yard_m2 REAL, kitchen INTEGER, suited TEXT, image TEXT,
-  status TEXT NOT NULL DEFAULT 'active', updated TEXT, note TEXT
-)`);
-
-// Nâng cấp cơ sở dữ liệu cũ: thêm cột mới nếu thiếu.
-const ADDED = { uturn_m: 'INTEGER', sidewalk_m: 'REAL' };
-const have = new Set(db.prepare('PRAGMA table_info(listings)').all().map((c) => c.name));
-const justAdded = Object.keys(ADDED).filter((c) => !have.has(c));
-for (const c of justAdded) db.exec(`ALTER TABLE listings ADD COLUMN ${c} ${ADDED[c]}`);
 
 export class ValidationError extends Error {
   constructor(errors) { super('Dữ liệu không hợp lệ'); this.errors = errors; this.status = 400; }
 }
 
-// Kiểm tra và chuẩn hoá một mặt bằng; trả về đối tượng sạch hoặc ném ValidationError { cột: lỗi }.
-export function clean(input) {
+// Kiểm tra và chuẩn hoá một dòng theo bộ mô tả cột; trả về đối tượng sạch hoặc ném ValidationError { cột: lỗi }.
+function cleanRow(fields, input) {
   const out = {};
   const errors = {};
-  for (const [k, f] of Object.entries(FIELDS)) {
+  for (const [k, f] of Object.entries(fields)) {
     let v = input[k];
     if (typeof v === 'string') v = v.trim();
     const empty = v === undefined || v === null || v === '';
@@ -85,12 +117,12 @@ export function clean(input) {
     } else if (f.type === 'bool') {
       out[k] = ['1', 'true', 'có', 'co', 'yes', 'x'].includes(String(v).toLowerCase()) ? 1 : 0;
     } else if (f.type === 'enum') {
-      if (!f.values.includes(v)) { errors[k] = 'Một trong: ' + f.values.join(', '); continue; }
+      if (!f.values.includes(v)) { errors[k] = 'Một trong: ' + f.values.filter(Boolean).join(', '); continue; }
       out[k] = v;
     } else if (f.type === 'list') {
       const items = (Array.isArray(v) ? v : String(v).split(/[;,|]/)).map((s) => String(s).trim()).filter(Boolean);
       const bad = items.filter((s) => !f.values.includes(s));
-      if (!items.length || bad.length) { errors[k] = 'Chọn trong: ' + f.values.join(', '); continue; }
+      if (bad.length || (!items.length && !f.optional)) { errors[k] = 'Chọn trong: ' + f.values.join(', '); continue; }
       out[k] = [...new Set(items)].join(';');
     } else {
       const s = String(v);
@@ -99,34 +131,130 @@ export function clean(input) {
       out[k] = s;
     }
   }
-  if (Object.keys(errors).length) throw new ValidationError(errors);
-  return out;
+  if (typeof out.code === 'string') out.code = out.code.toUpperCase();
+  return { out, errors };
 }
 
-const insertSql = `INSERT INTO listings (${COLUMNS.join(',')}) VALUES (${COLUMNS.map((c) => ':' + c).join(',')})`;
-const updateSql = `UPDATE listings SET ${COLUMNS.filter((c) => c !== 'code').map((c) => `${c} = :${c}`).join(', ')} WHERE code = :code`;
-const stmts = {
-  all: db.prepare('SELECT * FROM listings ORDER BY code'),
-  active: db.prepare("SELECT * FROM listings WHERE status = 'active' ORDER BY code"),
-  byCode: db.prepare('SELECT * FROM listings WHERE code = ?'),
-  insert: db.prepare(insertSql),
-  update: db.prepare(updateSql),
-  remove: db.prepare('DELETE FROM listings WHERE code = ?'),
-  count: db.prepare('SELECT COUNT(*) AS n FROM listings')
-};
+const SQL_TYPE = { num: 'REAL', int: 'INTEGER', bool: 'INTEGER', text: 'TEXT', enum: 'TEXT', list: 'TEXT' };
 
-export const listAll = () => stmts.all.all();
-export const listActive = () => stmts.active.all();
-export const getByCode = (code) => stmts.byCode.get(String(code || '').toUpperCase()) || null;
+// Một bảng có khoá `code`, kiểm tra theo `fields`, nhập / xuất CSV, nạp mẫu khi trống.
+function makeTable(name, fields, { seed, check } = {}) {
+  const columns = Object.keys(fields);
+  db.exec(`CREATE TABLE IF NOT EXISTS ${name} (id INTEGER PRIMARY KEY, ${columns.map((c) => `${c} ${SQL_TYPE[fields[c].type]}${c === 'code' ? ' NOT NULL UNIQUE' : ''}`).join(', ')})`);
+  const have = new Set(db.prepare(`PRAGMA table_info(${name})`).all().map((c) => c.name));
+  for (const c of columns) if (!have.has(c)) db.exec(`ALTER TABLE ${name} ADD COLUMN ${c} ${SQL_TYPE[fields[c].type]}`);
 
-export function upsert(input) {
-  const row = clean(input);
-  if (getByCode(row.code)) stmts.update.run(row); else stmts.insert.run(row);
-  return getByCode(row.code);
+  const st = {
+    all: db.prepare(`SELECT * FROM ${name} ORDER BY code`),
+    active: db.prepare(`SELECT * FROM ${name} WHERE status = 'active' ORDER BY code`),
+    byCode: db.prepare(`SELECT * FROM ${name} WHERE code = ?`),
+    insert: db.prepare(`INSERT INTO ${name} (${columns.join(',')}) VALUES (${columns.map((c) => ':' + c).join(',')})`),
+    update: db.prepare(`UPDATE ${name} SET ${columns.filter((c) => c !== 'code').map((c) => `${c} = :${c}`).join(', ')} WHERE code = :code`),
+    remove: db.prepare(`DELETE FROM ${name} WHERE code = ?`),
+    count: db.prepare(`SELECT COUNT(*) AS n FROM ${name}`)
+  };
+  let version = 0; // tăng mỗi lần ghi, để nơi khác biết cần tính lại bộ đệm
+
+  const t = {
+    name, fields, columns,
+    get version() { return version; },
+    clean(input) {
+      const { out, errors } = cleanRow(fields, input);
+      if (check) check(out, errors);
+      if (Object.keys(errors).length) throw new ValidationError(errors);
+      return out;
+    },
+    listAll: () => st.all.all(),
+    listActive: () => st.active.all(),
+    get: (code) => st.byCode.get(String(code || '').toUpperCase()) || null,
+    upsert(input) {
+      const row = t.clean(input);
+      if (t.get(row.code)) st.update.run(row); else st.insert.run(row);
+      version++;
+      return t.get(row.code);
+    },
+    remove(code) {
+      const ok = st.remove.run(String(code).toUpperCase()).changes > 0;
+      if (ok) version++;
+      return ok;
+    },
+    toCsv: (rows = st.all.all()) => toCsv(columns, rows),
+    // Nhập nhiều dòng trong một giao dịch: lỗi ở bất kỳ dòng nào thì không ghi gì cả.
+    importRows(records, { replace = false } = {}) {
+      const cleaned = [];
+      const errors = [];
+      records.forEach((r, i) => {
+        try { cleaned.push(t.clean(r)); } catch (e) { errors.push({ line: i + 2, code: r.code || '', errors: e.errors || { _: e.message } }); }
+      });
+      const codes = cleaned.map((r) => r.code);
+      const dup = codes.filter((c, i) => codes.indexOf(c) !== i);
+      if (dup.length) errors.push({ line: 0, code: dup[0], errors: { code: 'Mã bị trùng trong file' } });
+      if (errors.length) return { ok: false, errors };
+      db.exec('BEGIN');
+      try {
+        if (replace) db.exec(`DELETE FROM ${name}`);
+        let inserted = 0, updated = 0;
+        for (const row of cleaned) {
+          if (t.get(row.code)) { st.update.run(row); updated++; } else { st.insert.run(row); inserted++; }
+        }
+        db.exec('COMMIT');
+        version++;
+        return { ok: true, inserted, updated, total: st.count.get().n };
+      } catch (e) {
+        db.exec('ROLLBACK');
+        throw e;
+      }
+    },
+    seedIfEmpty() {
+      if (!seed || st.count.get().n > 0) return;
+      const r = t.importRows(parseCsv(readFileSync(here('./data/' + seed), 'utf8')));
+      console.log(r.ok ? `Đã nạp ${r.inserted} dòng mẫu vào ${name} từ data/${seed}` : `Lỗi nạp mẫu ${name}: ` + JSON.stringify(r.errors));
+    }
+  };
+  return t;
 }
-export function remove(code) {
-  return stmts.remove.run(String(code).toUpperCase()).changes > 0;
-}
+
+export const buildings = makeTable('buildings', BUILDING_FIELDS, { seed: 'buildings.csv' });
+
+export const homes = makeTable('homes', FIELDS, {
+  seed: 'homes.csv',
+  check(row, errors) {
+    if (row.building) {
+      const b = buildings.get(row.building);
+      if (!b) errors.building = 'Không có toà ' + row.building;
+      else {
+        if (row.lat == null) row.lat = b.lat;
+        if (row.lng == null) row.lng = b.lng;
+        if (row.mgmt_fee == null) row.mgmt_fee = b.mgmt_fee;
+      }
+    }
+    if (row.lat == null && !errors.lat) errors.lat = 'Bắt buộc khi không có mã toà';
+    if (row.lng == null && !errors.lng) errors.lng = 'Bắt buộc khi không có mã toà';
+    if (row.deal === 'ban' && row.price_billion == null) errors.price_billion = 'Căn bán cần giá bán';
+    if (row.deal === 'thue' && row.rent_million == null) errors.rent_million = 'Căn cho thuê cần giá thuê';
+    if (row.deal === 'ban' && !row.legal) errors.legal = 'Căn bán cần ghi pháp lý';
+    if (APARTMENT_TYPES.includes(row.type) && row.floor == null) errors.floor = 'Căn hộ cần ghi tầng';
+    if (!APARTMENT_TYPES.includes(row.type) && row.floors == null) errors.floors = 'Nhà đất cần ghi số tầng';
+  }
+});
+
+export const poisManual = makeTable('pois_manual', POI_FIELDS, {
+  seed: 'pois_manual.csv',
+  check(row, errors) {
+    if (row.kind !== 'school') row.level = '';
+    if (row.hidden && !row.osm_id) errors.hidden = 'Chỉ ẩn được điểm OSM (cần mã điểm OSM)';
+    if (!row.hidden && !row.name) errors.name = 'Bắt buộc với điểm không ẩn';
+  }
+});
+
+buildings.seedIfEmpty();
+homes.seedIfEmpty();
+poisManual.seedIfEmpty();
+
+// Tên ngắn dùng ở các module khác (căn nhà là dữ liệu chính).
+export const listAll = homes.listAll;
+export const listActive = homes.listActive;
+export const getByCode = homes.get;
 
 // ---------- CSV (RFC 4180 đơn giản: dấu phẩy, ngoặc kép, xuống dòng trong ngoặc) ----------
 export function parseCsv(text) {
@@ -153,49 +281,7 @@ export function parseCsv(text) {
   return rows.slice(1).map((r) => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
 }
 
-export function toCsv(rows) {
+export function toCsv(columns, rows) {
   const esc = (v) => { const s = v === null || v === undefined ? '' : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  return '﻿' + [COLUMNS.join(','), ...rows.map((r) => COLUMNS.map((c) => esc(r[c])).join(','))].join('\n') + '\n';
-}
-
-// Nhập nhiều dòng trong một giao dịch: lỗi ở bất kỳ dòng nào thì không ghi gì cả.
-export function importRows(records, { replace = false } = {}) {
-  const cleaned = [];
-  const errors = [];
-  records.forEach((r, i) => {
-    try { cleaned.push(clean(r)); } catch (e) { errors.push({ line: i + 2, code: r.code || '', errors: e.errors || { _: e.message } }); }
-  });
-  const codes = cleaned.map((r) => r.code);
-  const dup = codes.filter((c, i) => codes.indexOf(c) !== i);
-  if (dup.length) errors.push({ line: 0, code: dup[0], errors: { code: 'Mã bị trùng trong file' } });
-  if (errors.length) return { ok: false, errors };
-  db.exec('BEGIN');
-  try {
-    if (replace) db.exec('DELETE FROM listings');
-    let inserted = 0, updated = 0;
-    for (const row of cleaned) {
-      if (getByCode(row.code)) { stmts.update.run(row); updated++; } else { stmts.insert.run(row); inserted++; }
-    }
-    db.exec('COMMIT');
-    return { ok: true, inserted, updated, total: stmts.count.get().n };
-  } catch (e) {
-    db.exec('ROLLBACK');
-    throw e;
-  }
-}
-
-// Cột vừa thêm: lấy giá trị từ dữ liệu mẫu cho các mã trùng (chỉ điền ô đang trống).
-if (justAdded.length && stmts.count.get().n > 0) {
-  const seed = parseCsv(readFileSync(here('./data/listings.csv'), 'utf8'));
-  for (const c of justAdded) {
-    const up = db.prepare(`UPDATE listings SET ${c} = ? WHERE code = ? AND ${c} IS NULL`);
-    for (const r of seed) if (r[c] !== undefined && r[c] !== '') up.run(Number(r[c]), r.code);
-  }
-  console.log('Đã thêm cột', justAdded.join(', '), 'và điền từ dữ liệu mẫu');
-}
-
-// Lần chạy đầu: nạp dữ liệu mẫu.
-if (stmts.count.get().n === 0) {
-  const r = importRows(parseCsv(readFileSync(here('./data/listings.csv'), 'utf8')));
-  console.log(r.ok ? `Đã nạp ${r.inserted} mặt bằng mẫu từ data/listings.csv` : 'Lỗi nạp dữ liệu mẫu: ' + JSON.stringify(r.errors));
+  return '﻿' + [columns.join(','), ...rows.map((r) => columns.map((c) => esc(r[c])).join(','))].join('\n') + '\n';
 }

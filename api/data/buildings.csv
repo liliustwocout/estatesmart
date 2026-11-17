@@ -1,0 +1,8 @@
+code,name,zone,lat,lng,handover_year,amenities,mgmt_fee,status,note
+S1-03,Toà S1.03,The Sapphire 1,20.994213,105.942663,2019,be_boi;gym;san_choi;tien_loi,14,active,Dữ liệu toà nhà mô phỏng
+S2-10,Toà S2.10,The Sapphire 2,20.992524,105.942858,2019,be_boi;san_choi;tien_loi,14,active,Dữ liệu toà nhà mô phỏng
+MW-M1,Toà M1,Masteri Waterfront,20.993278,105.943435,2022,be_boi;gym;san_choi;vuon;tien_loi,18,active,Dữ liệu toà nhà mô phỏng
+ZP-R1,Toà R1.02,Zenpark,21.001514,105.9426,2021,be_boi;gym;san_choi,15,active,Dữ liệu toà nhà mô phỏng
+PV-P2,Toà P2,The Pavilion,21.002914,105.945171,2022,be_boi;gym;san_choi;mam_non,16,active,Dữ liệu toà nhà mô phỏng
+ZR-1,Toà ZR1,The Zurich,20.995548,105.937269,2023,be_boi;gym;vuon,17,active,Dữ liệu toà nhà mô phỏng
+BE-1,Toà BE1,The Beverly,20.998395,105.939672,2024,be_boi;gym;san_choi;tien_loi,18,active,Dữ liệu toà nhà mô phỏng
