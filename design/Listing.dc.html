@@ -134,19 +134,20 @@ img{max-width:100%}
 .ref{display:inline-grid;place-items:center;min-width:24px;min-height:24px;margin-left:4px;padding:0 4px;border-radius:6px;color:var(--accent);font-size:12px;font-weight:600;text-decoration:none;vertical-align:super;line-height:1}
 @media (hover:hover){.ref:hover{background:rgba(211,154,106,.16)}}
 
-/* Cạnh tranh */
-.comp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.panel{padding:clamp(28px,3.4vw,44px);border-radius:28px}
-.panel.fill{background:var(--surface);display:flex;flex-direction:column;justify-content:space-between;gap:40px;min-height:460px}
-.panel.line{box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:28px}
-.panel .big{display:block;font-size:clamp(104px,11vw,180px);line-height:.85}
-.panel .gap{margin:6px 0 0;font-size:19px;line-height:1.5}
-.seg-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:10px}
-.track{height:8px;border-radius:999px;background:rgba(247,243,236,.12);overflow:hidden}
-.track i{display:block;height:100%;border-radius:999px;background:var(--ink);transform-origin:left;animation:grow 800ms var(--ease-out) both}
-.seg-row:nth-child(3) .track i{animation-delay:90ms}
-.seg-row:nth-child(4) .track i{animation-delay:180ms}
-.seg-row p{margin:8px 0 0;font-size:14px;color:var(--ink-2)}
+/* Điểm tiện ích */
+.eco-panel{padding:clamp(24px,3.4vw,44px);border-radius:28px;background:var(--surface)}
+.eco-panel .h2{font-size:clamp(28px,3vw,44px)}
+.eco-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 40px;margin-top:24px;align-items:start}
+.eco-group{border-top:1px solid var(--line)}
+.eco-group summary{padding:12px 0;cursor:pointer}
+.eco-group summary::marker{color:var(--accent)}
+.eco-score{float:right;margin-left:8px;font-variant-numeric:tabular-nums}
+.eco-track{display:block;height:6px;margin-top:8px;border-radius:999px;background:var(--line);overflow:hidden}
+.eco-track i{display:block;height:100%;border-radius:inherit;background:var(--accent);transform-origin:left}
+.eco-items{display:grid;gap:6px;margin:0;padding:0 0 10px;list-style:none;font-size:14px;color:var(--ink-2)}
+.eco-items li{display:flex;justify-content:space-between;gap:12px}
+.eco-items li span:last-child{text-align:right}
+.eco-empty{margin:12px 0 0;color:var(--ink-2)}
 
 /* Nhận định */
 .verdict{margin:0;max-width:34ch;font-size:clamp(24px,2.6vw,38px);line-height:1.3;letter-spacing:-.02em;text-wrap:pretty}
@@ -157,22 +158,22 @@ img{max-width:100%}
 .sources li:target{color:var(--ink)}
 
 /* Đặt lịch */
-.contact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-inline:clamp(12px,1.4vw,20px)}
-.contact-media{position:relative;min-height:600px;border-radius:28px;overflow:hidden}
+.contact{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:12px;scroll-margin-top:124px}
+.contact-media{position:relative;min-height:380px;border-radius:28px;overflow:hidden}
 .contact-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.form{border-radius:28px;background:var(--paper);color:#1B1916;padding:clamp(28px,3.4vw,44px);display:flex;flex-direction:column;gap:24px;--focus:#9E3B22}
+.form{border-radius:28px;background:var(--paper);color:#1B1916;padding:clamp(20px,2.4vw,34px);display:flex;flex-direction:column;gap:16px;--focus:#9E3B22}
+.form .h2{font-size:clamp(28px,3vw,44px)}
 .form .label{color:rgba(27,25,22,.72)}
-.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px;margin-top:auto}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;margin-top:auto}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
-.field.full{grid-column:1/-1}
 .field label{font-size:14px;font-weight:600}
-.field input,.field select{height:50px;padding:0 2px;border:0;border-bottom:1px solid rgba(27,25,22,.45);border-radius:0;background:none;color:#1B1916;font-size:16px;transition:border-color var(--dur-1)}
+.field input,.field select{min-width:0;height:44px;padding:0 2px;border:0;border-bottom:1px solid rgba(27,25,22,.45);border-radius:0;background:none;color:#1B1916;font-size:16px;transition:border-color var(--dur-1)}
 .field input:focus,.field select:focus{border-bottom-color:#1B1916}
 .field input::placeholder{color:rgba(27,25,22,.5)}
 .field [aria-invalid="true"]{border-bottom-color:var(--danger)}
 .err{margin:0;font-size:14px;color:var(--danger);animation:es-enter var(--dur-2) var(--ease-out) both}
 .field.wide{grid-column:1/-1}
-.field textarea{width:100%;min-height:96px;padding:12px 14px;border-radius:14px;border:0;box-shadow:inset 0 0 0 1px rgba(27,25,22,.3);background:#FBF8F2;font:inherit;font-size:15px;color:#1B1916;resize:vertical}
+.field textarea{width:100%;min-height:76px;padding:12px 14px;border-radius:14px;border:0;box-shadow:inset 0 0 0 1px rgba(27,25,22,.3);background:#FBF8F2;font:inherit;font-size:15px;color:#1B1916;resize:vertical}
 .consent{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;cursor:pointer}
 .consent input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:#1B1916}
 .trap{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
@@ -209,12 +210,8 @@ a{color:inherit;text-decoration:none}
 /* Hiện dần khi cuộn tới: src/styles/reveal.js gắn data-in cho [data-reveal]; chỉ ẩn khi có JS (lớp .js trên <html>) */
 .rv{transition:opacity 650ms var(--ease-out),transform 850ms var(--ease-out);transition-delay:calc(var(--d,0) * 70ms)}
 .js [data-reveal]:not([data-in]) .rv{opacity:0;transform:translate3d(0,28px,0)}
-/* Biểu đồ phân khúc: thanh chạy từ 0 tới giá trị khi section vào màn hình, lần lượt từng thanh */
-.track i{animation:none;transition:transform 1100ms var(--ease-out)}
-.seg-row:nth-child(3) .track i{transition-delay:120ms}
-.seg-row:nth-child(4) .track i{transition-delay:240ms}
-.js [data-reveal]:not([data-in]) .track i{transform:scaleX(0) !important}
-.seg-head span:last-child{font-variant-numeric:tabular-nums}
+.eco-track i{transition:transform 850ms var(--ease-out)}
+.js [data-reveal]:not([data-in]) .eco-track i{transform:scaleX(0) !important}
 /* Dòng thông số: đường kẻ tự vẽ từ trái sang */
 .rows div{position:relative;border-top:0}
 .rows div::before{content:'';position:absolute;left:0;right:0;top:0;height:1px;background:var(--line);transform-origin:left;transition:transform 1000ms var(--ease-out);transition-delay:calc(var(--d,0) * 70ms + 120ms)}
@@ -232,18 +229,23 @@ a{color:inherit;text-decoration:none}
 @media (max-width:1100px){
 .specs{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+@media (min-width:901px){
+.contact>.g-anchor{grid-area:1 / 1;margin-bottom:0}
+.contact-media{grid-area:2 / 1}
+.contact .form{grid-area:1 / 2 / span 2}
+}
 @media (max-width:900px){
 .topbar-in{grid-template-columns:1fr auto}
 .seg{grid-column:1/-1;order:3}
-.rooms,.two,.comp,.contact{grid-template-columns:minmax(0,1fr)}
+.rooms,.two,.contact{grid-template-columns:minmax(0,1fr)}
 .room-media{min-height:360px}
-.contact-media{min-height:320px}
+.contact-media{min-height:clamp(160px,32vw,260px)}
 }
 @media (max-width:640px){
 .specs{grid-template-columns:repeat(2,minmax(0,1fr))}
 .seg button{padding:0 8px;font-size:13px}
 .seg button span{display:none}
-.fields{grid-template-columns:minmax(0,1fr)}
+.eco-grid,.fields{grid-template-columns:minmax(0,1fr)}
 .hero{height:auto;min-height:560px;display:flex;flex-direction:column;justify-content:flex-end}
 .hero-body{position:relative;left:auto;right:auto;bottom:auto;padding:180px 20px 20px;gap:20px}
 .hero-actions .btn{flex:1 1 auto}
@@ -363,31 +365,26 @@ a{color:inherit;text-decoration:none}
 </div>
 </section>
 
-<!-- CẠNH TRANH -->
+<!-- ĐIỂM TIỆN ÍCH -->
 <section class="wrap sec" data-guide="eco" data-reveal>
 {{guide.eco}}
-<div class="comp">
-<div class="panel fill rv">
-<div>
-<h2 class="h3">Phân tích cạnh tranh</h2>
-<span class="num big">{{l.compCount}}</span>
-<p style="margin: 14px 0 0">cơ sở cùng ngành trong bán kính 500 m<a class="ref" href="#nguon-3" aria-label="Nguồn 3">3</a></p>
-</div>
-<div>
-<p class="label" style="color: var(--accent)">Cơ hội thị trường</p>
-<p class="gap">{{l.gap}}</p>
-</div>
-</div>
-<div class="panel line rv" style="--d: 1">
-<h3 class="h3">{{segTitle}}</h3>
-<sc-for list="{{segments}}" as="s" hint-placeholder-count="3">
-<div class="seg-row">
-<div class="seg-head"><span>{{s.label}}</span><span>{{s.count}} cơ sở</span></div>
-<div class="track"><i style="transform: scaleX({{s.frac}})"></i></div>
-<p>{{s.note}}</p>
-</div>
+<div class="eco-panel rv">
+<h2 class="h2">Điểm tiện ích quanh nhà</h2>
+<sc-if value="{{hasEcoGroups}}" hint-placeholder-val="{{ true }}">
+<div class="eco-grid">
+<sc-for list="{{ecoGroups}}" as="g" hint-placeholder-count="6">
+<details class="eco-group">
+<summary>{{g.label}} <span class="eco-score">{{g.scoreText}}</span><span class="eco-track" aria-hidden="true"><i style="transform: scaleX({{g.frac}})"></i></span></summary>
+<ul class="eco-items">
+<sc-for list="{{g.items}}" as="a" hint-placeholder-count="3">
+<li><span>{{a.label}}</span><span>{{a.value}}</span></li>
+</sc-for>
+</ul>
+</details>
 </sc-for>
 </div>
+</sc-if>
+<sc-if value="{{noEcoGroups}}" hint-placeholder-val="{{ false }}"><p class="eco-empty">{{ecoEmpty}}</p></sc-if>
 </div>
 </section>
 
@@ -422,7 +419,7 @@ a{color:inherit;text-decoration:none}
 </section>
 
 <!-- ĐẶT LỊCH -->
-<section id="dat-lich" class="sec contact" data-guide="contact" data-reveal>
+<section id="dat-lich" class="wrap sec contact" data-guide="contact" data-reveal>
 {{guide.contact}}
 <div class="contact-media rv"><img src="{{l.contactImg}}" alt="" loading="lazy"></div>
 <div class="form rv" style="--d: 1">
@@ -442,12 +439,12 @@ a{color:inherit;text-decoration:none}
 
 <sc-if value="{{notSent}}" hint-placeholder-val="{{ true }}">
 <form class="fields" noValidate="{{true}}" onSubmit="{{submit}}">
-<div class="field full">
+<div class="field">
 <label for="f-name">Họ và tên</label>
 <input id="f-name" type="text" autoComplete="name" placeholder="Nguyễn Văn A" value="{{form.name}}" onChange="{{setName}}" aria-invalid="{{nameInvalid}}" aria-describedby="f-name-err">
 <sc-if value="{{errors.name}}" hint-placeholder-val="{{ false }}"><p class="err" id="f-name-err">{{errors.name}}</p></sc-if>
 </div>
-<div class="field full">
+<div class="field">
 <label for="f-phone">Số điện thoại</label>
 <input id="f-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="0901 234 567" value="{{form.phone}}" onChange="{{setPhone}}" aria-invalid="{{phoneInvalid}}" aria-describedby="f-phone-hint f-phone-err">
 <p class="hint" id="f-phone-hint">Nhập kiểu nào cũng được: có dấu cách, dấu chấm hoặc +84.</p>
@@ -549,7 +546,7 @@ class Component extends DCLogic {
         hero: B.hero3, heroPos: '60% 50%', heroAlt: 'Biệt thự hai tầng tường trắng, hàng cột và sân lát đá', contactImg: B.night,
         specs: [
           { label: 'Giá thuê', value: '75 triệu', note: 'mỗi tháng, chưa VAT' },
-          { label: 'Đơn giá/m²', value: '250.000 đ', note: 'Hợp lý so với khu vực⁴' },
+          { label: 'Đơn giá/m²', value: '250.000 đ', note: 'Hợp lý so với khu vực³' },
           { label: 'Diện tích', value: '300 m²', note: 'sàn sử dụng 2 tầng' },
           { label: 'Mặt tiền', value: '14 m', note: 'đường nội khu 13 m, nhìn ra hồ' },
           { label: 'Đặt cọc', value: '3 tháng', note: 'hợp đồng tối thiểu 3 năm' }
@@ -558,7 +555,7 @@ class Component extends DCLogic {
           { name: 'Sảnh chính', size: '96 m²', use: 'Khu phục vụ chính, 40–48 chỗ', note: 'Trần cao, cửa kính lớn hướng vườn. Phù hợp bố trí quầy order gần lối vào.', src: B.living },
           { name: 'Khu bếp', size: '42 m²', use: 'Quầy pha chế & bếp sơ chế', note: 'Đã có hệ thống cấp thoát nước. Cần bổ sung hút mùi công nghiệp.', src: B.kitchen },
           { name: 'Phòng tầng 2', size: '38 m²', use: 'Phòng họp nhóm / làm việc', note: 'Không gian yên tĩnh, có thể khai thác theo giờ cho khách văn phòng.', src: B.aptLiving },
-          { name: 'Sân vườn', size: '110 m²', use: 'Khu ngồi ngoài trời, 30 chỗ', note: 'Điểm khác biệt lớn nhất so với các quán lân cận.', src: B.garden }
+          { name: 'Sân vườn', size: '110 m²', use: 'Không gian ngoài trời', note: 'Có thể bố trí khu ngồi và cây xanh.', src: B.garden }
         ],
         locationHeadline: 'Lối tiếp cận thuận lợi, không có dải phân cách cứng trước cửa.',
         access: [
@@ -573,14 +570,8 @@ class Component extends DCLogic {
           { label: 'Trường liên cấp', value: '2 trường, 500 m', ref: '2' },
           { label: 'TTTM Vincom Mega Mall', value: '1,3 km', ref: '2' }
         ],
-        compCount: '07', gap: 'Phân khúc cà phê sân vườn cao cấp còn trống; phần lớn đối thủ là quán mang đi nhỏ.',
-        segments: [
-          { label: 'Bình dân (dưới 35.000 đ)', count: 3, pct: '43%', note: 'Chủ yếu là quán mang đi.' },
-          { label: 'Trung cấp (35.000–60.000 đ)', count: 3, pct: '43%', note: 'Hai chuỗi lớn, một quán độc lập.' },
-          { label: 'Cao cấp (trên 60.000 đ)', count: 1, pct: '14%', note: 'Không có quán sân vườn.' }
-        ],
         verdict: 'Mặt bằng phù hợp cao với mô hình cà phê sân vườn hướng tới cư dân và gia đình trong khu đô thị, tận dụng cảnh quan hồ Ngọc Trai. Giá thuê nằm trong mức hợp lý của khu vực; rủi ro chính là chi phí cải tạo bếp và lượng khách giảm vào giờ hành chính.',
-        pros: ['Sân vườn rộng, tạo khác biệt rõ rệt với đối thủ trong bán kính 500 m.', 'Đường hai chiều, không có dải phân cách cứng, ô tô dừng đỗ thuận tiện.', 'Mật độ cư dân thu nhập cao trong bán kính 1 km.'],
+        pros: ['Sân vườn rộng, gần hồ Ngọc Trai.', 'Đường hai chiều, không có dải phân cách cứng, ô tô dừng đỗ thuận tiện.'],
         cons: ['Chi phí cải tạo bếp và hút mùi ước tính 150–200 triệu.', 'Lưu lượng khách giờ hành chính thấp do xa khu văn phòng.', 'Hợp đồng tối thiểu 3 năm, cần đàm phán điều khoản tăng giá.']
       },
       {
@@ -589,7 +580,7 @@ class Component extends DCLogic {
         hero: B.patio, heroPos: '50% 50%', heroAlt: 'Nhà một tầng ốp gỗ, sân cỏ và cây ô liu', contactImg: B.tour,
         specs: [
           { label: 'Giá thuê', value: '45 triệu', note: 'mỗi tháng, chưa VAT' },
-          { label: 'Đơn giá/m²', value: '250.000 đ', note: 'Hợp lý so với khu vực⁴' },
+          { label: 'Đơn giá/m²', value: '250.000 đ', note: 'Hợp lý so với khu vực³' },
           { label: 'Diện tích', value: '180 m²', note: 'gồm sân trước 60 m²' },
           { label: 'Mặt tiền', value: '10 m', note: 'đại lộ nội khu 30 m' },
           { label: 'Đặt cọc', value: '2 tháng', note: 'hợp đồng tối thiểu 2 năm' }
@@ -613,15 +604,9 @@ class Component extends DCLogic {
           { label: 'Công viên, khu thể thao', value: '350 m', ref: '2' },
           { label: 'Siêu thị trong khu', value: '500 m', ref: '2' }
         ],
-        compCount: '12', gap: 'Mật độ cạnh tranh cao; lợi thế nằm ở sân trước cho khách mang đi dừng đỗ nhanh.',
-        segments: [
-          { label: 'Bình dân (dưới 35.000 đ)', count: 6, pct: '50%', note: 'Tập trung quanh trường đại học.' },
-          { label: 'Trung cấp (35.000–60.000 đ)', count: 5, pct: '42%', note: 'Ba chuỗi lớn trên cùng trục đường.' },
-          { label: 'Cao cấp (trên 60.000 đ)', count: 1, pct: '8%', note: 'Một quán specialty.' }
-        ],
         verdict: 'Phù hợp mô hình cà phê mang đi phục vụ cư dân các toà chung cư và sinh viên. Dải phân cách cứng làm giảm khách từ chiều ngược lại; cần đánh giá thực địa giờ cao điểm trước khi quyết định.',
         pros: ['Đơn giá thuê tốt, chi phí cố định thấp.', 'Sân trước thuận tiện cho khách mang đi.', 'Gần cụm chung cư đông dân và trường đại học.'],
-        cons: ['Dải phân cách cứng, khách chiều ngược phải quay đầu 250 m.', '12 cơ sở cùng ngành trong bán kính 500 m.', 'Ít chỗ đỗ ô tô.']
+        cons: ['Có dải phân cách cứng, cần quay đầu sau 250 m.', 'Ít chỗ đỗ ô tô.']
       },
       {
         code: 'MB-03', tab: 'San Hô', name: 'Shophouse căn góc, San Hô', model: 'NHÀ HÀNG', modelLower: 'nhà hàng',
@@ -629,7 +614,7 @@ class Component extends DCLogic {
         hero: B.land, heroPos: '50% 50%', heroAlt: 'Công trình hai tầng có sân đỗ xe phía trước', contactImg: B.top,
         specs: [
           { label: 'Giá thuê', value: '62 triệu', note: 'mỗi tháng, chưa VAT' },
-          { label: 'Đơn giá/m²', value: '258.000 đ', note: 'Cao hơn khu vực 8%⁴' },
+          { label: 'Đơn giá/m²', value: '258.000 đ', note: 'Cao hơn khu vực 8%³' },
           { label: 'Diện tích', value: '240 m²', note: 'sàn sử dụng 2 tầng' },
           { label: 'Mặt tiền', value: '8 m + 18 m', note: 'căn góc hai mặt đường' },
           { label: 'Đặt cọc', value: '3 tháng', note: 'hợp đồng tối thiểu 3 năm' }
@@ -652,12 +637,6 @@ class Component extends DCLogic {
           { label: 'Toà chung cư', value: '5 toà, 450 m', ref: '2' },
           { label: 'Khách sạn, căn hộ dịch vụ', value: '2 cơ sở, 600 m', ref: '2' },
           { label: 'Trung tâm Hà Nội', value: 'khoảng 15 km', ref: '2' }
-        ],
-        compCount: '09', gap: 'Thiếu nhà hàng có phòng riêng cho khách gia đình và doanh nghiệp trong bán kính 500 m.',
-        segments: [
-          { label: 'Bình dân (dưới 80.000 đ)', count: 5, pct: '56%', note: 'Quán cơm, bún phở trong khu.' },
-          { label: 'Trung cấp (80.000–200.000 đ)', count: 3, pct: '33%', note: 'Không có phòng riêng.' },
-          { label: 'Cao cấp (trên 200.000 đ)', count: 1, pct: '11%', note: 'Một nhà hàng khách sạn.' }
         ],
         verdict: 'Vị trí nhận diện tốt cho nhà hàng tầm trung phục vụ gia đình cư dân cuối tuần và tiếp khách doanh nghiệp. Đơn giá cao hơn mặt bằng chung 8%, nên cần đàm phán giá hoặc thời gian miễn phí cải tạo.',
         pros: ['Căn góc hai mặt tiền, nhận diện tốt.', 'Có hai phòng riêng, đáp ứng nhu cầu tiếp khách.', 'Gần trung tâm thương mại và cụm chung cư.'],
@@ -701,7 +680,12 @@ class Component extends DCLogic {
     const ri = Math.min(room, l.rooms.length - 1);
     const pad = (i) => String(i + 1).padStart(2, '0');
     const isSaved = !!saved[l.code];
-    const total = l.segments.reduce((a, s) => a + s.count, 0) || 1;
+    const ecoGroups = (l.eco || []).map((g) => ({
+      label: g.label,
+      scoreText: g.score == null ? 'Chưa có điểm' : g.score + '/100',
+      frac: (g.score ?? 0) / 100,
+      items: g.items.map((a) => ({ label: a.label, value: a.nearest?.text ?? 'Chưa ghi nhận' }))
+    }));
     const pickRoom = (i, focus) => {
       const n = l.rooms.length;
       const k = (i + n) % n;
@@ -715,17 +699,19 @@ class Component extends DCLogic {
       loadCls: this.state.loading ? 'is-loading' : '',
       busy: this.state.loading ? 'true' : 'false',
       tabCount: String(all.length),
-      segTitle: l.segTitle || 'Phân bổ theo phân khúc giá',
+      ecoGroups,
+      hasEcoGroups: ecoGroups.length > 0,
+      noEcoGroups: ecoGroups.length === 0,
+      ecoEmpty: this.state.loading ? 'Đang tải điểm tiện ích…' : 'Chưa có điểm tiện ích cho hồ sơ này.',
       sources: this.state.remote ? [
-        { id: 'nguon-1', text: 'Thông tin mặt bằng (giá, diện tích, lối tiếp cận): dữ liệu mô phỏng của bản thử nghiệm, quản lý tại trang quản trị' },
-        { id: 'nguon-2', text: 'Chung cư, trường học, Vincom, điểm xe buýt: © OpenStreetMap contributors (ODbL)' },
-        { id: 'nguon-3', text: 'Cơ sở cùng ngành: OpenStreetMap, có thể thiếu các quán chưa được cập nhật' },
-        { id: 'nguon-4', text: 'Đơn giá/m² khu vực: trung vị các mặt bằng cùng loại trong hệ thống' }
+        { id: 'nguon-1', text: 'Thông tin căn nhà và tiện ích trong toà: dữ liệu mô phỏng của bản thử nghiệm' },
+        { id: 'nguon-2', text: 'Tiện ích quanh nhà: © OpenStreetMap contributors (ODbL) và dữ liệu bổ sung trong hệ thống' },
+        { id: 'nguon-3', text: 'Khoảng cách đi làm: ước tính theo đường chim bay tới trung tâm quận được chọn' },
+        { id: 'nguon-4', text: 'Đơn giá/m² khu vực: trung vị các căn cùng loại trong hệ thống' }
       ] : [
         { id: 'nguon-1', text: 'Tin cho thuê gốc: Batdongsan.com.vn, truy cập 12/11/2026' },
         { id: 'nguon-2', text: 'Tuyến đường, dải phân cách, bãi đỗ: Google Maps và OpenFreeMap' },
-        { id: 'nguon-3', text: 'Cơ sở cùng ngành: GrabFood, ShopeeFood, GrabMart' },
-        { id: 'nguon-4', text: 'Đơn giá/m² khu vực: tổng hợp từ tin đăng cùng phường trong 90 ngày' }
+        { id: 'nguon-3', text: 'Đơn giá/m² khu vực: tổng hợp từ tin đăng cùng phường trong 90 ngày' }
       ],
       segX: (idx * 100) + '%',
       tabs: all.map((x, i) => ({
@@ -747,7 +733,6 @@ class Component extends DCLogic {
       },
       room: l.rooms[ri],
       roomImgs: l.rooms.map((r, i) => ({ src: r.src, alt: i === ri ? r.name + ', ' + l.name : '', cls: i === ri ? 'is-active' : '' })),
-      segments: l.segments.map((s) => ({ ...s, frac: (s.count / total).toFixed(3) })),
       sent,
       notSent: !sent,
       sending,

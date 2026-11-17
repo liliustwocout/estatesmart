@@ -550,7 +550,9 @@ export function profile(code, raw = {}) {
       { label: l.deal === 'ban' ? 'Pháp lý' : 'Nội thất', value: l.deal === 'ban' ? LEGAL[l.legal] : FURN[l.furnished], note: l.mgmt_fee ? `phí dịch vụ ${num(l.mgmt_fee)} nghìn/m²/tháng` : '' }
     ],
     rooms: roomsOf(l),
-    locationHeadline: `${near10.length} loại tiện ích trong khoảng 600 m quanh nhà.`,
+    locationHeadline: near10.length
+      ? `${near10.length} loại tiện ích trong khoảng 10 phút đi bộ.`
+      : 'Chưa ghi nhận tiện ích trong khoảng 10 phút đi bộ.',
     access: [
       { label: 'Điểm xe buýt gần nhất', value: it.xe_buyt && it.xe_buyt.nearest ? it.xe_buyt.nearest.text : 'Chưa ghi nhận', ref: '2' },
       ...(r.commute ? r.commute.trips.map((t) => ({ label: `Đi làm ${t.to}`, value: `cách khoảng ${t.km} km`, ref: '3' })) : []),
