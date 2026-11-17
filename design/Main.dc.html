@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<title>estateSmartAI — Thẩm định mặt bằng bằng dữ liệu</title>
+<title>estateSmartAI — Chọn nhà theo tiện ích quanh nhà</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -84,6 +84,7 @@ img{max-width:100%}
 .hero h1{margin:0;font-weight:500;font-size:clamp(46px,6.6vw,96px);line-height:1.04;letter-spacing:-.03em}
 .line{display:block;overflow:clip;padding-top:.14em;margin-top:-.14em;padding-bottom:.04em}
 .line>span{display:inline-block;animation:rise var(--dur-4) var(--ease-out) both;animation-delay:calc(160ms + var(--i) * 110ms)}
+.nw{white-space:nowrap}
 @keyframes rise{from{transform:translateY(108%)}}
 .hero-lede{margin:22px 0 0;max-width:34ch;font-size:clamp(17px,1.4vw,20px);line-height:1.5;color:var(--ink-2);animation:es-enter var(--dur-4) var(--ease-out) 480ms both}
 .hero-actions{display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px;margin-top:32px;animation:es-enter var(--dur-4) var(--ease-out) 600ms both}
@@ -382,10 +383,10 @@ img{max-width:100%}
 <a href="#gioi-thieu" onClick="{{closeMenu}}" style="--i: 0">Giới thiệu</a>
 <a href="#quy-trinh" onClick="{{closeMenu}}" style="--i: 1">Quy trình</a>
 <a href="Chat.dc.html" style="--i: 2">Trợ lý AI</a>
-<a href="Listing.dc.html" style="--i: 3">Hồ sơ mặt bằng</a>
+<a href="Listing.dc.html" style="--i: 3">Hồ sơ căn nhà</a>
 <a href="#lien-he" onClick="{{closeMenu}}" style="--i: 4">Liên hệ</a>
 </nav>
-<p class="label">Thẩm định mặt bằng F&amp;B và bán lẻ bằng dữ liệu</p>
+<p class="label">Chọn nhà cho cả gia đình bằng dữ liệu</p>
 </div>
 
 <main id="noi-dung">
@@ -395,8 +396,8 @@ img{max-width:100%}
 <img class="hero-img" fetchpriority="high" src="/_blob/88da756d7bdf21acce5e115ce122899b" alt="Công trình hai tầng tường trắng, hàng cột thẳng đứng và sân lát đá lúc hoàng hôn">
 <div class="hero-shade" style="background: linear-gradient(to top, rgba(18,16,14,0.88), rgba(18,16,14,{{overlay}}) 55%, rgba(18,16,14,0.45))"></div>
 <div class="hero-body">
-<h1><span class="line"><span style="--i: 0">Mặt bằng,</span></span><span class="line"><span style="--i: 1">thẩm định bằng dữ liệu.</span></span></h1>
-<p class="hero-lede">Ba mặt bằng đáng khảo sát nhất, mỗi chỉ số kèm nguồn kiểm chứng.</p>
+<h1><span class="line"><span style="--i: 0">Gần trường, <span class="nw">gần chợ,</span></span></span><span class="line"><span style="--i: 1">gần công viên.</span></span></h1>
+<p class="hero-lede">Kể về gia đình mình, nhận ba căn hộ hoặc nhà đất hợp nhất, kèm khoảng cách tới mọi tiện ích quanh nhà.</p>
 <div class="hero-actions">
 <a class="btn btn-shine" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 <a class="link" href="Listing.dc.html">Xem hồ sơ mẫu</a>
@@ -431,8 +432,8 @@ img{max-width:100%}
 <div class="wrap about-rest">
 <div class="about-row" data-reveal>
 <div class="about-cols rv">
-<p>Dành cho chủ quán F&amp;B và cửa hàng bán lẻ nhỏ. Hệ thống tổng hợp tin cho thuê, dữ liệu giao thông, đối thủ trên GrabFood và ShopeeFood, rồi đề xuất ba mặt bằng đáng khảo sát nhất.</p>
-<p class="muted">Chuỗi lớn có bộ phận phát triển mặt bằng riêng. Doanh nghiệp nhỏ thường chỉ dựa vào tin rao và kinh nghiệm cá nhân. estateSmartAI thu hẹp khoảng cách đó.</p>
+<p>Dành cho các gia đình đang tìm căn hộ hoặc nhà đất để mua hay thuê. Hệ thống đo khoảng cách từ từng căn tới trường học hợp tuổi con, chợ, siêu thị, bệnh viện, công viên và điểm xe buýt, rồi đề xuất ba căn hợp nhất với nhà mình.</p>
+<p class="muted">Tin rao thường chỉ nói giá và diện tích. Muốn biết quanh nhà có gì, gia đình phải tự mở bản đồ dò từng chỗ. estateSmartAI làm phần việc đó cho bạn.</p>
 </div>
 <div class="guide guide-end">
 <p class="say say-r"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Mình gom tin rao, trường, chợ, công viên quanh từng căn về một chỗ.</span></p>
@@ -451,21 +452,21 @@ img{max-width:100%}
 <!-- SO SÁNH -->
 <section class="sec wrap compare" data-reveal>
 <div class="cmp-intro">
-<h2 class="h2 rv">Từ vài tuần dò tin đến ba lựa chọn có nguồn.</h2>
+<h2 class="h2 rv">Từ tự dò bản đồ đến ba căn đủ tiện ích.</h2>
 <div class="guide guide-row" data-reveal>
 <img class="g-mascot" src="/mascot/08-bieu-do.svg" alt="" aria-hidden="true" width="160" height="190" loading="lazy">
-<p class="say say-side"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Thay vì tự đo từng chỗ trên bản đồ, bạn nhận 3 căn đáng đi xem, kèm phút đi bộ tới mọi tiện ích.</span></p>
+<p class="say say-side"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Thay vì tự đo từng chỗ trên bản đồ, bạn nhận 3 căn đáng đi xem, kèm khoảng cách tới mọi tiện ích.</span></p>
 </div>
 </div>
 <div class="cmp">
 <div class="cmp-col rv" style="--d: 1">
 <p class="label">Cách làm hiện nay</p>
-<div class="fig"><span class="num">1–2</span><p>tuần sàng lọc tin trên các sàn và hội nhóm, thông tin chưa được kiểm chứng.</p></div>
-<div class="fig"><span class="num">4–7</span><p>ngày liên hệ đầu mối và sắp xếp lịch khảo sát thực địa.</p></div>
+<div class="fig"><span class="num">1–2</span><p>tuần đọc tin rao, rồi tự mở bản đồ tìm trường, chợ, công viên quanh từng căn.</p></div>
+<div class="fig"><span class="num">4–7</span><p>ngày hẹn môi giới, đi xem nhà mới biết quanh đó có gì.</p></div>
 </div>
 <div class="cmp-col ours rv" style="--d: 2">
 <p class="label">Với estateSmartAI</p>
-<div class="fig"><span class="num">Top 3</span><p>mặt bằng phù hợp nhất để khảo sát, mỗi chỉ số kèm nguồn tham chiếu.</p></div>
+<div class="fig"><span class="num">Top 3</span><p>căn hợp với gia đình nhất, kèm khoảng cách tới trường, chợ, công viên, bệnh viện và nguồn dữ liệu.</p></div>
 <a class="btn btn-shine" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </div>
@@ -517,9 +518,9 @@ img{max-width:100%}
 <!-- 5 AI AGENT -->
 <section class="sec wrap" data-reveal>
 <div class="agents-head">
-<h2 class="h2 rv">Bộ phận phát triển mặt bằng cho doanh nghiệp nhỏ.</h2>
+<h2 class="h2 rv">Năm chuyên viên AI cho một quyết định lớn của cả nhà.</h2>
 <div class="agents-side rv" style="--d: 1">
-<p>Một Supervisor điều phối năm AI Agent. Mỗi Agent đảm nhận một nghiệp vụ; báo cáo cuối trích nguồn cho từng chỉ số.</p>
+<p>Một Supervisor điều phối năm AI Agent. Mỗi Agent đảm nhận một việc; báo cáo cuối ghi nguồn cho từng con số.</p>
 <div class="guide guide-row" data-reveal>
 <img class="g-mascot" src="/mascot/07-do-dac.svg" alt="" aria-hidden="true" width="160" height="190" loading="lazy">
 <p class="say say-side"><span class="say-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="say-t">Năm chuyên viên AI chia nhau từng việc, rồi mình gộp lại thành một báo cáo có nguồn.</span></p>
@@ -527,11 +528,11 @@ img{max-width:100%}
 </div>
 </div>
 <ol class="agents" data-reveal>
-<li class="agent rv" style="--d: 0"><span class="agent-n">01</span><span class="agent-t">Phân tích nhu cầu</span><p>Chuẩn hoá mô hình kinh doanh, ngân sách, diện tích và yêu cầu vận hành như chỗ đỗ xe cho khách mang đi.</p></li>
-<li class="agent rv" style="--d: 1"><span class="agent-n">02</span><span class="agent-t">Sàng lọc mặt bằng</span><p>Lọc theo ngân sách, khu vực và diện tích trên nguồn tin cho thuê đang hoạt động.</p></li>
-<li class="agent rv" style="--d: 2"><span class="agent-n">03</span><span class="agent-t">Đánh giá vị trí</span><p>Kiểm tra khả năng tiếp cận, bãi đỗ xe, dải phân cách cứng và mật độ dân cư, văn phòng trong bán kính phục vụ.</p></li>
-<li class="agent rv" style="--d: 3"><span class="agent-n">04</span><span class="agent-t">Phân tích cạnh tranh</span><p>Xác định cơ sở cùng ngành trên GrabFood, ShopeeFood, GrabMart, ước tính phân khúc giá và khoảng trống thị trường.</p></li>
-<li class="agent last rv" style="--d: 4"><span class="agent-n">05</span><span class="agent-t">Chấm điểm và khuyến nghị</span><p>Tính điểm phù hợp 0–100, đối chiếu đơn giá/m² với khu vực và nêu rõ ưu điểm, rủi ro.</p></li>
+<li class="agent rv" style="--d: 0"><span class="agent-n">01</span><span class="agent-t">Hiểu gia đình</span><p>Đọc nhu cầu mua hay thuê, ngân sách, tuổi các con, ông bà ở cùng và nơi bố mẹ đi làm, suy ra số phòng ngủ cần.</p></li>
+<li class="agent rv" style="--d: 1"><span class="agent-n">02</span><span class="agent-t">Sàng lọc căn</span><p>Lọc căn hộ, nhà đất theo ngân sách, số phòng ngủ và khu vực; nới dần khi còn quá ít lựa chọn.</p></li>
+<li class="agent rv" style="--d: 2"><span class="agent-n">03</span><span class="agent-t">Học hành và sức khoẻ</span><p>Tìm trường đúng cấp học của con, phòng khám, bệnh viện quanh từng căn và đo khoảng cách.</p></li>
+<li class="agent rv" style="--d: 3"><span class="agent-n">04</span><span class="agent-t">Sinh hoạt và đi lại</span><p>Chợ, siêu thị, công viên, sân chơi, chỗ tập thể thao, điểm xe buýt và quãng đường tới chỗ làm.</p></li>
+<li class="agent last rv" style="--d: 4"><span class="agent-n">05</span><span class="agent-t">Chấm điểm sống</span><p>Tính điểm 0–100 theo trọng số của chính gia đình bạn, nêu điểm mạnh và điều nên tự kiểm chứng.</p></li>
 </ol>
 </section>
 
@@ -571,9 +572,9 @@ img{max-width:100%}
 <footer id="lien-he" class="foot">
 <div class="wrap">
 <div class="foot-cta" data-reveal>
-<h2 class="h2 rv">Bắt đầu với<br>một yêu cầu.</h2>
+<h2 class="h2 rv">Bắt đầu từ<br>chuyện nhà mình.</h2>
 <div>
-<p>Chọn mô hình kinh doanh và khu vực mục tiêu. Trợ lý AI sẽ thực hiện phần thẩm định.</p>
+<p>Kể nhà mình có mấy người, con mấy tuổi, muốn mua hay thuê. Trợ lý AI sẽ tìm và chấm điểm từng căn.</p>
 <div class="foot-act">
 <a class="btn btn-shine" href="Chat.dc.html">Bắt đầu tư vấn<svg class="arr" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 <div class="guide guide-end" data-reveal>
@@ -586,7 +587,7 @@ img{max-width:100%}
 <div class="foot-grid">
 <div><p class="label">Khu vực thí điểm</p><p>Vinhomes Ocean Park 1<br>Gia Lâm, Hà Nội</p></div>
 <div><p class="label">Dữ liệu</p><p>Bản đồ và tiện ích<br>© OpenStreetMap</p></div>
-<div><p class="label">Sản phẩm</p><p><a class="link" href="Chat.dc.html">Trợ lý AI</a><br><a class="link" href="Listing.dc.html">Hồ sơ mặt bằng</a><br><a class="link" href="#quy-trinh">Quy trình</a></p></div>
+<div><p class="label">Sản phẩm</p><p><a class="link" href="Chat.dc.html">Trợ lý AI</a><br><a class="link" href="Listing.dc.html">Hồ sơ căn nhà</a><br><a class="link" href="#quy-trinh">Quy trình</a></p></div>
 </div>
 <p class="wordmark" aria-label="estateSmart/AI"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 4H7a3 3 0 0 0-3 3v18a3 3 0 0 0 3 3h1.6"></path><path d="M23.4 4H25a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H14.6"></path><path d="M11.2 29.5 20.8 2.5"></path></g><circle cx="21.6" cy="20.6" r="2.6" fill="#D39A6A"></circle></svg><span aria-hidden="true">estateSmart/AI</span></p>
 <div class="legal">
@@ -596,7 +597,7 @@ img{max-width:100%}
 </div>
 </footer>
 
-<a class="fab {{fabCls}}" href="Chat.dc.html" aria-label="Mở trợ lý AI tư vấn mặt bằng" tabIndex="{{fabTab}}" aria-hidden="{{fabHidden}}"><span class="fab-face" aria-hidden="true"><img src="/mascot/avatar.svg" alt="" width="34" height="36"></span><span>Hỏi trợ lý AI</span><svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
+<a class="fab {{fabCls}}" href="Chat.dc.html" aria-label="Mở trợ lý AI tư vấn chọn nhà" tabIndex="{{fabTab}}" aria-hidden="{{fabHidden}}"><span class="fab-face" aria-hidden="true"><img src="/mascot/avatar.svg" alt="" width="34" height="36"></span><span>Hỏi trợ lý AI</span><svg class="arr" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.5m0 0L8.5 4m4 4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"overlay":{"editor":"range","default":0.2,"min":0,"max":0.7,"step":0.01,"section":"Hero"},"$preview":{"width":1440,"height":6500}}'>
@@ -773,25 +774,25 @@ class Component extends DCLogic {
   }
   renderVals() {
     const chapterData = [
-      { title: 'Xác định nhu cầu', m: '03-suy-nghi', say: 'Bạn kể nhà mình mấy người, con mấy tuổi, ngân sách bao nhiêu.', sub: 'Mô hình kinh doanh, khu vực và ngân sách', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
-      { title: 'Sàng lọc', m: '05-soi-tin-dang', say: 'Mình loại căn vượt ngân sách hoặc thiếu phòng, phần còn lại ghim lên bản đồ.', sub: 'Danh sách ứng viên trên bản đồ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
-      { title: 'Hồ sơ mặt bằng', m: '07-do-dac', say: 'Mỗi căn có ảnh, thông số và nguồn để bạn tự kiểm tra.', sub: 'Hình ảnh, thông số và nguồn dữ liệu', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
-      { title: 'Đánh giá vị trí', m: '09-ban-do', say: 'Mình đo đường tới trường, chợ, công viên bằng phút đi bộ.', sub: 'Khả năng tiếp cận, dải phân cách, bãi đỗ xe', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
-      { title: 'Nhận định AI', m: '08-bieu-do', say: 'Chấm điểm sống 0–100, nói rõ điểm mạnh và điều cần kiểm chứng.', sub: 'Điểm phù hợp 0–100, ưu điểm và rủi ro', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
-      { title: 'So sánh', m: '06-ong-nhom', say: 'Ba căn đặt cạnh nhau theo cùng tiêu chí, chọn dễ hơn hẳn.', sub: 'Đối chiếu ba hồ sơ theo cùng tiêu chí', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
-      { title: 'Kết nối chủ nhà', m: '04-tim-thay', say: 'Ưng căn nào, mình gửi lời nhắn và hẹn lịch xem giúp bạn.', sub: 'Lưu danh sách khảo sát và đặt lịch xem', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
+      { title: 'Hiểu gia đình', m: '03-suy-nghi', say: 'Bạn kể nhà mình mấy người, con mấy tuổi, ngân sách bao nhiêu.', sub: 'Mua hay thuê, ngân sách, tuổi con, ông bà, nơi đi làm', src: '/_blob/88da756d7bdf21acce5e115ce122899b', pos: '60% 50%' },
+      { title: 'Sàng lọc', m: '05-soi-tin-dang', say: 'Mình loại căn vượt ngân sách hoặc thiếu phòng, phần còn lại ghim lên bản đồ.', sub: 'Căn vừa ngân sách và đủ phòng, ghim trên bản đồ', src: '/_blob/8cc9ac945960bf00282a323c6238a51c', pos: '50% 50%' },
+      { title: 'Hồ sơ căn', m: '07-do-dac', say: 'Mỗi căn có ảnh, thông số và nguồn để bạn tự kiểm tra.', sub: 'Hình ảnh, thông số căn và nguồn dữ liệu', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 40%' },
+      { title: 'Hệ sinh thái tiện ích', m: '09-ban-do', say: 'Mình đo khoảng cách tới trường, chợ, công viên quanh từng căn.', sub: 'Trường, chợ, y tế, công viên, xe buýt quanh nhà', src: '/_blob/e58ecc3f426d1ec53126f84a9cad47a3', pos: '50% 50%' },
+      { title: 'Nhận định AI', m: '08-bieu-do', say: 'Chấm điểm sống 0–100, nói rõ điểm mạnh và điều cần kiểm chứng.', sub: 'Điểm sống 0–100, điểm mạnh và điều cần kiểm chứng', src: '/_blob/3517a4dd3d9a82c4b088e7f9bcd011df', pos: '50% 50%' },
+      { title: 'So sánh', m: '06-ong-nhom', say: 'Ba căn đặt cạnh nhau theo cùng tiêu chí, chọn dễ hơn hẳn.', sub: 'Ba căn đặt cạnh nhau theo cùng tiêu chí', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%' },
+      { title: 'Đặt lịch xem nhà', m: '04-tim-thay', say: 'Ưng căn nào, mình gửi lời nhắn và hẹn lịch xem giúp bạn.', sub: 'Gửi lời nhắn cho chủ nhà và hẹn ngày xem', src: '/_blob/3e0f7e1611926dccf9bd89f3fb717e32', pos: '50% 50%' }
     ];
     const studyData = [
-      { title: 'Thẩm định vị trí,\nkhả năng tiếp cận\nvà giá thuê.', say: 'Hồ sơ mẫu đây: điểm sống, ưu điểm, điều cần kiểm chứng và nguồn cho từng con số.', body: 'Mỗi mặt bằng được chấm điểm phù hợp từ 0 đến 100, kèm ưu điểm, rủi ro và nguồn tham chiếu cho từng chỉ số.', cta: 'Xem hồ sơ mẫu', href: 'Listing.dc.html', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 45%', alt: 'Hàng cột đá và cửa kính dưới nắng chiều' },
-      { title: 'Năm AI Agent,\nmột báo cáo\nthống nhất.', say: 'Ba lựa chọn nằm cạnh nhau trên bản đồ, bấm vào là xem chi tiết.', body: 'Ba mặt bằng phù hợp nhất được trình bày song song trên bản đồ để bạn lưu vào danh sách khảo sát hoặc liên hệ chủ nhà.', cta: 'Trải nghiệm trợ lý AI', href: 'Chat.dc.html', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%', alt: 'Không gian chính với bàn gỗ và sofa' }
+      { title: 'Điểm sống\nvà mọi tiện ích\nquanh nhà.', say: 'Hồ sơ mẫu đây: điểm sống, ưu điểm, điều cần kiểm chứng và nguồn cho từng con số.', body: 'Mỗi căn được chấm điểm sống từ 0 đến 100 theo chính gia đình bạn, kèm khoảng cách tới từng tiện ích, ưu điểm, điều cần kiểm chứng và nguồn dữ liệu.', cta: 'Xem hồ sơ mẫu', href: 'Listing.dc.html', src: '/_blob/276d08c50962e6b144b0f758c6e01add', pos: '50% 45%', alt: 'Hàng cột đá và cửa kính dưới nắng chiều' },
+      { title: 'Năm AI Agent,\nmột bản đồ\ntiện ích.', say: 'Ba lựa chọn nằm cạnh nhau trên bản đồ, bấm vào là xem chi tiết.', body: 'Ba căn hợp nhất hiện cạnh nhau trên bản đồ, có vòng 300 m, 600 m, 1 km cùng trường, chợ, công viên quanh nhà, để bạn so sánh rồi hẹn xem nhà.', cta: 'Trải nghiệm trợ lý AI', href: 'Chat.dc.html', src: '/_blob/526999b39fdb3b7b29959da9e7531ab5', pos: '50% 50%', alt: 'Không gian chính với bàn gỗ và sofa' }
     ];
     const ci = this.state.chapter;
     const si = this.state.study;
     const open = this.state.menuOpen;
     const pad = (i) => String(i + 1).padStart(2, '0');
-    const statement = 'estateSmartAI thẩm định mặt bằng như một chuyên viên phát triển mạng lưới: vị trí, khả năng tiếp cận, cạnh tranh và giá thuê, trước khi bạn ký hợp đồng.';
+    const statement = 'estateSmartAI chọn nhà như một người thân rành khu vực: trường cho con, chợ cho ông bà, công viên cho cả nhà, trước khi bạn đặt cọc.';
     // Từ khoá được làm nổi bật (tính theo vị trí từ trong câu).
-    const KEY = ['chuyên viên phát triển mạng lưới', 'vị trí', 'khả năng tiếp cận', 'cạnh tranh', 'giá thuê'];
+    const KEY = ['người thân rành khu vực', 'trường cho con', 'chợ cho ông bà', 'công viên cho cả nhà'];
     const raw = statement.split(' ');
     const keyIdx = new Set();
     KEY.forEach((phrase) => {

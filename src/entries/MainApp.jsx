@@ -7,7 +7,7 @@ import Mascot from '../mascot/Mascot.jsx';
 // Mascot tương tác ở hero: design/Main.dc.html chừa chỗ trống <div data-mascot="hero">,
 // gắn vào bằng portal để dùng chung một cây React với trang (docs/KE_HOACH_MASCOT.md mục 4).
 const heroSize = () => (window.innerWidth <= 820 ? 104 : window.innerWidth <= 1024 ? 150 : 184);
-const GUIDE = 'Mình là trợ lý mặt bằng. Kéo xuống, mình dẫn bạn xem cách thẩm định nhé!';
+const GUIDE = 'Mình là trợ lý chọn nhà. Kéo xuống, mình dẫn bạn xem cách chọn nhé!';
 
 function HeroMascot() {
   const [slot, setSlot] = useState(null);
