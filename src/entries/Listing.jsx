@@ -10,12 +10,12 @@ import { smoothScroll } from '../styles/smoothScroll.js';
 // Một Mascot nhảy tới section đang xem và nói một câu ngắn; thứ tự khoá = thứ tự section (so le trái, phải).
 // Khoá trùng với data-guide và {{guide.khoá}} trong design/Listing.dc.html.
 const LINES = {
-  hero: ['04-tim-thay', 'Đây là điểm phù hợp của mặt bằng này.'],
-  specs: ['07-do-dac', 'Năm thông số chính, xem giá trước nhé.'],
-  rooms: ['05-soi-tin-dang', 'Bấm từng không gian để xem công năng.'],
-  location: ['09-ban-do', 'Lối vào, chỗ đỗ xe và tiện ích quanh đây.'],
-  comp: ['06-ong-nhom', 'Đối thủ quanh đây và khoảng trống còn lại.'],
-  verdict: ['08-bieu-do', 'Nhận định của mình: ưu điểm và rủi ro.'],
+  hero: ['04-tim-thay', 'Đây là điểm sống của căn này.'],
+  specs: ['07-do-dac', 'Phòng ngủ, diện tích, pháp lý, xem giá trước nhé.'],
+  rooms: ['05-soi-tin-dang', 'Bấm từng phòng để xem bố trí.'],
+  location: ['09-ban-do', 'Vòng 15 phút đi bộ quanh nhà đây.'],
+  eco: ['06-ong-nhom', 'Trường, chợ, công viên cách bao xa, xem ở đây.'],
+  verdict: ['08-bieu-do', 'Ưu điểm, và vài điều nên tự kiểm chứng.'],
   contact: ['10-ngon-cai', 'Ưng rồi thì đặt lịch đi xem nhé!'],
 };
 // Chỗ trống đầu mỗi section để Mascot đáp xuống

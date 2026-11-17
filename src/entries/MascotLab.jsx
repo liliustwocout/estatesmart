@@ -32,11 +32,11 @@ body { margin: 0; background: #1B1916; color: #F7F3EC; font: 400 15px/1.5 'Famil
 
 const SEQ = {
   'Thẩm định 5 Agent': [
-    ['03-suy-nghi', 1400, 'Bạn cần gì nhỉ?'], ['02-chay-tim', 700],
-    ['05-soi-tin-dang', 1400, 'Soi tin đăng…'], ['02-chay-tim', 700],
-    ['09-ban-do', 1400, 'Xem vị trí…'], ['02-chay-tim', 700],
-    ['06-ong-nhom', 1400, 'Ngó đối thủ…'], ['02-chay-tim', 700],
-    ['08-bieu-do', 1400, 'Chấm điểm…'], ['04-tim-thay', 1500, 'Tìm thấy rồi!'],
+    ['03-suy-nghi', 1400, 'Nghe nhà mình cần gì…'], ['02-chay-tim', 700],
+    ['05-soi-tin-dang', 1400, 'Lọc tin rao…'], ['02-chay-tim', 700],
+    ['07-do-dac', 1400, 'Đo đường tới trường…'], ['02-chay-tim', 700],
+    ['06-ong-nhom', 1400, 'Tìm chợ, công viên…'], ['02-chay-tim', 700],
+    ['08-bieu-do', 1400, 'Chấm điểm sống…'], ['04-tim-thay', 1500, 'Tìm thấy rồi!'],
   ],
   'Đã lưu hồ sơ': [['13-an-mung', 2000, 'Đã lưu hồ sơ!']],
   'Lỗi mạng': [['12-boi-roi', 2000, 'Ơ, mạng lỗi rồi…']],

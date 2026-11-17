@@ -6,11 +6,11 @@ import Mascot from '../mascot/Mascot.jsx';
 
 // Tư thế và câu nói ở từng trạm, theo thứ tự AGENTS trong Assistant.jsx
 const STOPS = [
-  ['03-suy-nghi', 'Đọc nhu cầu…', 'Nhu cầu'],
-  ['05-soi-tin-dang', 'Lọc tin đăng…', 'Sàng lọc'],
-  ['09-ban-do', 'Xem vị trí…', 'Vị trí'],
-  ['06-ong-nhom', 'Ngó đối thủ…', 'Cạnh tranh'],
-  ['08-bieu-do', 'Chấm điểm…', 'Chấm điểm'],
+  ['03-suy-nghi', 'Nghe nhà mình cần gì…', 'Gia đình'],
+  ['05-soi-tin-dang', 'Lọc tin rao…', 'Sàng lọc'],
+  ['07-do-dac', 'Đo đường tới trường…', 'Trường, y tế'], // tạm, chờ 18-deo-cap
+  ['06-ong-nhom', 'Tìm chợ, công viên…', 'Sinh hoạt'], // tạm, chờ 19-xach-gio
+  ['08-bieu-do', 'Chấm điểm sống…', 'Chấm điểm'],
 ];
 export const RUN_MS = 320; // khớp với transition `left` của .hunt-m trong assistant.css
 

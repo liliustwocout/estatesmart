@@ -40,7 +40,7 @@
   <header>
     <div>
       <h1>Mascot</h1>
-      <p>Trợ lý đi khảo sát mặt bằng: đầu là căn nhà, ăng-ten là ghim bản đồ. Kế hoạch: <code>docs/KE_HOACH_MASCOT.md</code></p>
+      <p>Trợ lý đi dò tiện ích quanh nhà cho cả gia đình: đầu là căn nhà, ăng-ten là ghim bản đồ. Kế hoạch: <code>docs/KE_HOACH_MASCOT.md</code></p>
     </div>
     <div class="row" role="group" aria-label="Bảng màu">
       <button data-pal="thuong-hieu" aria-pressed="true">Màu thương hiệu</button>
@@ -147,7 +147,7 @@
   }, { passive: true });
 
   // ---- Bấm: xoay vòng phản ứng; 5 lần nhanh → chóng mặt ----
-  const REACT = [['01-chao', 'Chào bạn!'], ['13-an-mung', 'Yeah!'], ['10-ngon-cai', 'Tìm mặt bằng không?'], ['04-tim-thay', 'Mình tìm giúp nhé!']];
+  const REACT = [['01-chao', 'Chào bạn!'], ['13-an-mung', 'Yeah!'], ['10-ngon-cai', 'Tìm nhà cho cả nhà nhé?'], ['04-tim-thay', 'Mình tìm giúp nhé!']];
   let clicks = [], ri = 0;
   function onTap() {
     const now = performance.now();
@@ -186,8 +186,8 @@
 
   // ---- Giả lập trạng thái chat ----
   document.getElementById('ask').onclick = () => play([
-    ['02-chay-tim', 2600, 'Đang đi tìm mặt bằng…'], ['06-ong-nhom', 1600, 'Soi đối thủ quanh đây…'], ['07-do-dac', 1600, 'Đo diện tích…'],
-    ['03-suy-nghi', 1600, 'Chấm điểm…'], ['04-tim-thay', 1500, 'Có 3 căn hợp!'], ['11-dang-tra-loi', 2200],
+    ['02-chay-tim', 2600, 'Đang đi tìm nhà…'], ['06-ong-nhom', 1600, 'Tìm chợ, công viên…'], ['07-do-dac', 1600, 'Đo đường tới trường…'],
+    ['03-suy-nghi', 1600, 'Chấm điểm sống…'], ['04-tim-thay', 1500, 'Có 3 căn hợp!'], ['11-dang-tra-loi', 2200],
   ], true);
   document.getElementById('fail').onclick = () => play([['02-chay-tim', 1600, 'Đang đi tìm…'], ['12-boi-roi', 2400, 'Mạng chập chờn, thử lại nhé']], true);
   document.getElementById('save').onclick = () => play([['13-an-mung', 2000, 'Đã lưu hồ sơ!']], true);

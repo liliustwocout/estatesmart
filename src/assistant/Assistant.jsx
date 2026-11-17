@@ -663,7 +663,7 @@ export default function Assistant() {
   const reveal = (on, delay = 0, off = 'translateY(12px)') => (on
     ? { opacity: 1, transform: 'none', transitionDelay: delay + 's' }
     : { opacity: 0, transform: off, pointerEvents: 'none', transitionDelay: '0s', transitionDuration: '.22s' });
-  const idleLine = !idleSay || busy || hunt ? null : draft.trim() ? 'Nghe hay đấy! Bấm gửi là mình đi tìm.' : 'Gõ nhu cầu bên trái, mình đi tìm ngay!';
+  const idleLine = !idleSay || busy || hunt ? null : draft.trim() ? 'Nghe hay đấy! Bấm gửi là mình đi tìm.' : 'Kể mình nghe nhà mình cần gì nhé!';
 
   return (
     <div className={'as-page' + (entered ? ' in' : '')}>

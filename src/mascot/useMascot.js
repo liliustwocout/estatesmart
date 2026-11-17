@@ -12,7 +12,7 @@ export const REST = '00-dung-yen';
 const REACTIONS = [
   ['01-chao', 'Chào bạn!'],
   ['13-an-mung', 'Yeah!'],
-  ['10-ngon-cai', 'Tìm mặt bằng không?'],
+  ['10-ngon-cai', 'Tìm nhà cho cả nhà nhé?'],
   ['04-tim-thay', 'Mình tìm giúp nhé!'],
 ];
 

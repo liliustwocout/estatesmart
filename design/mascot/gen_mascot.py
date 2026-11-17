@@ -87,27 +87,27 @@ POSES = [
   '<use href="#sh"/><g class="jump"><use href="#lg"/><use href="#bd"/><use href="#aL"/>' + ARM('M103 130 Q122 120 128 100')
   + '<path d="M138 50 c-8 0 -13 6 -13 13 c0 9 13 19 13 19 s13 -10 13 -19 c0 -7 -5 -13 -13 -13z" fill="#e07b3c"/><circle cx="138" cy="63" r="5" fill="#ffffff"/>' + HAND(128, 97)
   + '<use href="#hd"/><use href="#eN"/><use href="#mD"/></g><path class="tw" d="M20 40 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3z" fill="#e07b3c"/><path class="tw" style="animation-delay:.4s" d="M150 20 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z" fill="#2c6ab0"/>'),
- ('05-soi-tin-dang', 'Soi tin đăng', 'Section vấn đề: mô tả đẹp, thực tế sao?',
+ ('05-soi-tin-dang', 'Soi tin đăng', 'Soi tin rao, ảnh đẹp thực tế sao?',
   '<use href="#sh"/><use href="#lg"/><use href="#bd"/><use href="#hd"/><g transform="translate(0 4)"><use href="#eN"/></g><path d="M75 110 L85 110" stroke="#e07b3c" stroke-width="3" stroke-linecap="round"/>'
   '<rect x="48" y="126" width="48" height="38" rx="3" fill="#ffffff" stroke="#c3ceda" stroke-width="1.5"/><g stroke="#c9d3dd" stroke-width="3" stroke-linecap="round"><line x1="54" y1="135" x2="88" y2="135"/><line x1="54" y1="142" x2="82" y2="142"/><line x1="54" y1="149" x2="86" y2="149"/><line x1="54" y1="156" x2="72" y2="156"/></g>'
   + ARM('M57 132 Q46 146 50 156') + HAND(50, 158)
   + '<g class="sweep">' + ARM('M103 132 Q114 146 108 156') + '<line x1="94" y1="149" x2="106" y2="157" stroke="#111a24" stroke-width="5" stroke-linecap="round"/><circle cx="86" cy="142" r="9" fill="#dff0ff" fill-opacity=".7" stroke="#111a24" stroke-width="3.5"/>' + HAND(108, 158) + '</g>'),
- ('06-ong-nhom', 'Ống nhòm', 'Đối thủ cùng ngành, nguồn khách',
+ ('06-ong-nhom', 'Ống nhòm', 'Nhìn quanh tìm tiện ích',
   '<use href="#sh"/><use href="#lg"/><use href="#bd"/><g class="scan"><use href="#hd"/><ellipse cx="80" cy="110" rx="3" ry="2.5" fill="#e07b3c"/>'
   '<rect x="58" y="87" width="44" height="10" rx="4" fill="#111a24"/><circle cx="62.5" cy="92" r="11" fill="#111a24"/><circle cx="97.5" cy="92" r="11" fill="#111a24"/><circle cx="62.5" cy="92" r="6.5" fill="#8fd0ff"/><circle cx="97.5" cy="92" r="6.5" fill="#8fd0ff"/><circle cx="65" cy="89" r="2" fill="#ffffff"/><circle cx="100" cy="89" r="2" fill="#ffffff"/>'
   + ARM('M57 130 Q44 118 54 104') + ARM('M103 130 Q116 118 106 104') + HAND(54, 103) + HAND(106, 103) + '</g>'),
- ('07-do-dac', 'Đo đạc', 'Diện tích, mặt tiền, chỗ để xe',
+ ('07-do-dac', 'Đo đạc', 'Diện tích căn, phút đi bộ',
   '<use href="#sh"/><use href="#lg"/><use href="#bd"/><use href="#aR"/><use href="#hd"/><g transform="translate(-4 3)"><use href="#eN"/></g><use href="#mS"/>'
   '<g class="tape"><rect x="42" y="160" width="112" height="6" fill="#f2c94c"/><g stroke="#111a24" stroke-width="1.2">'
   + ''.join(f'<line x1="{x}" y1="160" x2="{x}" y2="{163 + (i % 2)}"/>' for i, x in enumerate(range(52, 150, 10)))
   + '</g><rect x="150" y="156" width="5" height="12" rx="1.5" fill="#111a24"/></g><rect x="22" y="146" width="22" height="22" rx="6" fill="#e07b3c"/><circle cx="33" cy="157" r="4.5" fill="#ffffff"/>'
   + ARM('M57 132 Q44 140 40 148') + HAND(39, 150)),
- ('08-bieu-do', 'Trình bày dữ liệu', 'Giá thuê khu vực, điểm số',
+ ('08-bieu-do', 'Trình bày dữ liệu', 'Điểm sống, điểm từng nhóm tiện ích',
   '<use href="#sh"/><use href="#lg"/><use href="#bd"/><use href="#aL"/><use href="#hd"/><g transform="translate(4 -2)"><use href="#eN"/></g><use href="#mD"/>'
   '<line x1="138" y1="106" x2="138" y2="176" stroke="#c3ceda" stroke-width="3"/><rect x="116" y="56" width="42" height="50" rx="4" fill="#ffffff" stroke="#c3ceda" stroke-width="1.5"/>'
   '<rect x="122" y="86" width="7" height="14" fill="#9dbee3" class="bar"/><rect x="133" y="76" width="7" height="24" fill="#2c6ab0" class="bar" style="animation-delay:.15s"/><rect x="144" y="66" width="7" height="34" fill="#e07b3c" class="bar" style="animation-delay:.3s"/>'
   + ARM('M103 130 Q120 124 120 112') + HAND(120, 109)),
- ('09-ban-do', 'Mở bản đồ', 'Khu vực, bán kính 300 m',
+ ('09-ban-do', 'Mở bản đồ', 'Vòng 15 phút đi bộ',
   '<use href="#sh"/><use href="#lg"/><use href="#bd"/><use href="#hd"/><g transform="translate(0 4)"><use href="#eW"/></g><use href="#mO"/>'
   '<path d="M32 124 L58 130 L84 122 L110 130 L130 124 L130 162 L110 168 L84 160 L58 168 L32 162 Z" fill="#dce8f5" stroke="#9dbee3" stroke-width="1.5" stroke-linejoin="round"/>'
   '<g stroke="#9dbee3" stroke-width="1.2"><line x1="58" y1="130" x2="58" y2="168"/><line x1="84" y1="122" x2="84" y2="160"/><line x1="110" y1="130" x2="110" y2="168"/></g><path d="M36 154 Q70 136 126 142" fill="none" stroke="#ffffff" stroke-width="4"/>'
@@ -126,7 +126,7 @@ POSES = [
   '<use href="#sh"/><use href="#lg"/><use href="#bd"/><use href="#aL"/><use href="#hd"/><g transform="translate(-3 0)"><use href="#eN"/></g><use href="#mW"/>'
   '<g class="scr">' + ARM('M103 130 Q132 122 134 96') + HAND(134, 92) + '</g>'
   '<g transform="translate(20 64)"><path class="drip" d="M0 0 C3 5 5 8 5 10 a5 5 0 0 1 -10 0 C-5 8 -3 5 0 0Z" fill="#8fd0ff"/></g>'),
- ('13-an-mung', 'Ăn mừng', 'Đã lưu hồ sơ, gửi yêu cầu khảo sát',
+ ('13-an-mung', 'Ăn mừng', 'Đã lưu hồ sơ, đặt lịch xem nhà xong',
   '<use href="#sh"/><g class="cheer"><use href="#lg"/><use href="#bd"/>' + ARM('M57 130 Q32 124 24 98') + ARM('M103 130 Q128 124 136 98') + HAND(24, 95) + HAND(136, 95)
   + '<use href="#hd"/><use href="#eH"/><use href="#mD"/></g>'
   '<rect class="cf" x="20" y="10" width="6" height="10" fill="#e07b3c"/><rect class="cf" style="animation-delay:.5s" x="130" y="6" width="6" height="10" fill="#2c6ab0"/><rect class="cf" style="animation-delay:.9s" x="104" y="2" width="5" height="8" fill="#f2c94c"/><rect class="cf" style="animation-delay:1.3s" x="44" y="4" width="5" height="8" fill="#2e7d5b"/>'),
